@@ -13,6 +13,8 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     
     Optional<StudentProfile> findByProfile(Profile profile);
     
+    Optional<StudentProfile> findByProfile_Id(UUID profileId);
+    
     Optional<StudentProfile> findBySchoolEmail(String schoolEmail);
     
     Optional<StudentProfile> findByPersonalEmail(String personalEmail);
@@ -20,4 +22,4 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     boolean existsBySchoolEmail(String schoolEmail);
     
     boolean existsByPersonalEmail(String personalEmail);
-} 
+}

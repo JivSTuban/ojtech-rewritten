@@ -1,111 +1,108 @@
 package com.ojtech.api.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
+@Data
+@NoArgsConstructor
 @Entity
 @Table(name = "student_profiles")
 public class StudentProfile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "profile_id")
-    private Profile profile;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", referencedColumnName = "id", nullable = false, unique = true)
+    private Profile profile; // Link to the base Profile entity
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId // This makes userId both PK and FK
+    @JoinColumn(name = "user_id")
+    private User user;
 
     private String university;
-
-    private String course;
-
-    @Min(1)
-    @Max(6)
-    private Integer yearLevel;
-
+    private String course; // Changed from major
+    private String yearLevel;
+    @Column(columnDefinition = "TEXT")
     private String bio;
-
-    @Size(max = 500)
-    private String githubProfile;
-
-    @Column(unique = true)
-    @NotNull
+    private String githubProfile; // Renamed from githubUrl to be consistent
+    
+    // Fields from old StudentProfile model that might be useful, or are on Profile/User now
+    // private String firstName; // Now on Profile.fullName
+    // private String lastName; // Now on Profile.fullName
     private String schoolEmail;
+    private String personalEmail; // Could be Profile.email or a secondary one
+    private String phoneNumber; // Could be on Profile or here if student specific contact
 
-    @Column(unique = true)
-    private String personalEmail;
-
-    private String phoneNumber;
-
-    private String country = "Philippines";
-
+    // Address fields (can be individual or a separate Embeddable Address object)
+    private String country;
     private String regionProvince;
-
     private String city;
-
     private String postalCode;
-
     private String streetAddress;
 
-    @CreationTimestamp
-    private OffsetDateTime createdAt;
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "student_skills", joinColumns = @JoinColumn(name = "student_profile_id"))
+    @Column(name = "skill")
+    private List<String> skills; // From original model
 
-    @UpdateTimestamp
-    private OffsetDateTime updatedAt;
+    // Academic Background - can be JSON string or separate entities
+    @Column(columnDefinition = "TEXT")
+    private String academicBackground; // Was List<String> in old model, now JSON or Text
     
-    @Column(columnDefinition = "jsonb")
-    private String academicBackground;
-    
-    // Default constructor
-    public StudentProfile() {
+    // CV related fields are now primarily on CV entity linked to Profile
+    // private String cvUrl;
+    // private String cvFilename;
+    // private LocalDateTime cvUploadedAt;
+
+    // hasCompletedOnboarding is on the base Profile entity
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
-    
-    // All-args constructor
-    public StudentProfile(UUID id, Profile profile, String university, String course, Integer yearLevel, 
-                         String bio, String githubProfile, String schoolEmail, String personalEmail, 
-                         String phoneNumber, String country, String regionProvince, String city, 
-                         String postalCode, String streetAddress, OffsetDateTime createdAt, 
-                         OffsetDateTime updatedAt, String academicBackground) {
-        this.id = id;
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // Constructors
+    public StudentProfile(Profile profile) {
         this.profile = profile;
-        this.university = university;
-        this.course = course;
-        this.yearLevel = yearLevel;
-        this.bio = bio;
-        this.githubProfile = githubProfile;
-        this.schoolEmail = schoolEmail;
-        this.personalEmail = personalEmail;
-        this.phoneNumber = phoneNumber;
-        this.country = country;
-        this.regionProvince = regionProvince;
-        this.city = city;
-        this.postalCode = postalCode;
-        this.streetAddress = streetAddress;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.academicBackground = academicBackground;
     }
     
-    // Getters and setters
-    public UUID getId() {
-        return id;
+    // Getters and Setters
+    public Long getUserId() {
+        return user.getId();
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setUserId(Long userId) {
+        user.setId(userId);
     }
 
-    public Profile getProfile() {
-        return profile;
+    public User getUser() {
+        return user;
     }
 
-    public void setProfile(Profile profile) {
-        this.profile = profile;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getUniversity() {
@@ -124,11 +121,11 @@ public class StudentProfile {
         this.course = course;
     }
 
-    public Integer getYearLevel() {
+    public String getYearLevel() {
         return yearLevel;
     }
 
-    public void setYearLevel(Integer yearLevel) {
+    public void setYearLevel(String yearLevel) {
         this.yearLevel = yearLevel;
     }
 
@@ -212,20 +209,12 @@ public class StudentProfile {
         this.streetAddress = streetAddress;
     }
 
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
+    public List<String> getSkills() {
+        return skills;
     }
 
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
     }
 
     public String getAcademicBackground() {
@@ -235,126 +224,20 @@ public class StudentProfile {
     public void setAcademicBackground(String academicBackground) {
         this.academicBackground = academicBackground;
     }
-    
-    // Builder class
-    public static Builder builder() {
-        return new Builder();
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
-    
-    public static class Builder {
-        private UUID id;
-        private Profile profile;
-        private String university;
-        private String course;
-        private Integer yearLevel;
-        private String bio;
-        private String githubProfile;
-        private String schoolEmail;
-        private String personalEmail;
-        private String phoneNumber;
-        private String country = "Philippines";
-        private String regionProvince;
-        private String city;
-        private String postalCode;
-        private String streetAddress;
-        private OffsetDateTime createdAt;
-        private OffsetDateTime updatedAt;
-        private String academicBackground;
-        
-        public Builder id(UUID id) {
-            this.id = id;
-            return this;
-        }
-        
-        public Builder profile(Profile profile) {
-            this.profile = profile;
-            return this;
-        }
-        
-        public Builder university(String university) {
-            this.university = university;
-            return this;
-        }
-        
-        public Builder course(String course) {
-            this.course = course;
-            return this;
-        }
-        
-        public Builder yearLevel(Integer yearLevel) {
-            this.yearLevel = yearLevel;
-            return this;
-        }
-        
-        public Builder bio(String bio) {
-            this.bio = bio;
-            return this;
-        }
-        
-        public Builder githubProfile(String githubProfile) {
-            this.githubProfile = githubProfile;
-            return this;
-        }
-        
-        public Builder schoolEmail(String schoolEmail) {
-            this.schoolEmail = schoolEmail;
-            return this;
-        }
-        
-        public Builder personalEmail(String personalEmail) {
-            this.personalEmail = personalEmail;
-            return this;
-        }
-        
-        public Builder phoneNumber(String phoneNumber) {
-            this.phoneNumber = phoneNumber;
-            return this;
-        }
-        
-        public Builder country(String country) {
-            this.country = country;
-            return this;
-        }
-        
-        public Builder regionProvince(String regionProvince) {
-            this.regionProvince = regionProvince;
-            return this;
-        }
-        
-        public Builder city(String city) {
-            this.city = city;
-            return this;
-        }
-        
-        public Builder postalCode(String postalCode) {
-            this.postalCode = postalCode;
-            return this;
-        }
-        
-        public Builder streetAddress(String streetAddress) {
-            this.streetAddress = streetAddress;
-            return this;
-        }
-        
-        public Builder createdAt(OffsetDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-        
-        public Builder updatedAt(OffsetDateTime updatedAt) {
-            this.updatedAt = updatedAt;
-            return this;
-        }
-        
-        public Builder academicBackground(String academicBackground) {
-            this.academicBackground = academicBackground;
-            return this;
-        }
-        
-        public StudentProfile build() {
-            return new StudentProfile(id, profile, university, course, yearLevel, bio, githubProfile, 
-                                     schoolEmail, personalEmail, phoneNumber, country, regionProvince, 
-                                     city, postalCode, streetAddress, createdAt, updatedAt, academicBackground);
-        }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 } 

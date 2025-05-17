@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,6 +47,8 @@ public class Profile {
     @Size(max = 500)
     private String githubProfile;
 
+    private String activeCvUrl;
+
     private Boolean hasCompletedOnboarding = false;
 
     private Boolean hasUploadedCv = false;
@@ -54,9 +57,8 @@ public class Profile {
     
     private String cvProcessingError;
     
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    private List<CV> cvs;
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<CV> cvs = new ArrayList<>();
     
     private Boolean enabled = true;
     
@@ -65,6 +67,9 @@ public class Profile {
     private Boolean accountNonLocked = true;
     
     private Boolean credentialsNonExpired = true;
+    
+    @OneToOne(mappedBy = "profile")
+    private User user;
     
     public Profile() {
     }

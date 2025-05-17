@@ -1,99 +1,100 @@
 package com.ojtech.api.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.JobRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.MatchRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.StudentProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.math.RoundingMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
-
 @Transactional
-
 public class JobMatchingServiceImpl implements JobMatchingService {
+
+    private static final Logger log = LoggerFactory.getLogger(JobMatchingServiceImpl.class);
 
     private final JobRepository jobRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final MatchRepository matchRepository;
     private final ObjectMapper objectMapper;
 
+    public JobMatchingServiceImpl(JobRepository jobRepository, 
+                                StudentProfileRepository studentProfileRepository, 
+                                MatchRepository matchRepository, 
+                                ObjectMapper objectMapper) {
+        this.jobRepository = jobRepository;
+        this.studentProfileRepository = studentProfileRepository;
+        this.matchRepository = matchRepository;
+        this.objectMapper = objectMapper;
+    }
+
     @Override
     public void calculateMatchesForCV(CV cv) {
+        if (cv == null || cv.getUser() == null) {
+            log.warn("CV or CV User is null, cannot calculate matches.");
+            return;
+        }
         try {
-            // Get the student profile
             Optional<StudentProfile> studentProfileOpt = studentProfileRepository.findByProfile(cv.getUser());
             if (studentProfileOpt.isEmpty()) {
+                log.warn("StudentProfile not found for CV user ID: {}, skipping match calculation.", cv.getUser().getId());
                 return;
             }
             StudentProfile studentProfile = studentProfileOpt.get();
 
-            // Get all active jobs
-            List<Job> jobs = jobRepository.findByStatus("open");
+            List<Job> jobs = jobRepository.findByStatus("open"); // Consider a more robust way to get active jobs
+            log.debug("Found {} active jobs to match against for student ID: {}", jobs.size(), studentProfile.getId());
 
-            // For each job, calculate match score and save or update match
             for (Job job : jobs) {
                 double score = calculateAiMatchScore(cv, job);
                 BigDecimal matchScore = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
 
-                // Find existing match or create new one
                 Optional<Match> existingMatch = matchRepository.findByStudentAndJob(studentProfile, job);
                 if (existingMatch.isPresent()) {
                     Match match = existingMatch.get();
                     match.setMatchScore(matchScore);
                     matchRepository.save(match);
-                            studentProfile.getId(), job.getId(), matchScore);
+                    log.info("Updated match for student ID: {}, job ID: {}, new score: {}", studentProfile.getId(), job.getId(), matchScore);
                 } else {
                     Match newMatch = Match.builder()
                             .student(studentProfile)
                             .job(job)
                             .matchScore(matchScore)
-                            .status("pending")
+                            .status("pending") // Default status
                             .build();
                     matchRepository.save(newMatch);
-                            studentProfile.getId(), job.getId(), matchScore);
+                    log.info("Created new match for student ID: {}, job ID: {}, score: {}", studentProfile.getId(), job.getId(), matchScore);
                 }
             }
         } catch (Exception e) {
+            log.error("Failed to calculate job matches for CV ID {}: {}", cv.getId(), e.getMessage(), e);
             throw new RuntimeException("Failed to calculate job matches for CV", e);
         }
     }
 
     @Override
     public void calculateMatchesForJob(Job job) {
+        if (job == null) {
+            log.warn("Job is null, cannot calculate matches.");
+            return;
+        }
         try {
             List<StudentProfile> studentProfiles = studentProfileRepository.findAll();
+            log.debug("Found {} student profiles to match against for job ID: {}", studentProfiles.size(), job.getId());
 
             for (StudentProfile studentProfile : studentProfiles) {
-                // Find active CV for this student
+                if (studentProfile.getProfile() == null || studentProfile.getProfile().getCvs() == null) {
+                    log.warn("Student profile or CV list is null for student ID: {}, skipping.", studentProfile.getId());
+                    continue;
+                }
                 Optional<CV> activeCv = studentProfile.getProfile().getCvs().stream()
                         .filter(CV::getIsActive)
                         .findFirst();
@@ -103,13 +104,12 @@ public class JobMatchingServiceImpl implements JobMatchingService {
                     double score = calculateAiMatchScore(cv, job);
                     BigDecimal matchScore = BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP);
 
-                    // Find existing match or create new one
                     Optional<Match> existingMatch = matchRepository.findByStudentAndJob(studentProfile, job);
                     if (existingMatch.isPresent()) {
                         Match match = existingMatch.get();
                         match.setMatchScore(matchScore);
                         matchRepository.save(match);
-                                studentProfile.getId(), job.getId(), matchScore);
+                        log.info("Updated match during job update for student ID: {}, job ID: {}, new score: {}", studentProfile.getId(), job.getId(), matchScore);
                     } else {
                         Match newMatch = Match.builder()
                                 .student(studentProfile)
@@ -118,12 +118,14 @@ public class JobMatchingServiceImpl implements JobMatchingService {
                                 .status("pending")
                                 .build();
                         matchRepository.save(newMatch);
-                                studentProfile.getId(), job.getId(), matchScore);
+                        log.info("Created new match during job update for student ID: {}, job ID: {}, score: {}", studentProfile.getId(), job.getId(), matchScore);
                     }
                 } else {
+                    log.warn("No active CV found for student profile ID: {}", studentProfile.getId());
                 }
             }
         } catch (Exception e) {
+            log.error("Failed to calculate student matches for job ID {}: {}", job.getId(), e.getMessage(), e);
             throw new RuntimeException("Failed to calculate student matches for job", e);
         }
     }
@@ -166,6 +168,10 @@ public class JobMatchingServiceImpl implements JobMatchingService {
 
     @Override
     public double calculateAiMatchScore(CV cv, Job job) {
+        if (cv == null || job == null) {
+            log.warn("CV or Job is null, cannot calculate match score.");
+            return 0.0;
+        }
         try {
             // Parse the CV skills and job required skills from JSON
             JsonNode cvSkills = parseJsonField(cv.getSkills());
@@ -225,11 +231,13 @@ public class JobMatchingServiceImpl implements JobMatchingService {
             // Ensure score is between 0 and 100
             score = Math.max(0, Math.min(100, score));
             
+            log.debug("CV ID: {}, Job ID: {}, Calculated Score: {:.2f}, Required Matched: {}/{}, Preferred Matched: {}/{}", 
                     cv.getId(), job.getId(), score, requiredSkillsMatched, totalRequiredSkills,
                     preferredSkillsMatched, totalPreferredSkills);
             
             return score;
         } catch (Exception e) {
+            log.error("Error calculating AI match score for CV ID {} and Job ID {}: {}", cv.getId(), job.getId(), e.getMessage(), e);
             return 0.0;
         }
     }

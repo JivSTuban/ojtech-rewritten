@@ -7,6 +7,8 @@ import { Label } from '../components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
 import { ToastHelper } from '../providers/ToastContext';
 import { Loader2, Upload } from 'lucide-react';
+import { useAuth, AppUser } from '@/providers/AuthProvider';
+import { Link } from 'react-router-dom';
 
 // Define interfaces for our component
 interface ProfilePageProps {}
@@ -21,6 +23,86 @@ interface ProfilePageState {
   userId: string | null;
   skills: string[];
 }
+
+// Define more specific profile types if needed, or use 'any' if profile structure varies greatly
+interface StudentProfileViewData {
+    firstName?: string;
+    lastName?: string;
+    email?: string; // from AppUser
+    username?: string; // from AppUser
+    phoneNumber?: string;
+    university?: string;
+    major?: string;
+    graduationYear?: number;
+    bio?: string;
+    skills?: string[];
+    cvUrl?: string;
+    cvFilename?: string;
+    githubUrl?: string;
+    linkedinUrl?: string;
+    portfolioUrl?: string;
+}
+
+interface EmployerProfileViewData {
+    companyName?: string;
+    email?: string; // from AppUser
+    username?: string; // from AppUser
+    companySize?: string;
+    industry?: string;
+    companyWebsite?: string;
+    companyDescription?: string;
+    companyLogoUrl?: string;
+    companyAddress?: string;
+    contactPersonName?: string;
+    contactPersonPosition?: string;
+    contactPersonEmail?: string;
+    contactPersonPhone?: string;
+    verified?: boolean;
+}
+
+const StudentProfileDisplay: React.FC<{ profile: StudentProfileViewData, user: AppUser }> = ({ profile, user }) => (
+    <div className="space-y-4">
+        <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({user.username})</h3>
+        <p><strong>Email:</strong> {user.email}</p>
+        {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
+        {profile.university && <p><strong>University:</strong> {profile.university}</p>}
+        {profile.major && <p><strong>Major:</strong> {profile.major}</p>}
+        {profile.graduationYear && <p><strong>Graduation Year:</strong> {profile.graduationYear}</p>}
+        {profile.bio && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p className="italic">{profile.bio}</p></div>}
+        {profile.skills && profile.skills.length > 0 && (
+            <div><strong>Skills:</strong> {profile.skills.join(', ')}</div>
+        )}
+        {profile.cvUrl && (
+            <p><strong>CV:</strong> <a href={profile.cvUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{profile.cvFilename || 'Download CV'}</a></p>
+        )}
+        <div className="flex space-x-4 mt-2">
+            {profile.githubUrl && <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">GitHub</a>}
+            {profile.linkedinUrl && <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">LinkedIn</a>}
+            {profile.portfolioUrl && <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Portfolio</a>}
+        </div>
+        <Link to="/onboarding/student" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+    </div>
+);
+
+const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileViewData, user: AppUser }> = ({ profile, user }) => (
+    <div className="space-y-4">
+        <h3 className="text-xl font-semibold">{profile.companyName} ({user.username})</h3>
+        {profile.companyLogoUrl && <img src={profile.companyLogoUrl} alt={`${profile.companyName} logo`} className="h-24 w-auto rounded my-2" />}
+        <p><strong>Contact Email (User):</strong> {user.email}</p>
+        {profile.verified && <p className="text-green-600 dark:text-green-400 font-semibold">Verified Employer</p>}
+        {profile.industry && <p><strong>Industry:</strong> {profile.industry}</p>}
+        {profile.companySize && <p><strong>Company Size:</strong> {profile.companySize}</p>}
+        {profile.companyWebsite && <p><strong>Website:</strong> <a href={profile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{profile.companyWebsite}</a></p>}
+        {profile.companyDescription && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p>{profile.companyDescription}</p></div>}
+        {profile.companyAddress && <p><strong>Address:</strong> {profile.companyAddress}</p>}
+        <h4 class="text-md font-semibold pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">Contact Person</h4>
+        {profile.contactPersonName && <p><strong>Name:</strong> {profile.contactPersonName}</p>}
+        {profile.contactPersonPosition && <p><strong>Position:</strong> {profile.contactPersonPosition}</p>}
+        {profile.contactPersonEmail && <p><strong>Email:</strong> {profile.contactPersonEmail}</p>}
+        {profile.contactPersonPhone && <p><strong>Phone:</strong> {profile.contactPersonPhone}</p>}
+        <Link to="/onboarding/employer" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Company Profile</Link>
+    </div>
+);
 
 export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   private supabase = createClient(
@@ -454,4 +536,48 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       </div>
     );
   }
-} 
+}
+
+export const ProfilePage: React.FC = () => {
+  const { user, isLoading, fetchUserProfile } = useAuth();
+
+  React.useEffect(() => {
+    // Fetch profile data when component mounts or user changes, 
+    // especially if it might have been updated via an onboarding page.
+    fetchUserProfile();
+  }, []); // Consider adding user.id or similar to dependencies if needed for re-fetch on user switch without full reload.
+
+  if (isLoading || !user) {
+    return <div className="min-h-screen flex items-center justify-center"><p>Loading profile...</p></div>;
+  }
+
+  // Assuming user.profile contains the specific profile data (student or employer)
+  // and user.roles indicates the type.
+  const profileData = user.profile;
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">User Profile</h2>
+        
+        {user.roles.includes('ROLE_STUDENT') && profileData && (
+          <StudentProfileDisplay profile={profileData as StudentProfileViewData} user={user} />
+        )}
+
+        {user.roles.includes('ROLE_EMPLOYER') && profileData && (
+          <EmployerProfileDisplay profile={profileData as EmployerProfileViewData} user={user} />
+        )}
+
+        {(!profileData && !isLoading) && (
+            <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">Your profile information is not yet complete.</p>
+                {user.roles.includes('ROLE_STUDENT') && 
+                    <Link to="/onboarding/student" className="text-indigo-600 hover:underline">Complete Student Profile</Link>}
+                {user.roles.includes('ROLE_EMPLOYER') && 
+                    <Link to="/onboarding/employer" className="text-indigo-600 hover:underline">Complete Company Profile</Link>}
+            </div>
+        )}
+      </div>
+    </div>
+  );
+}; 

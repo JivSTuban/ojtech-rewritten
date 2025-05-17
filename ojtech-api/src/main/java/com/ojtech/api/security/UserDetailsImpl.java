@@ -10,10 +10,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class UserDetailsImpl implements UserDetails {
 
+    private static final long serialVersionUID = 1L;
+
     private UUID id;
+    private String username;
     private String email;
     
     @JsonIgnore
@@ -32,39 +36,28 @@ public class UserDetailsImpl implements UserDetails {
     public UserDetailsImpl() {
     }
     
-    public UserDetailsImpl(UUID id, String email, String password, String fullName, 
-                         Collection<? extends GrantedAuthority> authorities, boolean enabled, 
-                         boolean accountNonExpired, boolean accountNonLocked, boolean credentialsNonExpired, 
-                         Profile profile) {
+    public UserDetailsImpl(UUID id, String username, String email, String password,
+                           Collection<? extends GrantedAuthority> authorities, Profile profile) {
         this.id = id;
+        this.username = username;
         this.email = email;
         this.password = password;
-        this.fullName = fullName;
         this.authorities = authorities;
-        this.enabled = enabled;
-        this.accountNonExpired = accountNonExpired;
-        this.accountNonLocked = accountNonLocked;
-        this.credentialsNonExpired = credentialsNonExpired;
         this.profile = profile;
     }
 
-    public static UserDetailsImpl build(Profile profile) {
-        List<GrantedAuthority> authorities = Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + profile.getRole().name())
-        );
+    public static UserDetailsImpl build(User user) {
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+                .collect(Collectors.toList());
 
-        return UserDetailsImpl.builder()
-                .id(profile.getId())
-                .email(profile.getEmail())
-                .password(profile.getPassword())
-                .fullName(profile.getFullName())
-                .authorities(authorities)
-                .enabled(profile.getEnabled() != null ? profile.getEnabled() : true)
-                .accountNonExpired(profile.getAccountNonExpired() != null ? profile.getAccountNonExpired() : true)
-                .accountNonLocked(profile.getAccountNonLocked() != null ? profile.getAccountNonLocked() : true)
-                .credentialsNonExpired(profile.getCredentialsNonExpired() != null ? profile.getCredentialsNonExpired() : true)
-                .profile(profile)
-                .build();
+        return new UserDetailsImpl(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getPassword(),
+                authorities,
+                user.getProfile());
     }
     
     // Explicit builder static class in case Lombok fails
@@ -74,6 +67,7 @@ public class UserDetailsImpl implements UserDetails {
     
     public static class UserDetailsImplBuilder {
         private UUID id;
+        private String username;
         private String email;
         private String password;
         private String fullName;
@@ -88,6 +82,11 @@ public class UserDetailsImpl implements UserDetails {
         
         public UserDetailsImplBuilder id(UUID id) {
             this.id = id;
+            return this;
+        }
+        
+        public UserDetailsImplBuilder username(String username) {
+            this.username = username;
             return this;
         }
         
@@ -137,9 +136,7 @@ public class UserDetailsImpl implements UserDetails {
         }
         
         public UserDetailsImpl build() {
-            return new UserDetailsImpl(id, email, password, fullName, authorities, 
-                                    enabled, accountNonExpired, accountNonLocked, 
-                                    credentialsNonExpired, profile);
+            return new UserDetailsImpl(id, username, email, password, authorities, profile);
         }
     }
 
@@ -155,7 +152,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override
@@ -213,6 +210,10 @@ public class UserDetailsImpl implements UserDetails {
     
     public void setId(UUID id) {
         this.id = id;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
     }
     
     public void setEmail(String email) {

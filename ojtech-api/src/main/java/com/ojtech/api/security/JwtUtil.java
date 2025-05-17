@@ -47,10 +47,12 @@ public class JwtUtil {
                 claims.put("userId", profile.getId().toString());
                 claims.put("role", profile.getRole().toString());
                 claims.put("fullName", profile.getFullName());
-                          profile.getEmail(), profile.getId(), profile.getRole());
+                log.debug("Adding claims for profile: Email={}, ID={}, Role={}", profile.getEmail(), profile.getId(), profile.getRole());
             } else {
+                log.warn("Profile is null for user: {}", userDetails.getUsername());
             }
         } else {
+            log.warn("UserDetails is not an instance of UserDetailsImpl for user: {}", userDetails.getUsername());
         }
         
         return createToken(claims, userDetails.getUsername());

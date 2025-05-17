@@ -1,14 +1,16 @@
 package com.ojtech.api.controller;
 
-import com.ojtech.api.model.Profile;
-import com.ojtech.api.model.UserRole;
+import com.ojtech.api.model.ERole;
+import com.ojtech.api.model.Role;
+import com.ojtech.api.model.User;
 import com.ojtech.api.payload.request.LoginRequest;
-import com.ojtech.api.payload.request.RegisterRequest;
+import com.ojtech.api.payload.request.SignupRequest;
 import com.ojtech.api.payload.response.JwtResponse;
 import com.ojtech.api.payload.response.MessageResponse;
-import com.ojtech.api.repository.ProfileRepository;
-import com.ojtech.api.security.JwtUtil;
-import com.ojtech.api.security.UserDetailsImpl;
+import com.ojtech.api.repository.RoleRepository;
+import com.ojtech.api.repository.UserRepository;
+import com.ojtech.api.security.jwt.JwtUtils;
+import com.ojtech.api.security.services.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,12 +19,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -33,67 +36,84 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final ProfileRepository profileRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder encoder;
+    private final JwtUtils jwtUtils;
 
-    @PostMapping("/login")
+    @PostMapping("/signin")
     @Operation(summary = "Login", description = "Authenticate a user and generate a JWT token")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsernameOrEmail(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtil.generateToken((UserDetailsImpl) authentication.getPrincipal());
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        String jwt = jwtUtils.generateJwtToken(authentication);
+        
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();        
         List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
+                .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        // Get the user role without the "ROLE_" prefix
-        String role = roles.stream()
-                .filter(r -> r.startsWith("ROLE_"))
-                .map(r -> r.substring(5))
-                .findFirst()
-                .orElse("");
-
-        return ResponseEntity.ok(new JwtResponse(
-                jwt,
-                userDetails.getId(),
-                userDetails.getEmail(),
-                userDetails.getFullName(),
-                role,
-                roles
-        ));
+        return ResponseEntity.ok(new JwtResponse(jwt, 
+                                                 userDetails.getId(), 
+                                                 userDetails.getUsername(), 
+                                                 userDetails.getEmail(), 
+                                                 roles));
     }
 
-    @PostMapping("/register")
+    @PostMapping("/signup")
     @Operation(summary = "Register", description = "Register a new user")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
-        if (profileRepository.existsByEmail(registerRequest.getEmail())) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Username is already taken!"));
+        }
+
+        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: Email is already in use!"));
         }
 
-        // Validate that password and confirmPassword match
-        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Passwords do not match!"));
+        // Create new user's account
+        User user = new User(signUpRequest.getUsername(), 
+                             signUpRequest.getEmail(),
+                             encoder.encode(signUpRequest.getPassword()));
+
+        Set<String> strRoles = signUpRequest.getRoles();
+        Set<Role> roles = new HashSet<>();
+
+        if (strRoles == null || strRoles.isEmpty()) {
+            Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                    .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
+            roles.add(userRole);
+        } else {
+            strRoles.forEach(role -> {
+                switch (role.toLowerCase()) {
+                    case "admin":
+                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                                .orElseThrow(() -> new RuntimeException("Error: Role ADMIN is not found."));
+                        roles.add(adminRole);
+                        break;
+                    case "employer":
+                        Role modRole = roleRepository.findByName(ERole.ROLE_EMPLOYER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role EMPLOYER is not found."));
+                        roles.add(modRole);
+                        break;
+                    default:
+                        Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                                .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
+                        roles.add(userRole);
+                }
+            });
         }
-
-        // Create new user's profile
-        Profile profile = Profile.builder()
-                .email(registerRequest.getEmail())
-                .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .fullName(registerRequest.getFullName())
-                .role(UserRole.valueOf(registerRequest.getRole()))
-                .hasCompletedOnboarding(false)
-                .build();
-
-        profileRepository.save(profile);
+        user.setRoles(roles);
+        // By default, user is not enabled until email verification (if implemented)
+        // For now, we'll enable them by default for simplicity, or set based on a flag if needed.
+        user.setEnabled(true); 
+        userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }

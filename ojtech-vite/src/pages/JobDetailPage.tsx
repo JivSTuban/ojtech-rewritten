@@ -1,323 +1,181 @@
-import React, { Component } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
-import { ArrowLeft, Briefcase, MapPin, Calendar, DollarSign, ExternalLink, Loader2 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
-import { createClient } from '@supabase/supabase-js';
+import React, { useState, useEffect, useCallback } from 'react';
+import jobService from '@/lib/api/jobService';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/providers/AuthProvider';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ArrowLeft, Briefcase, MapPin, CalendarDays, Users, DollarSign, Settings, CheckCircle } from 'lucide-react';
 
-// Job type definition
+// Base Job interface (could be shared from a types file)
 interface Job {
-  id: string;
-  employer_id: string;
-  title: string;
-  description: string | null;
-  company_name: string | null;
-  company_logo_url?: string | null;
-  location: string | null;
-  job_type: string | null;
-  salary_range: string | null;
-  required_skills: string[];
-  preferred_skills: Record<string, any> | null;
-  application_deadline: string | null;
-  created_at: string;
-  updated_at: string | null;
-  status: string;
-  is_active: boolean;
-  match_score?: number | null;
+    id: number;
+    title: string;
+    location: string;
+    jobType: string;
+    postedDate: string; 
+    salaryRange?: string; // Made optional as it is in Job entity
+    // isActive: boolean; // isActive is part of JobDetail specific extension here for clarity
+    // description: string; // Description is handled in JobDetail
+    // skillsRequired: string[]; // Handled in JobDetail
+    // employer: any; // Handled in JobDetail with more specificity
 }
 
-// Since we can't use useParams in a class component,
-// we'll create a wrapper function component that gets the params and passes them to our class
-export function JobDetailPageWrapper() {
-  const { id } = useParams<{ id: string }>();
-  return <JobDetailPage jobId={id || ''} />;
-}
-
-interface JobDetailPageProps {
-  jobId: string;
-}
-
-interface JobDetailPageState {
-  job: Job | null;
-  loading: boolean;
-  error: string | null;
-  isApplying: boolean;
-  hasApplied: boolean;
-  redirectToLogin: boolean;
-}
-
-export class JobDetailPage extends Component<JobDetailPageProps, JobDetailPageState> {
-  // Create a Supabase client (should be moved to a provider in a real app)
-  private supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  );
-  
-  constructor(props: JobDetailPageProps) {
-    super(props);
-    this.state = {
-      job: null,
-      loading: true,
-      error: null,
-      isApplying: false,
-      hasApplied: false,
-      redirectToLogin: false
-    };
-  }
-  
-  componentDidMount() {
-    this.fetchJobDetails();
-    this.checkUserSession();
-  }
-  
-  // Check if user is logged in
-  checkUserSession = async () => {
-    const { data: { session } } = await this.supabase.auth.getSession();
-    if (!session) {
-      this.setState({ redirectToLogin: true });
+// Expanded Job interface for detail view
+interface JobDetail extends Job {
+  description: string; 
+  skillsRequired: string[];
+  employer: { 
+    id: number;
+    username: string; 
+    employerProfile?: { 
+        companyName: string;
+        companyLogoUrl?: string;
+        companyDescription?: string;
+        industry?: string;
+        companyWebsite?: string;
     }
   };
-  
-  // Fetch job details
-  fetchJobDetails = async () => {
-    const { jobId } = this.props;
-    
-    if (!jobId) {
-      this.setState({ 
-        loading: false, 
-        error: "Job ID is required" 
-      });
+  closingDate?: string;
+  isActive: boolean;
+}
+
+export const JobDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [job, setJob] = useState<JobDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const fetchJobDetail = useCallback(async () => {
+    if (!id) {
+      setError('Job ID is missing.');
+      setIsLoading(false);
       return;
     }
-    
+    setIsLoading(true);
+    setError(null);
     try {
-      // In a real app, this would fetch from the API
-      // For now, create a mock job
-      const mockJob: Job = {
-        id: jobId,
-        employer_id: "emp1",
-        title: "Frontend Developer Intern",
-        description: `
-          <p>We're looking for a passionate frontend developer intern to join our team. This is a great opportunity to work with modern technologies and gain real-world experience.</p>
-          <p>As a frontend developer intern, you will:</p>
-          <ul>
-            <li>Work closely with senior developers to implement UI features</li>
-            <li>Turn design mockups into functional components</li>
-            <li>Debug and fix frontend issues</li>
-            <li>Learn best practices for web development</li>
-          </ul>
-        `,
-        company_name: "TechCorp",
-        company_logo_url: null,
-        location: "Remote",
-        job_type: "Internship",
-        salary_range: "$15-20/hr",
-        required_skills: ["React", "JavaScript", "HTML", "CSS"],
-        preferred_skills: null,
-        application_deadline: "2023-12-31",
-        created_at: new Date().toISOString(),
-        updated_at: null,
-        status: "open",
-        is_active: true,
-        match_score: 85
-      };
-      
-      // Simulate network delay
-      setTimeout(() => {
-        this.setState({
-          job: mockJob,
-          loading: false
-        });
-      }, 1000);
-      
-      // Check if user has already applied
-      // In a real app, this would check the applications table
-      this.setState({ hasApplied: false });
-      
-    } catch (error) {
-      console.error("Error fetching job details:", error);
-      this.setState({
-        loading: false,
-        error: "Failed to load job details. Please try again."
-      });
+      const data = await jobService.getActiveJobById(id);
+      setJob(data as JobDetail); // Cast to JobDetail, assuming API returns the full structure
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to fetch job details.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchJobDetail();
+  }, [fetchJobDetail]);
+
+  const handleApply = () => {
+    if (!user) {
+        navigate('/login', { state: { from: `/opportunities/${id}/apply` } });
+        return;
+    }
+    if (user.roles.includes('ROLE_STUDENT')) {
+        navigate(`/opportunities/apply/${id}`); 
+    } else {
+        alert("Only students can apply for jobs.");
     }
   };
-  
-  // Handle job application
-  handleApply = async () => {
-    const { job } = this.state;
-    if (!job) return;
-    
-    this.setState({ isApplying: true });
-    
-    try {
-      // In a real app, this would submit to the API
-      console.log(`Applying for job ${job.id}`);
-      
-      // Simulate network delay
-      setTimeout(() => {
-        this.setState({
-          isApplying: false,
-          hasApplied: true
-        });
-      }, 1500);
-    } catch (error) {
-      console.error("Error applying for job:", error);
-      this.setState({
-        isApplying: false,
-        error: "Failed to submit application. Please try again."
-      });
-    }
-  };
-  
-  render() {
-    const { job, loading, error, isApplying, hasApplied, redirectToLogin } = this.state;
-    
-    if (redirectToLogin) {
-      return <Navigate to="/auth/login" replace />;
-    }
-    
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-          <p className="text-gray-600">Loading job details...</p>
-        </div>
-      );
-    }
-    
-    if (error) {
-      return (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">
-            {error}
-          </div>
-          <Link to="/opportunities">
-            <Button variant="outline" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Opportunities
-            </Button>
-          </Link>
-        </div>
-      );
-    }
-    
-    if (!job) {
-      return (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg mb-6">
-            Job not found
-          </div>
-          <Link to="/opportunities">
-            <Button variant="outline" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Opportunities
-            </Button>
-          </Link>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link to="/opportunities">
-            <Button variant="ghost" className="flex items-center gap-2 pl-1 text-gray-600">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Opportunities
-            </Button>
-          </Link>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">
-                  {job.title}
-                </h1>
-                <p className="text-gray-600">
-                  {job.company_name}
-                </p>
-              </div>
-              {job.match_score !== null && (
-                <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-full font-medium text-sm">
-                  {job.match_score}% Match
-                </span>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-              <div className="flex items-center text-gray-600">
-                <MapPin className="w-5 h-5 mr-2 text-gray-500" />
-                {job.location || "Remote"}
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Briefcase className="w-5 h-5 mr-2 text-gray-500" />
-                {job.job_type || "Full-time"}
-              </div>
-              {job.application_deadline && (
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="w-5 h-5 mr-2 text-gray-500" />
-                  Apply by: {new Date(job.application_deadline).toLocaleDateString()}
-                </div>
-              )}
-              {job.salary_range && (
-                <div className="flex items-center text-gray-600">
-                  <DollarSign className="w-5 h-5 mr-2 text-gray-500" />
-                  {job.salary_range}
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6">
-              {hasApplied ? (
-                <div className="bg-green-50 text-green-700 px-4 py-3 rounded-lg flex items-center justify-between">
-                  <span>You've applied for this position</span>
-                  <ExternalLink className="w-4 h-4" />
-                </div>
-              ) : (
-                <Button
-                  className="w-full sm:w-auto"
-                  onClick={this.handleApply}
-                  disabled={isApplying}
-                >
-                  {isApplying ? "Submitting..." : "Apply Now"}
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          {/* Body */}
-          <div className="p-6">
-            {/* Skills */}
-            {job.required_skills && job.required_skills.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-3">Required Skills</h2>
-                <div className="flex flex-wrap gap-2">
-                  {job.required_skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-gray-100 text-gray-800 rounded-md text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Description */}
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Job Description</h2>
-              <div 
-                className="prose max-w-none text-gray-700"
-                dangerouslySetInnerHTML={{ __html: job.description || "No description provided." }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><p>Loading job details...</p></div>;
   }
-} 
+
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500"><p>Error: {error}</p></div>;
+  }
+
+  if (!job) {
+    return <div className="min-h-screen flex items-center justify-center"><p>Job not found.</p></div>;
+  }
+
+  const companyName = job.employer?.employerProfile?.companyName || job.employer?.username || 'A Company';
+  const companyLogo = job.employer?.employerProfile?.companyLogoUrl;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+        <Link to="/opportunities" className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mb-6">
+            <ArrowLeft size={18} className="mr-2" /> Back to Opportunities
+        </Link>
+
+        <Card className="dark:bg-gray-800 shadow-xl">
+            <CardHeader className="border-b dark:border-gray-700 pb-4">
+                <div className="flex flex-col md:flex-row items-start justify-between">
+                    <div>
+                        <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{job.title}</CardTitle>
+                        <CardDescription className="text-lg text-gray-600 dark:text-gray-400">
+                           {/* Link to a future company detail page if needed */}
+                           {/* <Link to={`/company/${job.employer?.id}`} className="hover:underline">{companyName}</Link> */}
+                           {companyName}
+                        </CardDescription>
+                    </div>
+                    {companyLogo && (
+                        <img src={companyLogo} alt={`${companyName} logo`} className="w-20 h-20 object-contain rounded-md mt-4 md:mt-0 md:ml-6" />
+                    )}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="inline-flex items-center"><MapPin size={16} className="mr-1.5" /> {job.location}</span>
+                    <span className="inline-flex items-center"><Briefcase size={16} className="mr-1.5" /> {job.jobType}</span>
+                    <span className="inline-flex items-center"><CalendarDays size={16} className="mr-1.5" /> Posted: {new Date(job.postedDate).toLocaleDateString()}</span>
+                    {job.closingDate && <span className="inline-flex items-center text-orange-600 dark:text-orange-400"><CalendarDays size={16} className="mr-1.5" /> Closes: {new Date(job.closingDate).toLocaleDateString()}</span>}
+                    {job.salaryRange && <span className="inline-flex items-center"><DollarSign size={16} className="mr-1.5" /> {job.salaryRange}</span>}
+                </div>
+            </CardHeader>
+            <CardContent className="py-6">
+                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Job Description</h3>
+                    {/* Using dangerouslySetInnerHTML assumes description is safe HTML or needs sanitization */}
+                    <div dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }} /> 
+                </div>
+
+                {job.skillsRequired && job.skillsRequired.length > 0 && (
+                    <div className="mt-6">
+                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Skills Required</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {job.skillsRequired.map(skill => (
+                                <span key={skill} className="px-3 py-1 text-sm bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                                    {skill}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                {job.employer?.employerProfile?.companyDescription && (
+                    <div className="mt-8 pt-6 border-t dark:border-gray-700">
+                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">About {companyName}</h3>
+                        <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line">{job.employer.employerProfile.companyDescription}</p>
+                        {job.employer.employerProfile.companyWebsite && 
+                            <p className="mt-2">
+                                <a href={job.employer.employerProfile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                                    Visit company website
+                                </a>
+                            </p>
+                        }
+                    </div>
+                )}
+
+                <div className="mt-8 text-center">
+                    {job.isActive ? (
+                        <Button size="lg" onClick={handleApply} className="w-full md:w-auto" disabled={!user?.roles.includes('ROLE_STUDENT') && user !== null}>
+                            Apply Now
+                        </Button>
+                    ) : (
+                        <p className="text-red-500 font-semibold">This job posting is no longer active.</p>
+                    )}
+                     {user && !user.roles.includes('ROLE_STUDENT') && job.isActive &&
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">Only students can apply for jobs.</p> }
+                </div>
+            </CardContent>
+        </Card>
+    </div>
+  );
+};
+
+export const JobDetailPageWrapper: React.FC = () => {
+    return <JobDetailPage />;
+}; 

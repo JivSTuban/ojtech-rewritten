@@ -1,269 +1,73 @@
 package com.ojtech.api.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "cvs")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CV {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    @NotNull
-    private Profile user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", nullable = false)
+    private Profile profile;
 
-    @Column(columnDefinition = "jsonb")
-    private String extractedSkills;
+    @Column(nullable = false)
+    private String fileName;
 
-    @Column(columnDefinition = "jsonb")
-    private String skills;
+    @Column(nullable = false)
+    private String fileUrl; // URL from Cloudinary or other storage
 
-    @Column(columnDefinition = "jsonb")
-    private String analysisResults;
+    private String fileType; // e.g., "application/pdf"
 
-    private OffsetDateTime lastAnalyzedAt;
+    private Long fileSize; // in bytes
 
-    private Integer version = 1;
+    private LocalDateTime uploadedAt;
 
-    private Boolean isActive = true;
+    private boolean isActive = false; // Indicates if this is the primary CV for the profile
 
-    @CreationTimestamp
-    private OffsetDateTime createdAt;
+    @Column(columnDefinition = "TEXT")
+    private String extractedText; // Text extracted from CV by parser
 
-    @UpdateTimestamp
-    private OffsetDateTime updatedAt;
-    
-    private String status;
-    
-    private String errorMessage;
-    
-    private String fileHash;
-    
-    // Default constructor
-    public CV() {
-    }
-    
-    // All-args constructor
-    public CV(UUID id, Profile user, String extractedSkills, String skills, String analysisResults,
-             OffsetDateTime lastAnalyzedAt, Integer version, Boolean isActive, OffsetDateTime createdAt,
-             OffsetDateTime updatedAt, String status, String errorMessage, String fileHash) {
-        this.id = id;
-        this.user = user;
-        this.extractedSkills = extractedSkills;
-        this.skills = skills;
-        this.analysisResults = analysisResults;
-        this.lastAnalyzedAt = lastAnalyzedAt;
-        this.version = version;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.status = status;
-        this.errorMessage = errorMessage;
-        this.fileHash = fileHash;
-    }
-    
-    // Getters and setters
-    public UUID getId() {
-        return id;
-    }
-    
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    
-    public Profile getUser() {
-        return user;
-    }
-    
-    public void setUser(Profile user) {
-        this.user = user;
-    }
-    
-    public String getExtractedSkills() {
-        return extractedSkills;
-    }
-    
-    public void setExtractedSkills(String extractedSkills) {
-        this.extractedSkills = extractedSkills;
-    }
-    
-    public String getSkills() {
-        return skills;
-    }
-    
-    public void setSkills(String skills) {
-        this.skills = skills;
-    }
-    
-    public String getAnalysisResults() {
-        return analysisResults;
-    }
-    
-    public void setAnalysisResults(String analysisResults) {
-        this.analysisResults = analysisResults;
-    }
-    
-    public OffsetDateTime getLastAnalyzedAt() {
-        return lastAnalyzedAt;
-    }
-    
-    public void setLastAnalyzedAt(OffsetDateTime lastAnalyzedAt) {
-        this.lastAnalyzedAt = lastAnalyzedAt;
-    }
-    
-    public Integer getVersion() {
-        return version;
-    }
-    
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-    
-    public Boolean getIsActive() {
-        return isActive != null ? isActive : false;
-    }
-    
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-    
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    public String getStatus() {
-        return status;
-    }
-    
-    public void setStatus(String status) {
-        this.status = status;
-    }
-    
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-    
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-    
-    public String getFileHash() {
-        return fileHash;
-    }
-    
-    public void setFileHash(String fileHash) {
-        this.fileHash = fileHash;
-    }
-    
-    // Builder class
-    public static Builder builder() {
-        return new Builder();
-    }
-    
-    public static class Builder {
-        private UUID id;
-        private Profile user;
-        private String extractedSkills;
-        private String skills;
-        private String analysisResults;
-        private OffsetDateTime lastAnalyzedAt;
-        private Integer version = 1;
-        private Boolean isActive = true;
-        private OffsetDateTime createdAt;
-        private OffsetDateTime updatedAt;
-        private String status;
-        private String errorMessage;
-        private String fileHash;
-        
-        public Builder id(UUID id) {
-            this.id = id;
-            return this;
-        }
-        
-        public Builder user(Profile user) {
-            this.user = user;
-            return this;
-        }
-        
-        public Builder extractedSkills(String extractedSkills) {
-            this.extractedSkills = extractedSkills;
-            return this;
-        }
-        
-        public Builder skills(String skills) {
-            this.skills = skills;
-            return this;
-        }
-        
-        public Builder analysisResults(String analysisResults) {
-            this.analysisResults = analysisResults;
-            return this;
-        }
-        
-        public Builder lastAnalyzedAt(OffsetDateTime lastAnalyzedAt) {
-            this.lastAnalyzedAt = lastAnalyzedAt;
-            return this;
-        }
-        
-        public Builder version(Integer version) {
-            this.version = version;
-            return this;
-        }
-        
-        public Builder isActive(Boolean isActive) {
-            this.isActive = isActive;
-            return this;
-        }
-        
-        public Builder createdAt(OffsetDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-        
-        public Builder updatedAt(OffsetDateTime updatedAt) {
-            this.updatedAt = updatedAt;
-            return this;
-        }
-        
-        public Builder status(String status) {
-            this.status = status;
-            return this;
-        }
-        
-        public Builder errorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
-            return this;
-        }
-        
-        public Builder fileHash(String fileHash) {
-            this.fileHash = fileHash;
-            return this;
-        }
-        
-        public CV build() {
-            return new CV(id, user, extractedSkills, skills, analysisResults, lastAnalyzedAt, 
-                         version, isActive, createdAt, updatedAt, status, errorMessage, fileHash);
+    @Column(columnDefinition = "TEXT")
+    private String skillsJson; // Parsed skills stored as JSON string
+
+    @Column(columnDefinition = "TEXT")
+    private String experienceJson; // Parsed experience stored as JSON string
+
+    @Column(columnDefinition = "TEXT")
+    private String educationJson; // Parsed education stored as JSON string
+
+    private String processingStatus; // e.g., PENDING, PROCESSING, COMPLETED, FAILED
+    private String processingError;
+
+    @PrePersist
+    protected void onCreate() {
+        if (uploadedAt == null) {
+            uploadedAt = LocalDateTime.now();
         }
     }
-} 
+
+    public CV(Profile profile, String fileName, String fileUrl) {
+        this.profile = profile;
+        this.fileName = fileName;
+        this.fileUrl = fileUrl;
+        this.uploadedAt = LocalDateTime.now();
+    }
+}

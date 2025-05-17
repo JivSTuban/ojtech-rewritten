@@ -1,60 +1,54 @@
 package com.ojtech.api.service;
 
 import com.ojtech.api.model.Job;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.model.JobApplication;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.model.Profile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.CVRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.JobApplicationRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.JobRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.repository.ProfileRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
-
 @Transactional
-
 public class JobApplicationServiceImpl implements JobApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(JobApplicationServiceImpl.class);
 
     private final JobApplicationRepository jobApplicationRepository;
     private final ProfileRepository profileRepository;
     private final JobRepository jobRepository;
     private final CVRepository cvRepository;
 
+    public JobApplicationServiceImpl(JobApplicationRepository jobApplicationRepository,
+                                     ProfileRepository profileRepository,
+                                     JobRepository jobRepository,
+                                     CVRepository cvRepository) {
+        this.jobApplicationRepository = jobApplicationRepository;
+        this.profileRepository = profileRepository;
+        this.jobRepository = jobRepository;
+        this.cvRepository = cvRepository;
+    }
+
     @Override
     public JobApplication createJobApplication(JobApplication jobApplication) {
-                jobApplication.getStudent().getId(), jobApplication.getJob().getId());
+        if (jobApplication.getStudent() == null || jobApplication.getStudent().getId() == null) {
+            throw new IllegalArgumentException("Student ID must be provided for job application.");
+        }
+        if (jobApplication.getJob() == null || jobApplication.getJob().getId() == null) {
+            throw new IllegalArgumentException("Job ID must be provided for job application.");
+        }
+
+        log.info("Creating job application for student ID: {} and job ID: {}", 
+                 jobApplication.getStudent().getId(), jobApplication.getJob().getId());
         return jobApplicationRepository.save(jobApplication);
     }
 

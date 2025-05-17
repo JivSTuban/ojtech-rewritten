@@ -1,312 +1,112 @@
 package com.ojtech.api.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "jobs")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Job {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "UUID")
     private UUID id;
 
-    @NotNull
+    @NotBlank
     private String title;
 
-    @NotNull
+    @NotBlank
+    @Column(columnDefinition = "TEXT")
     private String description;
 
+    @NotBlank
+    private String location; // e.g., "Manila, Philippines", "Remote"
+
+    @NotBlank
+    private String jobType; // e.g., "Full-time", "Part-time", "Internship"
+
+    private String salaryRange; // e.g., "PHP 20,000 - PHP 30,000", "Competitive"
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "job_skills", joinColumns = @JoinColumn(name = "job_id"))
+    @Column(name = "skill")
+    private List<String> skillsRequired;
+
     @NotNull
-    private String companyName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employer_user_id", nullable = false)
+    private User employer; // The user (employer) who posted this job
 
-    private String companyLogoUrl;
+    // Consider adding a direct link to EmployerProfile if frequently needed
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "employer_profile_id") 
+    // private EmployerProfile employerProfile;
 
-    @NotNull
-    private String location;
+    private boolean isActive = true; // For soft delete or deactivation
+    private LocalDateTime postedDate;
+    private LocalDateTime closingDate;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private JobType jobType;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    private String salaryRange;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    @ManyToOne
-    @JoinColumn(name = "employer_id")
-    @NotNull
-    private Profile employer;
-
-    @Enumerated(EnumType.STRING)
-    private JobStatus status = JobStatus.OPEN;
-
-    private OffsetDateTime applicationDeadline;
-
-    @CreationTimestamp
-    private OffsetDateTime createdAt;
-
-    @UpdateTimestamp
-    private OffsetDateTime updatedAt;
-
-    @Column(columnDefinition = "jsonb")
-    private String requiredSkills;
-
-    @Column(columnDefinition = "jsonb")
-    private String preferredSkills;
-    
-    public Job() {
-    }
-    
-    public Job(UUID id, String title, String description, String companyName, String companyLogoUrl,
-               String location, JobType jobType, String salaryRange, Profile employer, JobStatus status,
-               OffsetDateTime applicationDeadline, OffsetDateTime createdAt, OffsetDateTime updatedAt,
-               String requiredSkills, String preferredSkills) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.companyName = companyName;
-        this.companyLogoUrl = companyLogoUrl;
-        this.location = location;
-        this.jobType = jobType;
-        this.salaryRange = salaryRange;
-        this.employer = employer;
-        this.status = status;
-        this.applicationDeadline = applicationDeadline;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.requiredSkills = requiredSkills;
-        this.preferredSkills = preferredSkills;
-    }
-    
-    public UUID getId() {
-        return id;
-    }
-    
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    
-    public String getTitle() {
-        return title;
-    }
-    
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    
-    public String getDescription() {
-        return description;
-    }
-    
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    
-    public String getCompanyName() {
-        return companyName;
-    }
-    
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
-    
-    public String getCompanyLogoUrl() {
-        return companyLogoUrl;
-    }
-    
-    public void setCompanyLogoUrl(String companyLogoUrl) {
-        this.companyLogoUrl = companyLogoUrl;
-    }
-    
-    public String getLocation() {
-        return location;
-    }
-    
-    public void setLocation(String location) {
-        this.location = location;
-    }
-    
-    public JobType getJobType() {
-        return jobType;
-    }
-    
-    public void setJobType(JobType jobType) {
-        this.jobType = jobType;
-    }
-    
-    public String getSalaryRange() {
-        return salaryRange;
-    }
-    
-    public void setSalaryRange(String salaryRange) {
-        this.salaryRange = salaryRange;
-    }
-    
-    public Profile getEmployer() {
-        return employer;
-    }
-    
-    public void setEmployer(Profile employer) {
-        this.employer = employer;
-    }
-    
-    public JobStatus getStatus() {
-        return status;
-    }
-    
-    public void setStatus(JobStatus status) {
-        this.status = status;
-    }
-    
-    public OffsetDateTime getApplicationDeadline() {
-        return applicationDeadline;
-    }
-    
-    public void setApplicationDeadline(OffsetDateTime applicationDeadline) {
-        this.applicationDeadline = applicationDeadline;
-    }
-    
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public OffsetDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-    
-    public String getRequiredSkills() {
-        return requiredSkills;
-    }
-    
-    public void setRequiredSkills(String requiredSkills) {
-        this.requiredSkills = requiredSkills;
-    }
-    
-    public String getPreferredSkills() {
-        return preferredSkills;
-    }
-    
-    public void setPreferredSkills(String preferredSkills) {
-        this.preferredSkills = preferredSkills;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (postedDate == null) {
+            postedDate = LocalDateTime.now();
+        }
     }
 
-    // Explicit builder static method in case Lombok fails
-    public static JobBuilder builder() {
-        return new JobBuilder();
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
-    
-    // Explicit builder class implementation
-    public static class JobBuilder {
-        private UUID id;
-        private String title;
-        private String description;
-        private String companyName;
-        private String companyLogoUrl;
-        private String location;
-        private JobType jobType;
-        private String salaryRange;
-        private Profile employer;
-        private JobStatus status = JobStatus.OPEN;
-        private OffsetDateTime applicationDeadline;
-        private OffsetDateTime createdAt;
-        private OffsetDateTime updatedAt;
-        private String requiredSkills;
-        private String preferredSkills;
-        
-        JobBuilder() {}
-        
-        public JobBuilder id(UUID id) {
-            this.id = id;
-            return this;
-        }
-        
-        public JobBuilder title(String title) {
-            this.title = title;
-            return this;
-        }
-        
-        public JobBuilder description(String description) {
-            this.description = description;
-            return this;
-        }
-        
-        public JobBuilder companyName(String companyName) {
-            this.companyName = companyName;
-            return this;
-        }
-        
-        public JobBuilder companyLogoUrl(String companyLogoUrl) {
-            this.companyLogoUrl = companyLogoUrl;
-            return this;
-        }
-        
-        public JobBuilder location(String location) {
-            this.location = location;
-            return this;
-        }
-        
-        public JobBuilder jobType(JobType jobType) {
-            this.jobType = jobType;
-            return this;
-        }
-        
-        public JobBuilder salaryRange(String salaryRange) {
-            this.salaryRange = salaryRange;
-            return this;
-        }
-        
-        public JobBuilder employer(Profile employer) {
-            this.employer = employer;
-            return this;
-        }
-        
-        public JobBuilder status(JobStatus status) {
-            this.status = status;
-            return this;
-        }
-        
-        public JobBuilder applicationDeadline(OffsetDateTime applicationDeadline) {
-            this.applicationDeadline = applicationDeadline;
-            return this;
-        }
-        
-        public JobBuilder createdAt(OffsetDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-        
-        public JobBuilder updatedAt(OffsetDateTime updatedAt) {
-            this.updatedAt = updatedAt;
-            return this;
-        }
-        
-        public JobBuilder requiredSkills(String requiredSkills) {
-            this.requiredSkills = requiredSkills;
-            return this;
-        }
-        
-        public JobBuilder preferredSkills(String preferredSkills) {
-            this.preferredSkills = preferredSkills;
-            return this;
-        }
-        
-        public Job build() {
-            return new Job(id, title, description, companyName, companyLogoUrl,
-                           location, jobType, salaryRange, employer, status,
-                           applicationDeadline, createdAt, updatedAt,
-                           requiredSkills, preferredSkills);
-        }
-    }
+
+    // Constructors
+    // public Job() {} // Removed due to @NoArgsConstructor
+
+    // Getters and Setters // Removed due to @Data
+    // public Long getId() { return id; }
+    // public void setId(Long id) { this.id = id; }
+    // public String getTitle() { return title; }
+    // public void setTitle(String title) { this.title = title; }
+    // public String getDescription() { return description; }
+    // public void setDescription(String description) { this.description = description; }
+    // public String getLocation() { return location; }
+    // public void setLocation(String location) { this.location = location; }
+    // public String getJobType() { return jobType; }
+    // public void setJobType(String jobType) { this.jobType = jobType; }
+    // public String getSalaryRange() { return salaryRange; }
+    // public void setSalaryRange(String salaryRange) { this.salaryRange = salaryRange; }
+    // public List<String> getSkillsRequired() { return skillsRequired; }
+    // public void setSkillsRequired(List<String> skillsRequired) { this.skillsRequired = skillsRequired; }
+    // public User getEmployer() { return employer; }
+    // public void setEmployer(User employer) { this.employer = employer; }
+    // public boolean isActive() { return isActive; }
+    // public void setActive(boolean active) { isActive = active; }
+    // public LocalDateTime getPostedDate() { return postedDate; }
+    // public void setPostedDate(LocalDateTime postedDate) { this.postedDate = postedDate; }
+    // public LocalDateTime getClosingDate() { return closingDate; }
+    // public void setClosingDate(LocalDateTime closingDate) { this.closingDate = closingDate; }
+    // public LocalDateTime getCreatedAt() { return createdAt; }
+    // public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    // public LocalDateTime getUpdatedAt() { return updatedAt; }
+    // public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 } 

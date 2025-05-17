@@ -1,6 +1,9 @@
 package com.ojtech.api.controller;
 
 import com.ojtech.api.model.Job;
+import com.ojtech.api.payload.request.JobRequest;
+import com.ojtech.api.payload.response.MessageResponse;
+import com.ojtech.api.security.services.UserDetailsImpl;
 import com.ojtech.api.service.JobService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -8,57 +11,129 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/jobs")
-
-@Tag(name = "Jobs", description = "Job posting management endpoints")
+@Tag(name = "Jobs", description = "Job management and listing endpoints")
 public class JobController {
 
-    private final JobService jobService;
+    @Autowired
+    private JobService jobService;
 
-    @GetMapping
-    @Operation(
-            summary = "Get all jobs",
-            description = "Retrieves a list of all job postings"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved jobs",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Job.class)))
-    )
-    public ResponseEntity<List<Job>> getAllJobs() {
-        return ResponseEntity.ok(jobService.getAllJobs());
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            return null; // Or throw exception if user must be authenticated
+        }
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        return userDetails.getId();
     }
 
-    @GetMapping("/{id}")
-    @Operation(
-            summary = "Get job by ID",
-            description = "Retrieves a job posting by its UUID"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved job",
-            content = @Content(schema = @Schema(implementation = Job.class))
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "Job not found"
-    )
-    public ResponseEntity<Job> getJobById(
-            @Parameter(description = "Job ID", required = true)
-            @PathVariable UUID id) {
-        return jobService.getJobById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // --- Employer Job Management Endpoints ---
+    @PostMapping
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Create a new job posting", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<?> createJob(@Valid @RequestBody JobRequest jobRequest) {
+        Long employerUserId = getCurrentUserId();
+        if (employerUserId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("User not authenticated"));
+        try {
+            Job createdJob = jobService.createJob(jobRequest, employerUserId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error creating job: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{jobId}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Update an existing job posting", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<?> updateJob(@PathVariable Long jobId, @Valid @RequestBody JobRequest jobRequest) {
+        Long employerUserId = getCurrentUserId();
+        if (employerUserId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("User not authenticated"));
+        try {
+            Job updatedJob = jobService.updateJob(jobId, jobRequest, employerUserId);
+            return ResponseEntity.ok(updatedJob);
+        } catch (RuntimeException e) { // Catch more specific exceptions like AccessDeniedException if needed
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{jobId}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Delete a job posting", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<?> deleteJob(@PathVariable Long jobId) {
+        Long employerUserId = getCurrentUserId();
+        if (employerUserId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("User not authenticated"));
+        try {
+            jobService.deleteJob(jobId, employerUserId);
+            return ResponseEntity.ok(new MessageResponse("Job deleted successfully."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/my-jobs")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Get jobs posted by the current employer", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<?> getEmployerJobs(@PageableDefault(size = 10) Pageable pageable) {
+        Long employerUserId = getCurrentUserId();
+        if (employerUserId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("User not authenticated"));
+        Page<Job> jobs = jobService.getJobsByEmployer(employerUserId, pageable);
+        return ResponseEntity.ok(jobs);
+    }
+
+    @GetMapping("/my-jobs/{jobId}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Get a specific job by ID posted by current employer", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<?> getEmployerJobById(@PathVariable Long jobId) {
+        Long employerUserId = getCurrentUserId();
+        if (employerUserId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("User not authenticated"));
+        Optional<Job> job = jobService.getJobByIdAndEmployer(jobId, employerUserId);
+        return job.map(ResponseEntity::ok)
+                  .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- Public Job Listing Endpoints ---
+    @GetMapping
+    @Operation(summary = "Get all active job postings (paginated)")
+    public ResponseEntity<Page<Job>> getAllActiveJobs(@PageableDefault(size = 10) Pageable pageable) {
+        Page<Job> jobs = jobService.getAllActiveJobs(pageable);
+        return ResponseEntity.ok(jobs);
+    }
+
+    @GetMapping("/{jobId}")
+    @Operation(summary = "Get a specific active job by ID")
+    public ResponseEntity<?> getActiveJobById(@PathVariable Long jobId) {
+        Optional<Job> job = jobService.getActiveJobById(jobId);
+        return job.map(ResponseEntity::ok)
+                  .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/search")
+    @Operation(summary = "Search active jobs by title (paginated)")
+    public ResponseEntity<Page<Job>> searchJobsByTitle(
+        @Parameter(description = "Search term for job title") @RequestParam String title,
+        @PageableDefault(size = 10) Pageable pageable) {
+        Page<Job> jobs = jobService.searchActiveJobsByTitle(title, pageable);
+        return ResponseEntity.ok(jobs);
     }
 
     @GetMapping("/employer/{employerId}")
@@ -93,38 +168,6 @@ public class JobController {
         return ResponseEntity.ok(jobService.getJobsByStatus(status));
     }
 
-    @GetMapping("/search")
-    @Operation(
-            summary = "Search jobs",
-            description = "Searches jobs by title, description, or other criteria"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Successfully retrieved jobs",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = Job.class)))
-    )
-    public ResponseEntity<List<Job>> searchJobs(
-            @Parameter(description = "Search query")
-            @RequestParam(required = false) String query,
-            @Parameter(description = "Location filter")
-            @RequestParam(required = false) String location,
-            @Parameter(description = "Job type filter")
-            @RequestParam(required = false) String jobType) {
-        
-        List<Job> jobs;
-        if (query != null && !query.isEmpty()) {
-            jobs = jobService.searchJobs(query);
-        } else if (location != null && !location.isEmpty()) {
-            jobs = jobService.getJobsByLocation(location);
-        } else if (jobType != null && !jobType.isEmpty()) {
-            jobs = jobService.getJobsByJobType(jobType);
-        } else {
-            jobs = jobService.getActiveJobs();
-        }
-        
-        return ResponseEntity.ok(jobs);
-    }
-
     @GetMapping("/active")
     @Operation(
             summary = "Get active jobs",
@@ -137,50 +180,6 @@ public class JobController {
     )
     public ResponseEntity<List<Job>> getActiveJobs() {
         return ResponseEntity.ok(jobService.getActiveJobs());
-    }
-
-    @PostMapping
-    @Operation(
-            summary = "Create a job posting",
-            description = "Creates a new job posting"
-    )
-    @ApiResponse(
-            responseCode = "201",
-            description = "Job created successfully",
-            content = @Content(schema = @Schema(implementation = Job.class))
-    )
-    public ResponseEntity<Job> createJob(
-            @Parameter(description = "Job to create", required = true)
-            @Valid @RequestBody Job job) {
-        Job createdJob = jobService.createJob(job);
-        return new ResponseEntity<>(createdJob, HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{id}")
-    @Operation(
-            summary = "Update a job posting",
-            description = "Updates an existing job posting"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Job updated successfully",
-            content = @Content(schema = @Schema(implementation = Job.class))
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "Job not found"
-    )
-    public ResponseEntity<Job> updateJob(
-            @Parameter(description = "Job ID", required = true)
-            @PathVariable UUID id,
-            @Parameter(description = "Updated job details", required = true)
-            @Valid @RequestBody Job job) {
-        try {
-            Job updatedJob = jobService.updateJob(id, job);
-            return ResponseEntity.ok(updatedJob);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     @PatchMapping("/{id}/status")
@@ -205,30 +204,6 @@ public class JobController {
         try {
             Job updatedJob = jobService.updateJobStatus(id, status);
             return ResponseEntity.ok(updatedJob);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    @Operation(
-            summary = "Delete a job posting",
-            description = "Deletes a job posting by ID"
-    )
-    @ApiResponse(
-            responseCode = "204",
-            description = "Job deleted successfully"
-    )
-    @ApiResponse(
-            responseCode = "404",
-            description = "Job not found"
-    )
-    public ResponseEntity<Void> deleteJob(
-            @Parameter(description = "Job ID", required = true)
-            @PathVariable UUID id) {
-        try {
-            jobService.deleteJob(id);
-            return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

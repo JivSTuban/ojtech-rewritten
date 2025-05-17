@@ -1,213 +1,107 @@
-import React, { Component, createContext } from 'react';
-// import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js'; // Commented out
-import type { Session, User } from '@supabase/supabase-js'; // Keep types needed for context
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import authService, { UserData } from '@/lib/api/authService';
+import profileService from '@/lib/api/profileService'; // Import profile service
 
-// Define types for our context
+export interface AppUser extends UserData {
+  // Add profile specific fields here, or a nested profile object
+  profile?: any; // Generic profile for now, can be StudentProfileData or EmployerProfileData
+  hasCompletedOnboarding?: boolean;
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: any | null;
+  user: AppUser | null;
+  login: (data: any) => Promise<AppUser>;
+  register: (data: any) => Promise<any>; 
+  logout: () => void;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<any>;
-  signIn: (email: string, password: string) => Promise<any>;
-  signOut: () => Promise<void>;
-  setProfile: (profile: any) => void;
+  fetchUserProfile: () => Promise<void>; // Added to manually refresh profile
 }
 
-// Create context with default values
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  profile: null,
-  isLoading: true,
-  signUp: async () => ({}),
-  signIn: async () => ({}),
-  signOut: async () => {},
-  setProfile: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Props for AuthProvider
-interface AuthProviderProps {
-  children: React.ReactNode;
-  // supabaseUrl: string; // Removed
-  // supabaseAnonKey: string; // Removed
-}
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-// State interface
-interface AuthProviderState {
-  session: Session | null;
-  user: User | null;
-  profile: any | null;
-  isLoading: boolean;
-}
+  const fetchUserProfileData = async (userData: UserData): Promise<AppUser> => {
+    let profileData: any = null;
+    let hasCompletedOnboarding = false;
+    try {
+      if (userData.roles.includes('ROLE_STUDENT')) {
+        profileData = await profileService.getCurrentStudentProfile();
+        hasCompletedOnboarding = profileData?.hasCompletedOnboarding || false;
+      } else if (userData.roles.includes('ROLE_EMPLOYER')) {
+        profileData = await profileService.getCurrentEmployerProfile();
+        hasCompletedOnboarding = profileData?.hasCompletedOnboarding || false;
+      }
+    } catch (error: any) {
+      // Ignore 404 if profile doesn't exist yet, means onboarding not done
+      if (error.response?.status !== 404) {
+        console.error("Failed to fetch user profile:", error);
+        // Potentially set an error state here to show in UI
+      }
+      hasCompletedOnboarding = false; // Assume not complete if error or 404
+    }
+    return { ...userData, profile: profileData, hasCompletedOnboarding };
+  };
 
-export class AuthProvider extends Component<AuthProviderProps, AuthProviderState> {
-  // private supabase: SupabaseClient; // Removed
-
-  constructor(props: AuthProviderProps) {
-    super(props);
-    
-    // console.error("Missing Supabase credentials. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file");
-    // const demoUrl = 'https://demo.supabase.co'; 
-    // const demoKey = 'demo';
-    // this.supabase = createClient(demoUrl, demoKey);
-    
-    // Initialize Supabase client with provided credentials
-    // this.supabase = createClient(props.supabaseUrl, props.supabaseAnonKey); // Removed
-    
-    this.state = {
-      session: null,
-      user: null,
-      profile: null,
-      isLoading: true,
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        const fullUser = await fetchUserProfileData(currentUser);
+        setUser(fullUser);
+      }
+      setIsLoading(false);
     };
-  }
+    initializeAuth();
+  }, []);
 
-  componentDidMount() {
-    // Set up auth state listener
-    // this.supabase.auth.onAuthStateChange((event, session) => { // Removed
-    //   this.setState({ session, user: session?.user || null });
-      
-    //   if (session?.user) {
-    //     this.fetchProfile(session.user.id);
-    //   } else {
-    //     this.setState({ isLoading: false });
-    //   }
-    // });
-    
-    // Get initial session
-    // this.initializeAuth(); // Removed
-    this.setState({ isLoading: false }); // Set loading to false immediately
-  }
-
-  componentWillUnmount() {
-    // Clean up any subscriptions
-  }
-
-  // Initialize auth state
-  private async initializeAuth() {
-    // try { // Removed
-    //   const { data } = await this.supabase.auth.getSession();
-    //   this.setState({ 
-    //     session: data.session,
-    //     user: data.session?.user || null
-    //   });
-      
-    //   if (data.session?.user) {
-    //     await this.fetchProfile(data.session.user.id);
-    //   } else {
-    //     this.setState({ isLoading: false });
-    //   }
-    // } catch (error) {
-    //   console.error('Error initializing auth:', error);
-    //   this.setState({ isLoading: false });
-    // }
-  }
-
-  // Fetch user profile
-  private async fetchProfile(userId: string) {
-    // try { // Removed
-    //   const { data, error } = await this.supabase
-    //     .from('profiles')
-    //     .select('*')
-    //     .eq('id', userId)
-    //     .single();
-      
-    //   if (error) throw error;
-      
-    //   this.setState({ 
-    //     profile: data,
-    //     isLoading: false
-    //   });
-    // } catch (error) {
-    //   console.error('Error fetching profile:', error);
-    //   this.setState({ isLoading: false });
-    // }
-    console.log("fetchProfile called with userId:", userId); // Placeholder
-  }
-
-  // Auth methods
-  signUp = async (email: string, password: string) => {
-    console.log("signUp called with:", email, password); // Placeholder
-    return { data: null, error: { message: "Sign up not implemented" } }; // Placeholder
-    // try { // Removed
-    //   const { data, error } = await this.supabase.auth.signUp({
-    //     email,
-    //     password
-    //   });
-      
-    //   if (error) throw error;
-    //   return { data, error: null };
-    // } catch (error) {
-    //   console.error('Error signing up:', error);
-    //   return { data: null, error };
-    // }
+  const login = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const baseUserData = await authService.login(data);
+      const fullUser = await fetchUserProfileData(baseUserData);
+      setUser(fullUser);
+      setIsLoading(false);
+      return fullUser;
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
   };
 
-  signIn = async (email: string, password: string) => {
-    console.log("signIn called with:", email, password); // Placeholder
-    return { data: null, error: { message: "Sign in not implemented" } }; // Placeholder
-    // try { // Removed
-    //   const { data, error } = await this.supabase.auth.signInWithPassword({
-    //     email,
-    //     password
-    //   });
-      
-    //   if (error) throw error;
-    //   return { data, error: null };
-    // } catch (error) {
-    //   console.error('Error signing in:', error);
-    //   return { data: null, error };
-    // }
+  const register = async (data: any) => {
+    // After registration, user is not logged in immediately by this setup.
+    // They need to login separately. Or, modify backend to return JWT on signup.
+    return authService.register(data);
   };
 
-  signOut = async () => {
-    console.log("signOut called"); // Placeholder
-    this.setState({ user: null, session: null, profile: null }); // Placeholder
-    // try { // Removed
-    //   await this.supabase.auth.signOut();
-    //   this.setState({ 
-    //     user: null,
-    //     session: null,
-    //     profile: null
-    //   });
-    // } catch (error) {
-    //   console.error('Error signing out:', error);
-    // }
+  const logout = () => {
+    authService.logout();
+    setUser(null);
   };
 
-  setProfile = (profile: any) => {
-    this.setState({ profile });
-  };
-
-  render() {
-    const { user, session, profile, isLoading } = this.state;
-    const { children } = this.props;
-
-    const value: AuthContextType = {
-      user,
-      session,
-      profile,
-      isLoading,
-      signUp: this.signUp,
-      signIn: this.signIn,
-      signOut: this.signOut,
-      setProfile: this.setProfile,
-    };
-
-    return (
-      <AuthContext.Provider value={value}>
-        {children}
-      </AuthContext.Provider>
-    );
+  const fetchUserProfile = async () => {
+    if (user) {
+        setIsLoading(true);
+        const fullUser = await fetchUserProfileData(user);
+        setUser(fullUser);
+        setIsLoading(false);
+    }
   }
-}
 
-// Hook for consuming the auth context
-export function useAuth() {
-  const context = React.useContext(AuthContext);
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, fetchUserProfile }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}; 

@@ -1,6 +1,7 @@
 package com.ojtech.api.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -14,8 +15,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
     info = @Info(
         title = "OJTech API",
-        version = "1.0",
-        description = "Spring Boot API for OJTech job matching platform",
+        version = "v1",
+        description = "API for OJTech On-the-Job Training Management Portal",
         contact = @Contact(
             name = "OJTech Support",
             email = "support@ojtech.com",
@@ -38,9 +39,11 @@ import org.springframework.context.annotation.Configuration;
 )
 @SecurityScheme(
     name = "bearerAuth",
-    type = SecuritySchemeType.HTTP,
+    description = "JWT auth description",
     scheme = "bearer",
-    bearerFormat = "JWT"
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    in = SecuritySchemeIn.HEADER
 )
 public class OpenApiConfig {
 } 
