@@ -1,5 +1,6 @@
 import React, { Component, createContext } from 'react';
-import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
+// import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js'; // Commented out
+import type { Session, User } from '@supabase/supabase-js'; // Keep types needed for context
 
 // Define types for our context
 interface AuthContextType {
@@ -28,8 +29,8 @@ export const AuthContext = createContext<AuthContextType>({
 // Props for AuthProvider
 interface AuthProviderProps {
   children: React.ReactNode;
-  supabaseUrl: string;
-  supabaseAnonKey: string;
+  // supabaseUrl: string; // Removed
+  // supabaseAnonKey: string; // Removed
 }
 
 // State interface
@@ -41,25 +42,19 @@ interface AuthProviderState {
 }
 
 export class AuthProvider extends Component<AuthProviderProps, AuthProviderState> {
-  private supabase: SupabaseClient;
+  // private supabase: SupabaseClient; // Removed
 
   constructor(props: AuthProviderProps) {
     super(props);
     
-    // Check if required props are provided
-    if (!props.supabaseUrl || !props.supabaseAnonKey) {
-      console.error("Missing Supabase credentials. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file");
-      // Use demo credentials for development to avoid crashing
-      const demoUrl = 'https://demo.supabase.co'; 
-      const demoKey = 'demo';
-      // Initialize with demo credentials
-      this.supabase = createClient(demoUrl, demoKey);
-    } else {
-      // Initialize Supabase client with provided credentials
-      this.supabase = createClient(props.supabaseUrl, props.supabaseAnonKey);
-    }
+    // console.error("Missing Supabase credentials. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file");
+    // const demoUrl = 'https://demo.supabase.co'; 
+    // const demoKey = 'demo';
+    // this.supabase = createClient(demoUrl, demoKey);
     
-    // Set initial state
+    // Initialize Supabase client with provided credentials
+    // this.supabase = createClient(props.supabaseUrl, props.supabaseAnonKey); // Removed
+    
     this.state = {
       session: null,
       user: null,
@@ -70,19 +65,19 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
 
   componentDidMount() {
     // Set up auth state listener
-    this.supabase.auth.onAuthStateChange((event, session) => {
-      this.setState({ session, user: session?.user || null });
+    // this.supabase.auth.onAuthStateChange((event, session) => { // Removed
+    //   this.setState({ session, user: session?.user || null });
       
-      // If user is authenticated, fetch their profile
-      if (session?.user) {
-        this.fetchProfile(session.user.id);
-      } else {
-        this.setState({ isLoading: false });
-      }
-    });
+    //   if (session?.user) {
+    //     this.fetchProfile(session.user.id);
+    //   } else {
+    //     this.setState({ isLoading: false });
+    //   }
+    // });
     
     // Get initial session
-    this.initializeAuth();
+    // this.initializeAuth(); // Removed
+    this.setState({ isLoading: false }); // Set loading to false immediately
   }
 
   componentWillUnmount() {
@@ -91,87 +86,94 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
 
   // Initialize auth state
   private async initializeAuth() {
-    try {
-      const { data } = await this.supabase.auth.getSession();
-      this.setState({ 
-        session: data.session,
-        user: data.session?.user || null
-      });
+    // try { // Removed
+    //   const { data } = await this.supabase.auth.getSession();
+    //   this.setState({ 
+    //     session: data.session,
+    //     user: data.session?.user || null
+    //   });
       
-      if (data.session?.user) {
-        await this.fetchProfile(data.session.user.id);
-      } else {
-        this.setState({ isLoading: false });
-      }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      this.setState({ isLoading: false });
-    }
+    //   if (data.session?.user) {
+    //     await this.fetchProfile(data.session.user.id);
+    //   } else {
+    //     this.setState({ isLoading: false });
+    //   }
+    // } catch (error) {
+    //   console.error('Error initializing auth:', error);
+    //   this.setState({ isLoading: false });
+    // }
   }
 
   // Fetch user profile
   private async fetchProfile(userId: string) {
-    try {
-      const { data, error } = await this.supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    // try { // Removed
+    //   const { data, error } = await this.supabase
+    //     .from('profiles')
+    //     .select('*')
+    //     .eq('id', userId)
+    //     .single();
       
-      if (error) throw error;
+    //   if (error) throw error;
       
-      this.setState({ 
-        profile: data,
-        isLoading: false
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      this.setState({ isLoading: false });
-    }
+    //   this.setState({ 
+    //     profile: data,
+    //     isLoading: false
+    //   });
+    // } catch (error) {
+    //   console.error('Error fetching profile:', error);
+    //   this.setState({ isLoading: false });
+    // }
+    console.log("fetchProfile called with userId:", userId); // Placeholder
   }
 
   // Auth methods
   signUp = async (email: string, password: string) => {
-    try {
-      const { data, error } = await this.supabase.auth.signUp({
-        email,
-        password
-      });
+    console.log("signUp called with:", email, password); // Placeholder
+    return { data: null, error: { message: "Sign up not implemented" } }; // Placeholder
+    // try { // Removed
+    //   const { data, error } = await this.supabase.auth.signUp({
+    //     email,
+    //     password
+    //   });
       
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error signing up:', error);
-      return { data: null, error };
-    }
+    //   if (error) throw error;
+    //   return { data, error: null };
+    // } catch (error) {
+    //   console.error('Error signing up:', error);
+    //   return { data: null, error };
+    // }
   };
 
   signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    console.log("signIn called with:", email, password); // Placeholder
+    return { data: null, error: { message: "Sign in not implemented" } }; // Placeholder
+    // try { // Removed
+    //   const { data, error } = await this.supabase.auth.signInWithPassword({
+    //     email,
+    //     password
+    //   });
       
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('Error signing in:', error);
-      return { data: null, error };
-    }
+    //   if (error) throw error;
+    //   return { data, error: null };
+    // } catch (error) {
+    //   console.error('Error signing in:', error);
+    //   return { data: null, error };
+    // }
   };
 
   signOut = async () => {
-    try {
-      await this.supabase.auth.signOut();
-      this.setState({ 
-        user: null,
-        session: null,
-        profile: null
-      });
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    console.log("signOut called"); // Placeholder
+    this.setState({ user: null, session: null, profile: null }); // Placeholder
+    // try { // Removed
+    //   await this.supabase.auth.signOut();
+    //   this.setState({ 
+    //     user: null,
+    //     session: null,
+    //     profile: null
+    //   });
+    // } catch (error) {
+    //   console.error('Error signing out:', error);
+    // }
   };
 
   setProfile = (profile: any) => {

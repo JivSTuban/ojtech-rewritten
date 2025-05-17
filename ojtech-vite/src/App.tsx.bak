@@ -1,0 +1,177 @@
+import React, { Component } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './providers/AuthProvider';
+import { ThemeProvider } from './providers/ThemeProvider';
+import { ToastProvider } from './providers/ToastContext';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { HomePage } from './pages/HomePage';
+import { OpportunitiesPage } from './pages/OpportunitiesPage';
+import { JobDetailPageWrapper } from './pages/JobDetailPage';
+import { SignOutPage } from './pages/SignOutPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { JobApplicationPage } from './pages/JobApplicationPage';
+import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
+import { EmployerOnboardingPage } from './pages/EmployerOnboardingPage';
+import { EmployerJobsPage } from './pages/EmployerJobsPage';
+import { StudentOnboardingPage } from './pages/StudentOnboardingPage';
+import { Toaster } from './components/ui/Toaster';
+import { 
+  ProtectedRoute, 
+  StudentRoute, 
+  EmployerRoute, 
+  AdminRoute, 
+  AuthenticatedRoute, 
+  PublicOnlyRoute,
+  OnboardingRoute
+} from './components/auth/ProtectedRoute';
+import { OnboardingCheck } from './components/auth/OnboardingCheck';
+import './index.css';
+
+// These pages will need to be created
+// import { ApplicationsPage } from './pages/ApplicationsPage';
+// import { EmployerDashboardPage } from './pages/EmployerDashboardPage';
+// import { CreateJobPage } from './pages/CreateJobPage';
+// import { EditJobPage } from './pages/EditJobPage';
+// import { JobApplicationsPage } from './pages/JobApplicationsPage';
+// import { SuccessGuidePage } from './pages/SuccessGuidePage';
+// import { AdminDashboardPage } from './pages/AdminDashboardPage';
+// import { AdminUsersPage } from './pages/AdminUsersPage';
+
+// Define environment variables
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+// Layout component with navigation and footer
+class AppLayout extends Component<{ children: React.ReactNode }> {
+  render() {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          {this.props.children}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+}
+
+// Environment setup info component
+class ApiInfoDisplay extends Component {
+  render() {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+        <div className="w-full max-w-md p-6 bg-card rounded-lg shadow-md border border-border">
+          <h1 className="text-xl font-bold mb-4">
+            API Configuration
+          </h1>
+          <p className="mb-4">
+            The application is configured to connect to the backend API at: <code className="font-mono text-sm">{apiUrl}</code>
+          </p>
+          <div className="bg-muted p-4 rounded-md">
+            <p className="font-mono text-sm mb-2">If you want to use a different API URL:</p>
+            <p className="font-mono text-sm mb-2">1. Create a <code>.env</code> file in the project root directory</p>
+            <p className="font-mono text-sm mb-2">2. Add the following variable:</p>
+            <pre className="bg-[#111] text-white p-2 rounded text-xs overflow-x-auto">
+              VITE_API_URL=http://your-api-url.com/api
+            </pre>
+          </div>
+          <p className="mt-4 text-sm">
+            Make sure the Spring Boot API is running at the configured URL.
+          </p>
+        </div>
+      </div>
+    );
+  }
+}
+
+// App component
+export class App extends Component {
+  render() {
+    return (
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ToastProvider>
+          <AuthProvider>
+            <Router future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}>
+              <OnboardingCheck>
+                <AppLayout>
+                  <Routes>
+                    {/* Public routes - accessible to all */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/opportunities/:id" element={<JobDetailPageWrapper />} />
+                    
+                    {/* Public routes - accessible only to unauthenticated users */}
+                    <Route element={<PublicOnlyRoute />}>
+                      {/* Auth routes accessible only when not logged in */}
+                      <Route path="/auth/login" element={<LoginPage />} />
+                      <Route path="/auth/register" element={<RegisterPage />} />
+                    </Route>
+                    
+                    {/* Auth routes accessible to all */}
+                    <Route path="/auth/signout" element={<SignOutPage />} />
+                    <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+                    
+                    {/* Protected routes - requires any authentication */}
+                    <Route element={<AuthenticatedRoute />}>
+                      <Route path="/profile" element={<ProfilePage />} />
+                    </Route>
+                    
+                    {/* Student routes - require onboarding completion */}
+                    <Route element={<StudentRoute requireOnboarding={true} />}>
+                      <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
+                      <Route path="/track" element={<TrackApplicationsPage />} />
+                    </Route>
+                    
+                    {/* Employer routes - require onboarding completion */}
+                    <Route element={<EmployerRoute requireOnboarding={true} />}>
+                      <Route path="/employer/jobs" element={<EmployerJobsPage />} />
+                      {/* <Route path="/employer/jobs/create" element={<CreateJobPage />} /> */}
+                      {/* <Route path="/employer/jobs/:id/edit" element={<EditJobPage />} /> */}
+                      {/* <Route path="/employer/jobs/:id/applications" element={<JobApplicationsPage />} /> */}
+                    </Route>
+                    
+                    {/* Onboarding Routes - don't require onboarding completion */}
+                    <Route element={<OnboardingRoute />}>
+                      {/* Student onboarding route */}
+                      <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
+                      
+                      {/* Employer onboarding route */}
+                      <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
+                      
+                      {/* Admin onboarding placeholder */}
+                      <Route path="/onboarding/admin" element={
+                        <div className="container mx-auto px-4 py-8">
+                          <h1 className="text-3xl font-bold mb-6">Admin Onboarding</h1>
+                          <p>Complete your admin profile to get started.</p>
+                        </div>
+                      } />
+                    </Route>
+                    
+                    {/* Admin routes */}
+                    {/* <Route element={<AdminRoute />}>
+                      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                      <Route path="/admin/users" element={<AdminUsersPage />} />
+                    </Route> */}
+                    
+                    {/* API Info */}
+                    <Route path="/api-info" element={<ApiInfoDisplay />} />
+                    
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </AppLayout>
+              </OnboardingCheck>
+            </Router>
+            <Toaster />
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    );
+  }
+}
