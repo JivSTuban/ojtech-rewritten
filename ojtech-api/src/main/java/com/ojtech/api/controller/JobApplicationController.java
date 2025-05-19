@@ -20,11 +20,14 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/job-applications")
-
 @Tag(name = "Job Applications", description = "APIs for managing job applications")
 public class JobApplicationController {
 
     private final JobApplicationService jobApplicationService;
+    
+    public JobApplicationController(JobApplicationService jobApplicationService) {
+        this.jobApplicationService = jobApplicationService;
+    }
 
     @PostMapping
     @Operation(

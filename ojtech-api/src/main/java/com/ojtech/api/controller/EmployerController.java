@@ -19,11 +19,14 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/employers")
-
 @Tag(name = "Employers", description = "Employer management endpoints")
 public class EmployerController {
 
     private final EmployerService employerService;
+    
+    public EmployerController(EmployerService employerService) {
+        this.employerService = employerService;
+    }
 
     @GetMapping
     @Operation(

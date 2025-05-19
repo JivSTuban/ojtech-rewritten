@@ -1,4 +1,4 @@
-import React, { Component, createRef } from 'react';
+import React, { Component, createRef, RefObject } from 'react';
 import { Button } from "./Button";
 import { Link } from "react-router-dom";
 
@@ -24,11 +24,6 @@ interface HeroHeaderProps {
   waveSpeedMultiplier?: number;
 }
 
-interface HeroHeaderState {
-  width: number;
-  height: number;
-}
-
 const defaultProps: HeroHeaderProps = {
   title: 'Find Your Perfect <br /> Internship Match',
   subtitle: 'Our AI-powered matching connects you with relevant job opportunities that align with your skills and aspirations.',
@@ -52,110 +47,52 @@ const defaultProps: HeroHeaderProps = {
   waveSpeedMultiplier: 0.005,
 };
 
-class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
-  private canvasRef = createRef<HTMLCanvasElement>();
+export class WaveyHeroHeader extends Component<HeroHeaderProps> {
+  static defaultProps = defaultProps;
+  
+  private canvasRef: RefObject<HTMLCanvasElement>;
   private animationFrameId: number | null = null;
   private time: number = 0;
-  
-  static defaultProps = defaultProps;
 
   constructor(props: HeroHeaderProps) {
     super(props);
-    
-    // Initialize with window dimensions
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const height = typeof window !== 'undefined' ? window.innerHeight : 800;
-    
-    this.state = {
-      width,
-      height
-    };
-    
-    this.onResize = this.onResize.bind(this);
-    this.drawBackground = this.drawBackground.bind(this);
+    this.canvasRef = createRef<HTMLCanvasElement>();
   }
 
   componentDidMount() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', this.onResize);
-    }
-    
-    // Initialize canvas with proper dimensions
-    const canvas = this.canvasRef.current;
-    if (canvas) {
-      canvas.width = this.state.width;
-      canvas.height = this.state.height;
-    }
-    
-    // Start animation
-    this.drawBackground();
-  }
-
-  componentDidUpdate(prevProps: HeroHeaderProps) {
-    // Check if wave-related props have changed
-    if (
-      prevProps.waveColor1 !== this.props.waveColor1 ||
-      prevProps.waveColor2 !== this.props.waveColor2 ||
-      prevProps.waveColor3 !== this.props.waveColor3 ||
-      prevProps.waveColor4 !== this.props.waveColor4 ||
-      prevProps.waveColor5 !== this.props.waveColor5 ||
-      prevProps.waveColor6 !== this.props.waveColor6 ||
-      prevProps.waveColor7 !== this.props.waveColor7 ||
-      prevProps.waveColor8 !== this.props.waveColor8 ||
-      prevProps.waveOpacityBase !== this.props.waveOpacityBase ||
-      prevProps.waveOpacityIncrement !== this.props.waveOpacityIncrement ||
-      prevProps.waveAmplitude !== this.props.waveAmplitude ||
-      prevProps.waveSpeedMultiplier !== this.props.waveSpeedMultiplier
-    ) {
-      // Cancel the previous animation frame
-      if (this.animationFrameId) {
-        cancelAnimationFrame(this.animationFrameId);
-      }
-      
-      // Start a new animation
-      this.drawBackground();
-    }
+    this.initCanvas();
+    window.addEventListener('resize', this.handleResize);
   }
 
   componentWillUnmount() {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', this.onResize);
-    }
-    
+    window.removeEventListener('resize', this.handleResize);
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
   }
 
-  onResize() {
-    this.setState({
-      width: window.innerWidth,
-      height: window.innerHeight
-    });
-    
+  handleResize = () => {
     const canvas = this.canvasRef.current;
-    if (canvas) {
+    if (!canvas) return;
+    
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-    }
   }
 
-  drawBackground() {
+  initCanvas = () => {
     const canvas = this.canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    const { width, height } = this.state;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     
-    ctx.clearRect(0, 0, width, height);
-
-    // dark base - pure black
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, width, height);
-
-    // flowing waves
+    this.drawBackground(ctx, canvas.width, canvas.height);
+  }
+  
+  drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     const {
       waveColor1,
       waveColor2,
@@ -168,9 +105,16 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
       waveOpacityBase,
       waveOpacityIncrement,
       waveAmplitude,
-      waveSpeedMultiplier
+      waveSpeedMultiplier,
     } = this.props;
     
+    ctx.clearRect(0, 0, width, height);
+
+    // dark base - pure black
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, width, height);
+
+    // flowing waves
     const waveColors = [
       waveColor1,
       waveColor2,
@@ -183,10 +127,10 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
     ];
     
     for (let i = 0; i < 8; i++) {
-      const opacity = waveOpacityBase! + i * waveOpacityIncrement!;
+      const opacity = (waveOpacityBase || 0.2) + i * (waveOpacityIncrement || 0.05);
       ctx.beginPath();
       for (let x = 0; x < width; x++) {
-        const y = height / 2 + Math.sin((x + this.time + i * 100) * waveSpeedMultiplier!) * waveAmplitude! + i * 20;
+        const y = height / 2 + Math.sin((x + this.time + i * 100) * (waveSpeedMultiplier || 0.005)) * (waveAmplitude || 40) + i * 20;
         ctx.lineTo(x, y);
       }
       ctx.strokeStyle = waveColors[i] || `rgba(40, 40, 40, ${opacity})`;
@@ -195,7 +139,7 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
     }
 
     this.time += 1.5;
-    this.animationFrameId = requestAnimationFrame(this.drawBackground);
+    this.animationFrameId = requestAnimationFrame(() => this.drawBackground(ctx, width, height));
   }
 
   render() {
@@ -206,7 +150,7 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
       primaryButtonUrl,
       secondaryButtonText,
       secondaryButtonUrl,
-      imageSrc
+      imageSrc,
     } = this.props;
 
     return (
@@ -214,8 +158,6 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
         <canvas
           ref={this.canvasRef}
           className="absolute top-0 left-0 w-full h-full z-0"
-          width={this.state.width}
-          height={this.state.height}
         />
 
         <div className="relative z-10 flex items-center justify-between max-w-7xl mx-auto px-6 h-full">
@@ -267,5 +209,3 @@ class WaveyHeroHeader extends Component<HeroHeaderProps, HeroHeaderState> {
     );
   }
 }
-
-export default WaveyHeroHeader;

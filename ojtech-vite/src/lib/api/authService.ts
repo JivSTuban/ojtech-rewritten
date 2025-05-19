@@ -1,17 +1,18 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/auth';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const AUTH_API_URL = `${API_BASE_URL}/auth`;
 
 interface SignupData {
-  username?: string;
-  email?: string;
-  password?: string;
+  username: string;
+  email: string;
+  password: string;
   roles?: string[];
 }
 
 interface LoginData {
-  usernameOrEmail?: string;
-  password?: string;
+  usernameOrEmail: string;
+  password: string;
 }
 
 export interface UserData {
@@ -23,11 +24,20 @@ export interface UserData {
 }
 
 const register = async (data: SignupData) => {
-  return axios.post(`${API_URL}/signup`, data);
+  console.log('Sending registration data:', data);
+  console.log('To URL:', `${AUTH_API_URL}/signup`);
+  try {
+    const response = await axios.post(`${AUTH_API_URL}/signup`, data);
+    console.log('Registration response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Registration API error:', error);
+    throw error;
+  }
 };
 
 const login = async (data: LoginData) => {
-  const response = await axios.post(`${API_URL}/signin`, data);
+  const response = await axios.post(`${AUTH_API_URL}/signin`, data);
   if (response.data.accessToken) {
     localStorage.setItem('user', JSON.stringify(response.data));
   }

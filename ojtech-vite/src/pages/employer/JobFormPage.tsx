@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Component, ChangeEvent, FormEvent } from 'react';
 import jobService from '@/lib/api/jobService';
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
+import { useNavigate, useParams, Link, Navigate, useLocation } from 'react-router-dom';
+import { AuthContext } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input'; // Assuming Input component
 import { Textarea } from '@/components/ui/Textarea'; // Assuming Textarea component
@@ -20,13 +20,27 @@ interface JobFormData {
   isActive: boolean;
 }
 
-export const JobFormPage: React.FC = () => {
-  const { jobId } = useParams<{ jobId?: string }>();
-  const isEditMode = Boolean(jobId);
-  const navigate = useNavigate();
-  const { user } = useAuth();
+interface JobFormPageProps {
+  jobId?: string;
+  navigate: (path: string) => void;
+}
 
-  const [formData, setFormData] = useState<JobFormData>({
+interface JobFormPageState {
+  formData: JobFormData;
+  skillsInput: string;
+  isLoading: boolean;
+  error: string | null;
+  redirectTo: string | null;
+}
+
+class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+
+  constructor(props: JobFormPageProps) {
+    super(props);
+    this.state = {
+      formData: {
     title: '',
     description: '',
     location: '',
@@ -35,17 +49,39 @@ export const JobFormPage: React.FC = () => {
     skillsRequired: [],
     closingDate: '',
     isActive: true,
-  });
-  const [skillsInput, setSkillsInput] = useState(''); // For comma-separated input
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+      },
+      skillsInput: '',
+      isLoading: false,
+      error: null,
+      redirectTo: null
+    };
+  }
 
-  const fetchJobData = useCallback(async () => {
-    if (isEditMode && jobId && user) {
-      setIsLoading(true);
+  componentDidMount() {
+    const { user } = this.context || {};
+    
+    if (!user || !user.roles.includes('ROLE_EMPLOYER')) {
+      this.setState({ redirectTo: '/login' });
+      return;
+    }
+    
+    if (this.props.jobId) {
+      this.fetchJobData();
+    }
+  }
+
+  fetchJobData = async () => {
+    const { jobId } = this.props;
+    
+    if (!jobId) return;
+    
+    this.setState({ isLoading: true });
+    
       try {
         const job = await jobService.getEmployerJobById(jobId);
-        setFormData({
+      
+      this.setState({
+        formData: {
           title: job.title || '',
           description: job.description || '',
           location: job.location || '',
@@ -54,63 +90,81 @@ export const JobFormPage: React.FC = () => {
           skillsRequired: job.skillsRequired || [],
           closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '', // Format for input type=date
           isActive: job.isActive === undefined ? true : job.isActive,
+        },
+        skillsInput: (job.skillsRequired || []).join(', ')
         });
-        setSkillsInput((job.skillsRequired || []).join(', '));
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to load job data.');
+      this.setState({
+        error: err.response?.data?.message || 'Failed to load job data.'
+      });
       } finally {
-        setIsLoading(false);
+      this.setState({ isLoading: false });
       }
-    }
-  }, [isEditMode, jobId, user]);
+  };
 
-  useEffect(() => {
-    if (!user || !user.roles.includes('ROLE_EMPLOYER')) {
-        navigate('/login');
-        return;
-    }
-    fetchJobData();
-  }, [user, navigate, fetchJobData]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    
     if (type === 'checkbox') {
         const checked = (e.target as HTMLInputElement).checked;
-        setFormData(prev => ({ ...prev, [name]: checked }));
+      this.setState(prev => ({
+        formData: { ...prev.formData, [name]: checked }
+      }));
     } else {
-        setFormData(prev => ({ ...prev, [name]: value }));
+      this.setState(prev => ({
+        formData: { ...prev.formData, [name]: value }
+      }));
     }
   };
 
-  const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSkillsInput(e.target.value);
-    setFormData(prev => ({ ...prev, skillsRequired: e.target.value.split(',').map(skill => skill.trim()).filter(skill => skill) }));
+  handleSkillsChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const skillsInput = e.target.value;
+    const skills = skillsInput.split(',').map(skill => skill.trim()).filter(skill => skill);
+    
+    this.setState({
+      skillsInput,
+      formData: {
+        ...this.state.formData,
+        skillsRequired: skills
+      }
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+    this.setState({ error: null, isLoading: true });
 
     // Convert closingDate to ISO string if it exists, otherwise null
     const payload = {
-        ...formData,
-        closingDate: formData.closingDate ? new Date(formData.closingDate).toISOString() : null,
+      ...this.state.formData,
+      closingDate: this.state.formData.closingDate ? new Date(this.state.formData.closingDate).toISOString() : null,
     };
 
+    const isEditMode = Boolean(this.props.jobId);
+
     try {
-      if (isEditMode && jobId) {
-        await jobService.updateJob(jobId, payload);
+      if (isEditMode && this.props.jobId) {
+        await jobService.updateJob(this.props.jobId, payload);
       } else {
         await jobService.createJob(payload);
       }
-      navigate('/employer/jobs');
+      this.props.navigate('/employer/jobs');
     } catch (err: any) {
-      setError(err.response?.data?.message || (isEditMode ? 'Failed to update job.' : 'Failed to create job.'));
+      this.setState({
+        error: err.response?.data?.message || (isEditMode ? 'Failed to update job.' : 'Failed to create job.')
+      });
     } finally {
-      setIsLoading(false);
+      this.setState({ isLoading: false });
     }
   };
+
+  render() {
+    const { formData, skillsInput, isLoading, error, redirectTo } = this.state;
+    const isEditMode = Boolean(this.props.jobId);
+    
+    if (redirectTo) {
+      return <Navigate to={redirectTo} />;
+    }
   
   if (isLoading && isEditMode) {
     return <div className="min-h-screen flex items-center justify-center"><p>Loading job details...</p></div>;
@@ -125,28 +179,28 @@ export const JobFormPage: React.FC = () => {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={this.handleSubmit} className="space-y-6">
                     <div>
                         <Label htmlFor="title" className="dark:text-gray-300">Job Title</Label>
-                        <Input type="text" name="title" id="title" value={formData.title} onChange={handleChange} required 
+                <Input type="text" name="title" id="title" value={formData.title} onChange={this.handleChange} required 
                                className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600" />
                     </div>
 
                     <div>
                         <Label htmlFor="description" className="dark:text-gray-300">Description</Label>
-                        <Textarea name="description" id="description" rows={5} value={formData.description} onChange={handleChange} required 
+                <Textarea name="description" id="description" rows={5} value={formData.description} onChange={this.handleChange} required 
                                   className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"/>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <Label htmlFor="location" className="dark:text-gray-300">Location (e.g., City, Remote)</Label>
-                            <Input type="text" name="location" id="location" value={formData.location} onChange={handleChange} required 
+                  <Input type="text" name="location" id="location" value={formData.location} onChange={this.handleChange} required 
                                    className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"/>
                         </div>
                         <div>
                             <Label htmlFor="jobType" className="dark:text-gray-300">Job Type</Label>
-                            <select name="jobType" id="jobType" value={formData.jobType} onChange={handleChange} required
+                  <select name="jobType" id="jobType" value={formData.jobType} onChange={this.handleChange} required
                                     className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                                 <option value="Full-time">Full-time</option>
                                 <option value="Part-time">Part-time</option>
@@ -159,26 +213,28 @@ export const JobFormPage: React.FC = () => {
 
                     <div>
                         <Label htmlFor="salaryRange" className="dark:text-gray-300">Salary Range (Optional)</Label>
-                        <Input type="text" name="salaryRange" id="salaryRange" value={formData.salaryRange} onChange={handleChange} 
+                <Input type="text" name="salaryRange" id="salaryRange" value={formData.salaryRange} onChange={this.handleChange} 
                                className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600" placeholder="e.g., PHP 20,000 - PHP 30,000"/>
                     </div>
 
                     <div>
                         <Label htmlFor="skillsRequired" className="dark:text-gray-300">Skills Required (comma-separated)</Label>
-                        <Input type="text" name="skillsRequired" id="skillsRequired" value={skillsInput} onChange={handleSkillsChange} required 
+                <Input type="text" name="skillsRequired" id="skillsRequired" value={skillsInput} onChange={this.handleSkillsChange} required 
                                className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"/>
                     </div>
 
                     <div>
                         <Label htmlFor="closingDate" className="dark:text-gray-300">Application Closing Date (Optional)</Label>
-                        <Input type="date" name="closingDate" id="closingDate" value={formData.closingDate} onChange={handleChange} 
+                <Input type="date" name="closingDate" id="closingDate" value={formData.closingDate} onChange={this.handleChange} 
                                className="mt-1 dark:bg-gray-700 dark:text-white dark:border-gray-600"/>
                     </div>
                     
                     <div className="flex items-center space-x-2 pt-2">
                         <Checkbox id="isActive" name="isActive" checked={formData.isActive} 
                                   onCheckedChange={(checkedState) => { 
-                                    setFormData(prev => ({ ...prev, isActive: Boolean(checkedState) }));
+                          this.setState(prev => ({
+                            formData: { ...prev.formData, isActive: Boolean(checkedState) }
+                          }));
                                   }}
                                   className="dark:border-gray-600"/>
                         <Label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -187,8 +243,8 @@ export const JobFormPage: React.FC = () => {
                     </div>
 
                     {error && (
-                        <div className="text-red-500 text-sm text-center p-2 bg-red-50 dark:bg-red-900 rounded-md">
-                        {error}
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 dark:bg-red-900/30 dark:border-red-500">
+                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
                         </div>
                     )}
 
@@ -205,4 +261,13 @@ export const JobFormPage: React.FC = () => {
         </Card>
     </div>
   );
+  }
+}
+
+// Wrapper component to handle routing props
+export const JobFormPage: React.FC = () => {
+  const { jobId } = useParams<{ jobId?: string }>();
+  const navigate = useNavigate();
+  
+  return <JobFormPageClass jobId={jobId} navigate={navigate} />;
 }; 

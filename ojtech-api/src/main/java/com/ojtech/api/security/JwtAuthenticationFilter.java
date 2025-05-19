@@ -1,10 +1,11 @@
 package com.ojtech.api.security;
 
+import com.ojtech.api.security.jwt.JwtUtils;
+import com.ojtech.api.security.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,13 +21,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    private final JwtUtil jwtUtil;
+    private final JwtUtils jwtUtils;
     private final UserDetailsServiceImpl userDetailsService;
+
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsServiceImpl userDetailsService) {
+        this.jwtUtils = jwtUtils;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,18 +43,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
             
-            // Special handling for /api/profiles/me endpoint
-            boolean isProfilesMeEndpoint = requestURI.equals("/api/profiles/me");
-            if (isProfilesMeEndpoint) {
-                log.debug("JwtAuthenticationFilter: Special handling for /api/profiles/me endpoint");
+            // Special handling for /api/profile/me endpoint
+            boolean isProfileMeEndpoint = requestURI.equals("/api/profile/me");
+            if (isProfileMeEndpoint) {
+                log.debug("JwtAuthenticationFilter: Special handling for /api/profile/me endpoint");
             }
             
             if (jwt != null) {
-                String username = jwtUtil.extractUsername(jwt);
+                String username = jwtUtils.extractUsername(jwt);
                 log.debug("JwtAuthenticationFilter: JWT token found for user: {}", username);
 
                 // Dump the token claims for debugging
-                log.debug("JwtAuthenticationFilter: Token claims: {}", jwtUtil.dumpAllClaims(jwt));
+                log.debug("JwtAuthenticationFilter: Token claims: {}", jwtUtils.dumpAllClaims(jwt));
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     try {
@@ -57,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.debug("JwtAuthenticationFilter: User details loaded successfully for: {}", username);
                         log.debug("JwtAuthenticationFilter: User authorities: {}", userDetails.getAuthorities());
                         
-                        if (jwtUtil.validateToken(jwt, userDetails)) {
+                        if (jwtUtils.validateToken(jwt, userDetails)) {
                             log.debug("JwtAuthenticationFilter: JWT token valid for user: {}", username);
                             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                                     userDetails, null, userDetails.getAuthorities());

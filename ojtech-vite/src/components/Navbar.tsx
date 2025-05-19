@@ -1,26 +1,19 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
-
-interface NavbarProps {
-  user?: {
-    email: string;
-  } | null;
-  profile?: {
-    role?: string;
-    avatar_url?: string;
-    full_name?: string;
-  } | null;
-  signOut?: () => void;
-  isLoading?: boolean;
-}
+import { AuthContext } from '../providers/AuthProvider';
+import { useTheme } from 'next-themes';
 
 interface NavbarState {
   isDropdownOpen: boolean;
 }
 
-export class Navbar extends Component<NavbarProps, NavbarState> {
-  constructor(props: NavbarProps) {
+// Class component for Navbar logic
+class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?: string }, NavbarState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+
+  constructor(props: { setTheme: (theme: string) => void; theme?: string }) {
     super(props);
     this.state = {
       isDropdownOpen: false
@@ -33,21 +26,8 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
     }));
   };
 
-  componentDidMount() {
-    // Update loading state classes
-    document.body.classList.toggle('auth-checking', !!this.props.isLoading);
-    document.body.classList.toggle('auth-ready', !this.props.isLoading);
-  }
-
-  componentDidUpdate(prevProps: NavbarProps) {
-    if (prevProps.isLoading !== this.props.isLoading) {
-      document.body.classList.toggle('auth-checking', !!this.props.isLoading);
-      document.body.classList.toggle('auth-ready', !this.props.isLoading);
-    }
-  }
-
   render() {
-    const { user, profile, signOut, isLoading } = this.props;
+    const { user, isLoading, logout } = this.context || {};
     const { isDropdownOpen } = this.state;
 
     // Don't render anything while checking auth
@@ -72,17 +52,10 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
               OJTech
             </Link>
             
-            {user && profile?.role && (
+            {user && user.roles && (
               <div className="flex space-x-6">
-                {/* Common navigation for all non-student users */}
-                {profile.role !== "student" && (
-                  <Link to="/" className="text-gray-400 hover:text-white">
-                    Home
-                  </Link>
-                )}
-                
                 {/* Student-specific navigation */}
-                {profile.role === "student" && (
+                {user.roles.includes('ROLE_STUDENT') && (
                   <>
                     <Link to="/opportunities" className="text-gray-400 hover:text-white">
                       Find Jobs
@@ -94,7 +67,7 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
                 )}
                 
                 {/* Employer-specific navigation */}
-                {profile.role === "employer" && (
+                {user.roles.includes('ROLE_EMPLOYER') && (
                   <>
                     <Link to="/employer/jobs" className="text-gray-400 hover:text-white">
                       Manage Jobs
@@ -103,7 +76,7 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
                 )}
                 
                 {/* Admin-specific navigation */}
-                {profile.role === "admin" && (
+                {user.roles.includes('ROLE_ADMIN') && (
                   <>
                     <Link to="/admin/dashboard" className="text-gray-400 hover:text-white">
                       Dashboard
@@ -120,9 +93,13 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                {profile?.role && (
-                  <span className="px-2 py-1 text-xs rounded-full bg-green-600 text-white font-medium">
-                    {profile.role}
+                {user.roles && user.roles.length > 0 && (
+                  <span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
+                    {user.roles.includes('ROLE_ADMIN') 
+                      ? 'Admin' 
+                      : user.roles.includes('ROLE_EMPLOYER') 
+                        ? 'Employer' 
+                        : 'Student'}
                   </span>
                 )}
                 
@@ -131,15 +108,15 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
                     onClick={this.toggleDropdown}
                     className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center overflow-hidden"
                   >
-                    {profile?.avatar_url ? (
+                    {user.profile?.avatar_url ? (
                       <img 
-                        src={profile.avatar_url} 
+                        src={user.profile.avatar_url} 
                         alt="Avatar" 
                         className="h-full w-full object-cover"
                       />
                     ) : (
                       <span className="text-white">
-                        {profile?.full_name?.charAt(0) || user.email?.charAt(0)}
+                        {user.firstName?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </span>
                     )}
                   </button>
@@ -147,15 +124,15 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                       <Link 
-                        to={profile?.role === "employer" ? "/employer/dashboard" : "/profile"} 
+                        to="/profile" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                         onClick={this.toggleDropdown}
                       >
-                        {profile?.role === "employer" ? "Company Profile" : "My Resume"}
+                        {user.roles?.includes('ROLE_EMPLOYER') ? "Company Profile" : "My Profile"}
                       </Link>
                       <button 
                         onClick={() => {
-                          if (signOut) signOut();
+                          if (logout) logout();
                           this.toggleDropdown();
                         }} 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
@@ -168,10 +145,10 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
               </>
             ) : (
               <>
-                <Link to="/auth/login">
+                <Link to="/login">
                   <Button variant="ghost" className="text-white">Log In</Button>
                 </Link>
-                <Link to="/auth/register">
+                <Link to="/register">
                   <Button className="bg-white text-black hover:bg-gray-200">Sign Up</Button>
                 </Link>
               </>
@@ -182,3 +159,9 @@ export class Navbar extends Component<NavbarProps, NavbarState> {
     );
   }
 } 
+
+// Wrapper component to provide theme context
+export const Navbar: React.FC = () => {
+  const { setTheme, theme } = useTheme();
+  return <NavbarClass setTheme={setTheme} theme={theme} />;
+}; 

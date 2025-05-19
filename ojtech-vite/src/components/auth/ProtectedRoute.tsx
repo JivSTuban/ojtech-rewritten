@@ -4,9 +4,17 @@ import { useAuth } from '@/providers/AuthProvider';
 
 interface ProtectedRouteProps {
   allowedRoles?: string[]; // e.g. ['ROLE_ADMIN', 'ROLE_EMPLOYER']
+  children?: React.ReactNode;
+  isOnboardingPath?: boolean;
+  requireOnboarding?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  allowedRoles,
+  children,
+  isOnboardingPath = false,
+  requireOnboarding = true
+}) => {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -30,32 +38,33 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
   }
 
   // For routes other than onboarding, check if onboarding is complete
-  // (Onboarding routes themselves should be accessible if user has correct role but hasn't completed onboarding)
-  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
-  if (!isOnboardingRoute && !user.hasCompletedOnboarding) {
+  // Skip this check if isOnboardingPath is true or requireOnboarding is false
+  if (requireOnboarding && !isOnboardingPath && !user.hasCompletedOnboarding) {
     // Redirect to appropriate onboarding page based on role
-    if (user.roles.includes('ROLE_STUDENT')) {
+    if (user.roles?.includes('ROLE_STUDENT')) {
       return <Navigate to="/onboarding/student" replace />;
     }
-    if (user.roles.includes('ROLE_EMPLOYER')) {
+    if (user.roles?.includes('ROLE_EMPLOYER')) {
       return <Navigate to="/onboarding/employer" replace />;
     }
     // Fallback if role is unclear but onboarding needed (should ideally not happen)
     return <Navigate to="/" replace />; 
   }
 
-  return <Outlet />;
+  // Return children if provided, otherwise use Outlet
+  return children ? <>{children}</> : <Outlet />;
 };
 
+interface PublicOnlyRouteProps {
+  children?: React.ReactNode;
+}
+
 // A route that is only accessible to unauthenticated users
-export class PublicOnlyRoute extends React.Component {
-  static contextType = AuthContext;
-  declare context: React.ContextType<typeof AuthContext>;
+export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) => {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
 
-  render() {
-    const { isAuthenticated, isLoading, userRole, onboardingCompleted } = this.context;
-
-    // If still loading, show nothing
+  // If still loading, show a loading spinner
     if (isLoading) {
       return (
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -65,62 +74,53 @@ export class PublicOnlyRoute extends React.Component {
     }
 
     // If authenticated, redirect based on role and onboarding status
-    if (isAuthenticated) {
+  if (user) {
       // If onboarding is not completed, redirect to the appropriate onboarding page
-      if (!onboardingCompleted) {
-        if (userRole === 'STUDENT') {
+    if (!user.hasCompletedOnboarding) {
+      if (user.roles?.includes('ROLE_STUDENT')) {
           return <Navigate to="/onboarding/student" replace />;
-        } else if (userRole === 'EMPLOYER') {
+      } else if (user.roles?.includes('ROLE_EMPLOYER')) {
           return <Navigate to="/onboarding/employer" replace />;
-        } else if (userRole === 'ADMIN') {
+      } else if (user.roles?.includes('ROLE_ADMIN')) {
           return <Navigate to="/onboarding/admin" replace />;
         }
       } else {
         // If onboarding is completed, redirect to the appropriate dashboard
-        if (userRole === 'STUDENT') {
+      if (user.roles?.includes('ROLE_STUDENT')) {
           return <Navigate to="/track" replace />;
-        } else if (userRole === 'EMPLOYER') {
+      } else if (user.roles?.includes('ROLE_EMPLOYER')) {
           return <Navigate to="/employer/jobs" replace />;
-        } else if (userRole === 'ADMIN') {
+      } else if (user.roles?.includes('ROLE_ADMIN')) {
           return <Navigate to="/admin/dashboard" replace />;
-        }
       }
     }
-
-    // If not authenticated, show the public route
-    return <Outlet />;
+    // Default redirect if none of the specific roles matched
+    return <Navigate to="/" replace />;
   }
-}
+
+  // If not authenticated, show the public route
+  return children ? <>{children}</> : <Outlet />;
+};
 
 // Role-specific route components for easier usage
-export class StudentRoute extends React.Component<Omit<ProtectedRouteProps, 'allowedRoles'>> {
-  render() {
-    return <ProtectedRoute {...this.props} allowedRoles={['STUDENT']} />;
-  }
-}
+export const StudentRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
+  return <ProtectedRoute {...props} allowedRoles={['ROLE_STUDENT']} />;
+};
 
-export class EmployerRoute extends React.Component<Omit<ProtectedRouteProps, 'allowedRoles'>> {
-  render() {
-    return <ProtectedRoute {...this.props} allowedRoles={['EMPLOYER']} />;
-  }
-}
+export const EmployerRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
+  return <ProtectedRoute {...props} allowedRoles={['ROLE_EMPLOYER']} />;
+};
 
-export class AdminRoute extends React.Component<Omit<ProtectedRouteProps, 'allowedRoles'>> {
-  render() {
-    return <ProtectedRoute {...this.props} allowedRoles={['ADMIN']} />;
-  }
-}
+export const AdminRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
+  return <ProtectedRoute {...props} allowedRoles={['ROLE_ADMIN']} />;
+};
 
 // A route that requires any authentication
-export class AuthenticatedRoute extends React.Component<Omit<ProtectedRouteProps, 'allowedRoles'>> {
-  render() {
-    return <ProtectedRoute {...this.props} />;
-  }
-}
+export const AuthenticatedRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
+  return <ProtectedRoute {...props} />;
+};
 
 // A special route for onboarding paths
-export class OnboardingRoute extends React.Component<Omit<ProtectedRouteProps, 'isOnboardingPath'>> {
-  render() {
-    return <ProtectedRoute {...this.props} isOnboardingPath={true} requireOnboarding={false} />;
-  }
-} 
+export const OnboardingRoute: React.FC<Omit<ProtectedRouteProps, 'isOnboardingPath' | 'requireOnboarding'>> = (props) => {
+  return <ProtectedRoute {...props} isOnboardingPath={true} requireOnboarding={false} />;
+}; 

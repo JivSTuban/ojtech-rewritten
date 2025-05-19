@@ -3,6 +3,7 @@ package com.ojtech.api.config;
 import com.ojtech.api.model.Job;
 import com.ojtech.api.model.JobStatus;
 import com.ojtech.api.model.JobType;
+import com.ojtech.api.model.Profile;
 import com.ojtech.api.model.UserRole;
 import com.ojtech.api.repository.JobRepository;
 import com.ojtech.api.repository.ProfileRepository;
@@ -14,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -49,7 +50,7 @@ public class DataInitializer implements ApplicationRunner {
         if (profileRepository.count() == 0) {
             
             // Create student user
-            com.ojtech.api.model.Profile student = com.ojtech.api.model.Profile.builder()
+            Profile student = Profile.builder()
                 .email("student@ojtech.com")
                 .password(passwordEncoder.encode("student123"))
                 .fullName("Sample Student")
@@ -59,7 +60,7 @@ public class DataInitializer implements ApplicationRunner {
                 .build();
             
             // Create employer user
-            com.ojtech.api.model.Profile employer = com.ojtech.api.model.Profile.builder()
+            Profile employer = Profile.builder()
                 .email("employer@ojtech.com")
                 .password(passwordEncoder.encode("employer123"))
                 .fullName("Sample Employer")
@@ -69,7 +70,7 @@ public class DataInitializer implements ApplicationRunner {
                 .build();
             
             // Create admin user
-            com.ojtech.api.model.Profile admin = com.ojtech.api.model.Profile.builder()
+            Profile admin = Profile.builder()
                 .email("admin@ojtech.com")
                 .password(passwordEncoder.encode("admin123"))
                 .fullName("Admin User")
@@ -85,54 +86,48 @@ public class DataInitializer implements ApplicationRunner {
     private void createJobsIfNotExist() {
         if (jobRepository.count() == 0) {
             
-            // Get employer user
-            com.ojtech.api.model.Profile employer = profileRepository.findByEmail("employer@ojtech.com")
-                .orElseThrow(() -> new RuntimeException("Employer not found"));
+            // Get employer profile
+            Profile employerProfile = profileRepository.findByEmail("employer@ojtech.com")
+                .orElseThrow(() -> new RuntimeException("Employer profile not found for email: employer@ojtech.com"));
             
+            // Instead of trying to get a User from Profile, we'll just use the Profile directly
+            // since our Job model has been updated to work with it
+
             // Create jobs
             Job job1 = Job.builder()
                 .title("Software Engineer Intern")
                 .description("Join our engineering team for a summer internship focused on web development.")
-                .requiredSkills("Java, Spring Boot, React")
-                .preferredSkills("Docker, AWS, TypeScript")
+                .skillsRequired(List.of("Java", "Spring Boot", "React"))
                 .location("San Francisco, CA")
-                .jobType(JobType.INTERNSHIP)
-                .status(JobStatus.OPEN)
-                .companyName("TechCorp Inc.")
-                .companyLogoUrl("https://example.com/logo.png")
+                .jobType("INTERNSHIP")
+                .isActive(true)
                 .salaryRange("$20-25/hour")
-                .applicationDeadline(OffsetDateTime.now().plusMonths(1))
-                .employer(employer)
+                .closingDate(LocalDateTime.now().plusMonths(1))
+                .employer(employerProfile) // Changed to use Profile directly 
                 .build();
             
             Job job2 = Job.builder()
                 .title("Data Science Co-op")
                 .description("6-month co-op position working with our data science team on machine learning projects.")
-                .requiredSkills("Python, pandas, scikit-learn")
-                .preferredSkills("TensorFlow, PyTorch, SQL")
+                .skillsRequired(List.of("Python", "pandas", "scikit-learn"))
                 .location("Boston, MA")
-                .jobType(JobType.CO_OP)
-                .status(JobStatus.OPEN)
-                .companyName("DataInsights LLC")
-                .companyLogoUrl("https://example.com/data-logo.png")
+                .jobType("CO_OP")
+                .isActive(true)
                 .salaryRange("$22-28/hour")
-                .applicationDeadline(OffsetDateTime.now().plusMonths(2))
-                .employer(employer)
+                .closingDate(LocalDateTime.now().plusMonths(2))
+                .employer(employerProfile)
                 .build();
             
             Job job3 = Job.builder()
                 .title("UX/UI Design Internship")
                 .description("Help design user interfaces for our mobile and web applications.")
-                .requiredSkills("Figma, Adobe XD, UI/UX principles")
-                .preferredSkills("HTML/CSS, JavaScript, Prototyping")
+                .skillsRequired(List.of("Figma", "Adobe XD", "UI/UX principles"))
                 .location("Remote")
-                .jobType(JobType.INTERNSHIP)
-                .status(JobStatus.OPEN)
-                .companyName("DesignFirst Co.")
-                .companyLogoUrl("https://example.com/design-logo.png")
+                .jobType("INTERNSHIP")
+                .isActive(true)
                 .salaryRange("$18-22/hour")
-                .applicationDeadline(OffsetDateTime.now().plusWeeks(3))
-                .employer(employer)
+                .closingDate(LocalDateTime.now().plusWeeks(3))
+                .employer(employerProfile)
                 .build();
             
             jobRepository.saveAll(List.of(job1, job2, job3));

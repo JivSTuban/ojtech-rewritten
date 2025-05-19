@@ -1,113 +1,145 @@
 import React, { Component } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { AuthContext } from '../providers/AuthProvider';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { Textarea } from '../components/ui/Textarea';
-import { Label } from '../components/ui/Label';
-import { FileDropInput } from '../components/ui/FileDropInput';
-import { Spinner } from '../components/ui/Spinner';
-import { toast } from '../components/ui/toast-utils';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
-interface JobApplicationProps {
+// Interface for the job details
+interface Job {
+  id: string;
+  title: string;
+  company_name: string | null;
+}
+
+// Props for the application page component
+interface JobApplicationPageProps {
   jobId: string;
+  navigate: (path: string) => void;
 }
 
-interface JobApplicationState {
-  isLoading: boolean;
-  isSubmitting: boolean;
-  isSubmitted: boolean;
+// State for the application page
+interface JobApplicationPageState {
+  job: Job | null;
+  loading: boolean;
   error: string | null;
-  job: any;
   formData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    experience: string;
     coverLetter: string;
-    resumeFile: File | null;
-    additionalInfo: string;
-    contactEmail: string;
-    contactPhone: string;
   };
-  validation: {
-    coverLetter: string | null;
-    resumeFile: string | null;
-    contactEmail: string | null;
-    contactPhone: string | null;
-  };
+  submitting: boolean;
+  submitError: string | null;
 }
 
-class JobApplicationPageComponent extends Component<JobApplicationProps, JobApplicationState> {
+class JobApplicationPageClass extends Component<JobApplicationPageProps, JobApplicationPageState> {
   static contextType = AuthContext;
-  context!: React.ContextType<typeof AuthContext>;
-
-  constructor(props: JobApplicationProps) {
+  declare context: React.ContextType<typeof AuthContext>;
+  
+  // API base URL
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  
+  constructor(props: JobApplicationPageProps) {
     super(props);
     this.state = {
-      isLoading: true,
-      isSubmitting: false,
-      isSubmitted: false,
-      error: null,
       job: null,
+      loading: true,
+      error: null,
       formData: {
-        coverLetter: '',
-        resumeFile: null,
-        additionalInfo: '',
-        contactEmail: '',
-        contactPhone: ''
+        fullName: '',
+        email: '',
+        phone: '',
+        experience: '',
+        coverLetter: ''
       },
-      validation: {
-        coverLetter: null,
-        resumeFile: null,
-        contactEmail: null,
-        contactPhone: null
-      }
+      submitting: false,
+      submitError: null
     };
   }
-
-  async componentDidMount() {
-    const { jobId } = this.props;
+  
+  componentDidMount() {
+    // Check if user is logged in
+    const authContext = this.context;
+    const { user } = authContext;
     
-    // Check if user is authenticated
-    if (!this.context.session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to apply for this job",
-        variant: "destructive"
-      });
-      this.setState({ error: 'Authentication required' });
+    // If not authenticated, redirect to login
+    if (!user) {
+      this.props.navigate('/login');
       return;
     }
-
-    // Set email from user profile if available
-    if (this.context.user) {
+    
+    // Check if user is a student
+    if (!user.roles?.includes('ROLE_STUDENT')) {
+      this.setState({
+        loading: false,
+        error: "Only students can apply for jobs"
+      });
+      return;
+    }
+    
+    // Prefill form with user data
+    if (user) {
       this.setState(prevState => ({
         formData: {
           ...prevState.formData,
-          contactEmail: this.context.user?.email || ''
+          fullName: user?.fullName || '',
+          email: user?.email || ''
         }
       }));
     }
     
+    this.fetchJobDetails();
+  }
+  
+  fetchJobDetails = async () => {
+    const { jobId } = this.props;
+    
+    if (!jobId) {
+      this.setState({
+        error: "Job ID is missing",
+        loading: false
+      });
+      return;
+    }
+    
     try {
-      // Fetch job details
-      const response = await fetch(`/api/jobs/${jobId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch job details');
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const jobData = await response.json();
-      this.setState({
-        isLoading: false,
-        job: jobData
+      const response = await axios.get(`${this.API_BASE_URL}/jobs/${jobId}`, {
+        headers
       });
-    } catch (error) {
-      console.error('Error fetching job:', error);
+      
+      if (response.data) {
+        this.setState({
+          job: {
+            id: response.data.id,
+            title: response.data.title,
+            company_name: response.data.companyName
+          },
+          loading: false
+        });
+      } else {
+        this.setState({
+          error: "Job not found",
+          loading: false
+        });
+      }
+    } catch (err) {
+      console.error("Fetch job details error:", err);
       this.setState({
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to load job details'
+        error: "Failed to load job details",
+        loading: false
       });
     }
-  }
-
+  };
+  
   handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     this.setState(prevState => ({
@@ -117,297 +149,223 @@ class JobApplicationPageComponent extends Component<JobApplicationProps, JobAppl
       }
     }));
   };
-
-  handleFileChange = (file: File | null) => {
-    this.setState(prevState => ({
-      formData: {
-        ...prevState.formData,
-        resumeFile: file
-      },
-      validation: {
-        ...prevState.validation,
-        resumeFile: null
-      }
-    }));
-  };
-
-  validateForm = () => {
-    const { formData } = this.state;
-    const validation: JobApplicationState['validation'] = {
-      coverLetter: null,
-      resumeFile: null,
-      contactEmail: null,
-      contactPhone: null
-    };
-    
-    let isValid = true;
-
-    if (!formData.coverLetter.trim()) {
-      validation.coverLetter = 'Cover letter is required';
-      isValid = false;
-    }
-
-    if (!formData.resumeFile) {
-      validation.resumeFile = 'Resume file is required';
-      isValid = false;
-    }
-
-    if (!formData.contactEmail.trim()) {
-      validation.contactEmail = 'Email is required';
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
-      validation.contactEmail = 'Invalid email format';
-      isValid = false;
-    }
-
-    if (!formData.contactPhone.trim()) {
-      validation.contactPhone = 'Phone number is required';
-      isValid = false;
-    }
-
-    this.setState({ validation });
-    return isValid;
-  };
-
+  
   handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!this.validateForm()) {
-      return;
-    }
+    const { jobId } = this.props;
+    const { formData } = this.state;
     
-    this.setState({ isSubmitting: true });
+    this.setState({ submitting: true, submitError: null });
     
     try {
-      const { formData, job } = this.state;
-      const { jobId } = this.props;
+      const token = localStorage.getItem('token');
       
-      // Create form data for file upload
-      const submitData = new FormData();
-      submitData.append('jobId', jobId);
-      submitData.append('coverLetter', formData.coverLetter);
-      submitData.append('additionalInfo', formData.additionalInfo);
-      submitData.append('contactEmail', formData.contactEmail);
-      submitData.append('contactPhone', formData.contactPhone);
-      
-      if (formData.resumeFile) {
-        submitData.append('resume', formData.resumeFile);
+      if (!token) {
+        this.setState({
+          submitError: "You must be logged in to apply",
+          submitting: false
+        });
+        return;
       }
       
-      // Submit application
-      const response = await fetch('/api/job-applications', {
-        method: 'POST',
-        body: submitData
-      });
+      // Send application data to the API
+      const response = await axios.post(
+        `${this.API_BASE_URL}/job-applications/apply`,
+        {
+          jobId,
+          coverLetter: formData.coverLetter,
+          contactPhone: formData.phone,
+          yearsOfExperience: Number(formData.experience) || 0
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit application');
-      }
-      
-      this.setState({ 
-        isSubmitting: false,
-        isSubmitted: true
-      });
-      
-      toast({
-        title: "Application Submitted!",
-        description: "Your application has been successfully submitted.",
-        variant: "success"
-      });
-    } catch (error) {
-      console.error('Submission error:', error);
+      // Navigate to application tracking page
+      this.props.navigate('/track');
+    } catch (err: any) {
+      console.error("Error submitting application:", err);
       this.setState({
-        isSubmitting: false,
-        error: error instanceof Error ? error.message : 'Failed to submit application'
-      });
-      
-      toast({
-        title: "Submission Failed",
-        description: error instanceof Error ? error.message : 'Failed to submit application',
-        variant: "destructive"
+        submitError: err.response?.data?.message || "Failed to submit application",
+        submitting: false
       });
     }
   };
-
+  
   render() {
-    const { isLoading, isSubmitting, isSubmitted, error, job, formData, validation } = this.state;
+    const { job, loading, error, formData, submitting, submitError } = this.state;
     
-    if (error === 'Authentication required') {
-      return <Navigate to="/auth/login" state={{ returnTo: `/opportunities/apply/${this.props.jobId}` }} />;
-    }
-    
-    if (isLoading) {
+    if (loading) {
       return (
-        <div className="container mx-auto py-8 px-4">
-          <div className="flex justify-center items-center min-h-[50vh]">
-            <Spinner size="lg" />
-          </div>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
       );
     }
     
     if (error) {
       return (
-        <div className="container mx-auto py-8 px-4">
-          <Card className="p-6 max-w-3xl mx-auto">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Job</h2>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={() => window.location.href = '/opportunities'}>
-                Back to Opportunities
-              </Button>
-            </div>
-          </Card>
-        </div>
-      );
-    }
-    
-    if (isSubmitted) {
-      return (
-        <div className="container mx-auto py-8 px-4">
-          <Card className="p-6 max-w-3xl mx-auto">
-            <div className="text-center">
-              <div className="rounded-full bg-green-100 p-3 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-green-600 mb-2">Application Submitted!</h2>
-              <p className="text-gray-600 mb-6">
-                Your application for <span className="font-semibold">{job?.title}</span> has been successfully submitted.
-                The employer will review your application and contact you if they're interested.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => window.location.href = '/opportunities'}>
-                  Browse More Opportunities
-                </Button>
-                <Button variant="outline" onClick={() => window.location.href = '/track'}>
-                  Track Your Applications
-                </Button>
-              </div>
-            </div>
-          </Card>
+        <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+          <Link to="/opportunities" className="absolute top-8 left-8">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </Button>
+          </Link>
+          <h2 className="text-2xl font-semibold text-red-500 mb-4">Error</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Button onClick={() => this.props.navigate('/opportunities')}>
+            Back to Opportunities
+          </Button>
         </div>
       );
     }
     
     return (
-      <div className="container mx-auto py-8 px-4">
-        <Card className="p-6 max-w-3xl mx-auto">
+      <main className="min-h-screen py-8 md:py-12 flex flex-col items-center">
+        <div className="container max-w-2xl px-4">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-2">Apply for {job?.title}</h1>
-            <p className="text-gray-600">at {job?.company}</p>
+            <Link to={`/opportunities/${this.props.jobId}`}>
+              <Button variant="outline" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Job Details</span>
+              </Button>
+            </Link>
           </div>
           
-          <form onSubmit={this.handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="coverLetter">Cover Letter</Label>
-              <Textarea 
-                id="coverLetter"
-                name="coverLetter"
-                placeholder="Introduce yourself and explain why you're a good fit for this position..."
-                rows={6}
-                value={formData.coverLetter}
-                onChange={this.handleInputChange}
-                className={validation.coverLetter ? "border-red-500" : ""}
-              />
-              {validation.coverLetter && (
-                <p className="text-red-500 text-sm">{validation.coverLetter}</p>
-              )}
-            </div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden w-full p-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Position</h1>
+            <p className="text-gray-600 mb-6">
+              {job?.title} at {job?.company_name || 'Company'}
+            </p>
             
-            <div className="space-y-2">
-              <Label>Resume</Label>
-              <FileDropInput 
-                onChange={this.handleFileChange}
-                currentFile={formData.resumeFile}
-                acceptedFileTypes={['.pdf', '.doc', '.docx']}
-                maxSizeMB={5}
-              />
-              {validation.resumeFile && (
-                <p className="text-red-500 text-sm">{validation.resumeFile}</p>
-              )}
-              <p className="text-sm text-gray-500">
-                Accepted formats: PDF, DOC, DOCX. Max size: 5MB
-              </p>
-            </div>
+            {submitError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
+                {submitError}
+              </div>
+            )}
             
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">Email Address</Label>
-              <Input 
-                id="contactEmail"
-                name="contactEmail"
-                type="email"
-                placeholder="your@email.com"
-                value={formData.contactEmail}
-                onChange={this.handleInputChange}
-                className={validation.contactEmail ? "border-red-500" : ""}
-              />
-              {validation.contactEmail && (
-                <p className="text-red-500 text-sm">{validation.contactEmail}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">Phone Number</Label>
-              <Input 
-                id="contactPhone"
-                name="contactPhone"
-                type="tel"
-                placeholder="Your phone number"
-                value={formData.contactPhone}
-                onChange={this.handleInputChange}
-                className={validation.contactPhone ? "border-red-500" : ""}
-              />
-              {validation.contactPhone && (
-                <p className="text-red-500 text-sm">{validation.contactPhone}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="additionalInfo">Additional Information (Optional)</Label>
-              <Textarea 
-                id="additionalInfo"
-                name="additionalInfo"
-                placeholder="Any additional details you'd like to share..."
-                rows={3}
-                value={formData.additionalInfo}
-                onChange={this.handleInputChange}
-              />
-            </div>
-            
-            <div className="pt-4 flex gap-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Spinner className="mr-2" />
-                    Submitting...
-                  </>
-                ) : "Submit Application"}
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => window.history.back()}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
-      </div>
+            <form onSubmit={this.handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="text-sm font-medium text-gray-700 block">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={this.handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-gray-700 block">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={this.handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="phone" className="text-sm font-medium text-gray-700 block">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={this.handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="experience" className="text-sm font-medium text-gray-700 block">
+                  Years of Experience
+                </label>
+                <input
+                  type="number"
+                  id="experience"
+                  name="experience"
+                  value={formData.experience}
+                  onChange={this.handleInputChange}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="coverLetter" className="text-sm font-medium text-gray-700 block">
+                  Cover Letter
+                </label>
+                <textarea
+                  id="coverLetter"
+                  name="coverLetter"
+                  value={formData.coverLetter}
+                  onChange={this.handleInputChange}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Tell us why you're interested in this position and how your experience makes you a good fit..."
+                  required
+                />
+              </div>
+              
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit Application"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => this.props.navigate(`/opportunities/${this.props.jobId}`)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
     );
   }
 }
 
-// Wrapper to get URL parameters from React Router
-export const JobApplicationPage = () => {
-  const { id } = useParams<{ id: string }>();
+// Wrapper component to use hooks with class component
+export function JobApplicationPage() {
+  const params = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const jobId = params.id || '';
   
-  if (!id) {
-    return <Navigate to="/opportunities" />;
-  }
-  
-  return <JobApplicationPageComponent jobId={id} />;
-}; 
+  return <JobApplicationPageClass jobId={jobId} navigate={navigate} />;
+} 

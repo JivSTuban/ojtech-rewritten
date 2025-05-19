@@ -27,7 +27,7 @@ public class JwtUtil {
     // Use a SecretKey instead of a String for better security
     private final SecretKey key;
     
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expirationMs}")
     private Long expiration;
 
     // Constructor to initialize the key

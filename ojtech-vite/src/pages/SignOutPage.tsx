@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
+import { AuthLayout } from '../components/layouts/AuthLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Loader2 } from 'lucide-react';
 
 interface SignOutPageState {
   isSignedOut: boolean;
@@ -43,34 +47,34 @@ export class SignOutPage extends Component<{}, SignOutPageState> {
       return <Navigate to="/" replace />;
     }
 
-    if (error) {
-      return (
-        <div className="min-h-[calc(100vh-theme(spacing.16))] flex items-center justify-center p-4">
-          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-            <h1 className="text-xl font-bold text-red-600 mb-4">
-              Error Signing Out
-            </h1>
-            <p className="mb-4 text-gray-700">
-              {error}
-            </p>
-            <button
-              onClick={() => this.setState({ isSignedOut: true })}
-              className="w-full py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded transition-colors"
-            >
-              Go to Home Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div className="min-h-[calc(100vh-theme(spacing.16))] flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-gray-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-700">Signing out...</p>
-        </div>
-      </div>
+      <AuthLayout>
+        <Card className="w-full max-w-md p-6 space-y-6">
+          {error ? (
+            <>
+              <div className="text-center space-y-4">
+                <h1 className="text-xl font-bold text-red-600">
+                  Error Signing Out
+                </h1>
+                <p className="text-muted-foreground">
+                  {error}
+                </p>
+              </div>
+              <Button 
+                onClick={() => this.setState({ isSignedOut: true })}
+                className="w-full"
+              >
+                Go to Home Page
+              </Button>
+            </>
+          ) : (
+            <div className="text-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+              <p className="text-muted-foreground">Signing out...</p>
+            </div>
+          )}
+        </Card>
+      </AuthLayout>
     );
   }
 } 

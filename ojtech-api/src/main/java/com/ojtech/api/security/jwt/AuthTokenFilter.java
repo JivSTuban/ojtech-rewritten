@@ -1,6 +1,6 @@
 package com.ojtech.api.security.jwt;
 
-import com.ojtech.api.security.services.UserDetailsServiceImpl;
+import com.ojtech.api.security.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

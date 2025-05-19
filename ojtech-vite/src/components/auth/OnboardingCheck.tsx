@@ -17,9 +17,9 @@ export class OnboardingCheck extends Component<OnboardingCheckProps> {
       '/',
       '/opportunities',
       '/opportunities/', // Include with trailing slash for path matching
-      '/auth/login', 
-      '/auth/register', 
-      '/auth/verify-email',
+      '/login',
+      '/register',
+      '/verify-email',
       '/auth/signout',
       '/api-info'
     ]

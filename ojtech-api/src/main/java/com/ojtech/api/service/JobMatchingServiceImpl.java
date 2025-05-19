@@ -173,11 +173,22 @@ public class JobMatchingServiceImpl implements JobMatchingService {
             return 0.0;
         }
         try {
-            // Parse the CV skills and job required skills from JSON
-            JsonNode cvSkills = parseJsonField(cv.getSkills());
-            JsonNode extractedSkills = parseJsonField(cv.getExtractedSkills());
-            JsonNode requiredSkills = parseJsonField(job.getRequiredSkills());
-            JsonNode preferredSkills = parseJsonField(job.getPreferredSkills());
+            // Get the skills from CV and Job
+            String cvSkillsJson = cv.getSkills() != null ? cv.getSkills() : "[]";
+            String extractedSkillsJson = cv.getExtractedSkills() != null ? cv.getExtractedSkills() : "[]";
+            
+            // Convert Job's List<String> to JSON string first if needed
+            List<String> requiredSkillsList = job.getRequiredSkills();
+            List<String> preferredSkillsList = job.getPreferredSkills();
+            
+            String requiredSkillsJson = requiredSkillsList != null ? objectMapper.writeValueAsString(requiredSkillsList) : "[]";
+            String preferredSkillsJson = preferredSkillsList != null ? objectMapper.writeValueAsString(preferredSkillsList) : "[]";
+            
+            // Parse the skills as JSON nodes
+            JsonNode cvSkills = parseJsonField(cvSkillsJson);
+            JsonNode extractedSkills = parseJsonField(extractedSkillsJson);
+            JsonNode requiredSkills = parseJsonField(requiredSkillsJson);
+            JsonNode preferredSkills = parseJsonField(preferredSkillsJson);
             
             if (cvSkills == null || requiredSkills == null) {
                 return 0.0;

@@ -255,6 +255,44 @@ public class Profile {
         return hasUploadedCv != null ? hasUploadedCv : false;
     }
     
+    public User getUser() {
+        return user;
+    }
+    
+    public void setUser(User user) {
+        this.user = user;
+    }
+    
+    public String getActiveCvUrl() {
+        return activeCvUrl;
+    }
+    
+    public void setActiveCvUrl(String activeCvUrl) {
+        this.activeCvUrl = activeCvUrl;
+    }
+    
+    // Add compatibility methods for boolean
+    public boolean isEnabled() {
+        return enabled != null ? enabled : true;
+    }
+    
+    public boolean isAccountNonExpired() {
+        return accountNonExpired != null ? accountNonExpired : true;
+    }
+    
+    public boolean isAccountNonLocked() {
+        return accountNonLocked != null ? accountNonLocked : true;
+    }
+    
+    public boolean isCredentialsNonExpired() {
+        return credentialsNonExpired != null ? credentialsNonExpired : true;
+    }
+    
+    // Add username equivalent - return email as username
+    public String getUsername() {
+        return email;
+    }
+    
     // Explicit builder static method in case Lombok fails
     public static ProfileBuilder builder() {
         return new ProfileBuilder();
@@ -379,5 +417,10 @@ public class Profile {
                               cvProcessingStatus, cvProcessingError, cvs, enabled, 
                               accountNonExpired, accountNonLocked, credentialsNonExpired);
         }
+    }
+
+    // Add compatibility method for self-reference
+    public Profile getProfile() {
+        return this;
     }
 } 

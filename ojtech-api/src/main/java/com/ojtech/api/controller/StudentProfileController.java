@@ -25,6 +25,10 @@ public class StudentProfileController {
 
     private final StudentProfileService studentProfileService;
 
+    public StudentProfileController(StudentProfileService studentProfileService) {
+        this.studentProfileService = studentProfileService;
+    }
+
     @GetMapping
     @Operation(
             summary = "Get all student profiles",

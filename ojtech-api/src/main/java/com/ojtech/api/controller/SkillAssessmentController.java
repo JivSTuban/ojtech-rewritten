@@ -24,6 +24,10 @@ import java.util.UUID;
 public class SkillAssessmentController {
 
     private final SkillAssessmentService skillAssessmentService;
+    
+    public SkillAssessmentController(SkillAssessmentService skillAssessmentService) {
+        this.skillAssessmentService = skillAssessmentService;
+    }
 
     @GetMapping("/user/{userId}")
     @Operation(

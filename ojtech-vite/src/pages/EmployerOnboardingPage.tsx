@@ -459,7 +459,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     const { error, isCompleted, currentStep } = this.state;
     
     if (error === 'Authentication required') {
-      return <Navigate to="/auth/login" state={{ returnTo: '/onboarding/employer' }} />;
+      return <Navigate to="/login" state={{ returnTo: '/onboarding/employer' }} />;
     }
     
     if (error === 'Access denied') {
@@ -512,4 +512,11 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
       </OnboardingCheckLayout>
     );
   }
+
+  // Logout function with redirect
+  logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
 } 

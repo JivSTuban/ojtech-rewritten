@@ -2,6 +2,7 @@ package com.ojtech.api.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ojtech.api.model.Profile;
+import com.ojtech.api.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -46,6 +47,28 @@ public class UserDetailsImpl implements UserDetails {
         this.profile = profile;
     }
 
+    public static UserDetailsImpl build(Profile profile) {
+        // Create a single authority based on the profile's role
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + profile.getRole().name());
+        List<GrantedAuthority> authorities = Collections.singletonList(authority);
+
+        UserDetailsImpl userDetails = new UserDetailsImpl(
+                profile.getId(),
+                profile.getEmail(),    // Using email as username
+                profile.getEmail(),
+                profile.getPassword(),
+                authorities,
+                profile);
+                
+        userDetails.setEnabled(profile.isEnabled());
+        userDetails.setFullName(profile.getFullName());
+        userDetails.setAccountNonExpired(true);
+        userDetails.setAccountNonLocked(true);
+        userDetails.setCredentialsNonExpired(true);
+        
+        return userDetails;
+    }
+    
     public static UserDetailsImpl build(User user) {
         List<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName().name()))

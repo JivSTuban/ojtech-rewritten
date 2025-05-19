@@ -2,12 +2,14 @@ package com.ojtech.api.payload.response;
 
 import com.ojtech.api.model.Job;
 import com.ojtech.api.model.EmployerProfile; // Assuming EmployerProfile exists and is relevant
+import com.ojtech.api.model.Profile;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID; // Import UUID
 
 // This DTO is for the public job detail view
 public class JobDetailResponse {
-    private Long id;
+    private UUID id;
     private String title;
     private String description;
     private String location;
@@ -21,17 +23,17 @@ public class JobDetailResponse {
 
     // Inner class for Employer details
     public static class EmployerInfo {
-        private Long id; // User ID of the employer
+        private UUID id; // User ID of the employer, Changed to UUID
         private String username; // Employer's username
         private EmployerProfileInfo employerProfile; // Nested profile DTO
 
-        public EmployerInfo(Long id, String username, EmployerProfileInfo employerProfile) {
+        public EmployerInfo(UUID id, String username, EmployerProfileInfo employerProfile) { // Changed to UUID
             this.id = id;
             this.username = username;
             this.employerProfile = employerProfile;
         }
         // Getters
-        public Long getId() { return id; }
+        public UUID getId() { return id; } // Changed to UUID
         public String getUsername() { return username; }
         public EmployerProfileInfo getEmployerProfile() { return employerProfile; }
     }
@@ -60,7 +62,7 @@ public class JobDetailResponse {
     }
 
     // Constructor to map from Job entity and EmployerProfile entity
-    public JobDetailResponse(Job job, EmployerProfile profile) {
+    public JobDetailResponse(Job job, EmployerProfile employerProfile) {
         this.id = job.getId();
         this.title = job.getTitle();
         this.description = job.getDescription();
@@ -72,21 +74,25 @@ public class JobDetailResponse {
         this.postedDate = job.getPostedDate();
         this.closingDate = job.getClosingDate();
 
+        // Create employer info from profile
+        Profile profile = job.getEmployer();
         EmployerProfileInfo profileInfo = null;
-        if (profile != null) {
+        
+        if (employerProfile != null) {
             profileInfo = new EmployerProfileInfo(
-                profile.getCompanyName(),
-                profile.getCompanyLogoUrl(),
-                profile.getCompanyDescription(),
-                profile.getIndustry(),
-                profile.getCompanyWebsite()
+                employerProfile.getCompanyName(),
+                employerProfile.getCompanyLogoUrl(),
+                employerProfile.getCompanyDescription(),
+                employerProfile.getIndustry(),
+                employerProfile.getCompanyWebsite()
             );
         }
-        this.employer = new EmployerInfo(job.getEmployer().getId(), job.getEmployer().getUsername(), profileInfo);
+        
+        this.employer = new EmployerInfo(profile.getId(), profile.getUsername(), profileInfo);
     }
 
     // Getters for JobDetailResponse
-    public Long getId() { return id; }
+    public UUID getId() { return id; } // Changed to UUID
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }

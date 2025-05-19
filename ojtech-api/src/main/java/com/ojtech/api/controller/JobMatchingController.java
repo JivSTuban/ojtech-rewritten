@@ -23,6 +23,10 @@ import java.util.UUID;
 public class JobMatchingController {
 
     private final JobMatchingService jobMatchingService;
+    
+    public JobMatchingController(JobMatchingService jobMatchingService) {
+        this.jobMatchingService = jobMatchingService;
+    }
 
     @GetMapping("/student/{studentId}")
     @Operation(

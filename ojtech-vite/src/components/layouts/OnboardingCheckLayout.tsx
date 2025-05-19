@@ -10,22 +10,33 @@ interface OnboardingCheckLayoutProps {
 interface OnboardingCheckLayoutState {
   isLoading: boolean;
   isAuthenticated: boolean;
-  isEmployer: boolean;
-  isCompleted: boolean;
+  hasCompletedOnboarding: boolean;
   error: string | null;
 }
 
+// Paths that should be accessible without onboarding completion
+const EXEMPT_PATHS = [
+  "/onboarding",
+  "/", // Home page
+  "/about",
+  "/contact",
+  "/privacy-policy",
+  "/terms-of-service",
+  "/login",
+  "/register",
+  "/verify-email"
+];
+
 export class OnboardingCheckLayout extends Component<OnboardingCheckLayoutProps, OnboardingCheckLayoutState> {
   static contextType = AuthContext;
-  context!: React.ContextType<typeof AuthContext>;
+  declare context: React.ContextType<typeof AuthContext>;
   
   constructor(props: OnboardingCheckLayoutProps) {
     super(props);
     this.state = {
       isLoading: true,
       isAuthenticated: false,
-      isEmployer: false,
-      isCompleted: false,
+      hasCompletedOnboarding: false,
       error: null
     };
   }
@@ -34,66 +45,51 @@ export class OnboardingCheckLayout extends Component<OnboardingCheckLayoutProps,
     await this.checkAuth();
   }
 
+  // Check auth and onboarding status
   async checkAuth() {
     try {
-      // Check if user is authenticated
-      if (!this.context.session) {
+      // Skip onboarding checks if not authenticated
+      if (!this.context?.user) {
         this.setState({ 
           isLoading: false, 
-          isAuthenticated: false,
-          error: 'Authentication required'
+          isAuthenticated: false
         });
         return;
       }
 
-      // Check if user has the employer role
-      const isEmployer = this.context.user?.user_metadata?.role === 'employer';
-      if (!isEmployer) {
+      // User is authenticated, check onboarding status
         this.setState({ 
-          isLoading: false, 
           isAuthenticated: true,
-          isEmployer: false,
-          error: 'Access denied'
-        });
-        return;
-      }
+      });
 
       // Check if onboarding is already completed
-      try {
-        const response = await fetch('/api/employer/onboarding/status', {
-          headers: {
-            'Authorization': `Bearer ${this.context.session?.access_token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          this.setState({
-            isLoading: false,
-            isAuthenticated: true,
-            isEmployer: true,
-            isCompleted: data.isCompleted
-          });
-        } else {
-          // If API error, assume not completed
-          this.setState({
-            isLoading: false,
-            isAuthenticated: true,
-            isEmployer: true,
-            isCompleted: false
-          });
-        }
-      } catch (error) {
-        // Handle fetch error
-        console.error('Error checking onboarding status:', error);
-        this.setState({
-          isLoading: false,
-          isAuthenticated: true,
-          isEmployer: true,
-          isCompleted: false,
-          error: 'Failed to check onboarding status'
-        });
+      const { user, isLoading } = this.context;
+      
+      // Wait for auth context to be ready
+      if (isLoading) {
+        // Keep the loading state true until auth context is ready
+        return;
       }
+
+      // Get current path
+      const pathname = window.location.pathname;
+      
+      // Skip checks if path is exempt (public pages, auth pages, onboarding pages)
+      const isExemptPath = EXEMPT_PATHS.some(path => pathname.startsWith(path));
+
+      // Skip checks for exempt paths
+      if (isExemptPath) {
+        this.setState({ isLoading: false });
+        return;
+      }
+
+      // Get onboarding status from user profile
+      const hasCompletedOnboarding = this.context.onboardingCompleted || false;
+      
+          this.setState({
+            isLoading: false,
+        hasCompletedOnboarding
+        });
     } catch (error) {
       // Global error handling
       console.error('Error in authentication check:', error);
@@ -105,7 +101,7 @@ export class OnboardingCheckLayout extends Component<OnboardingCheckLayoutProps,
   }
 
   render() {
-    const { isLoading, isAuthenticated, isEmployer, isCompleted, error } = this.state;
+    const { isLoading, isAuthenticated, hasCompletedOnboarding } = this.state;
     
     if (isLoading) {
       return (
@@ -115,18 +111,34 @@ export class OnboardingCheckLayout extends Component<OnboardingCheckLayoutProps,
       );
     }
     
+    // Get current path to determine where to redirect
+    const pathname = window.location.pathname;
+    
+    // Skip redirects for onboarding pages
+    if (pathname.startsWith('/onboarding')) {
+      return this.props.children;
+    }
+    
+    // If not authenticated, redirect to login
     if (!isAuthenticated) {
-      return <Navigate to="/auth/login" replace />;
+      return <Navigate to="/login" replace />;
     }
     
-    if (!isEmployer) {
-      return <Navigate to="/profile" replace />;
+    // If onboarding is not completed and not on an exempt path,
+    // redirect to the appropriate onboarding page
+    const userRole = this.context.userRole;
+    
+    if (!hasCompletedOnboarding) {
+      if (userRole === 'STUDENT') {
+        return <Navigate to="/onboarding/student" replace />;
+      } else if (userRole === 'EMPLOYER') {
+        return <Navigate to="/onboarding/employer" replace />;
+      } else if (userRole === 'ADMIN') {
+        return <Navigate to="/onboarding/admin" replace />;
+    }
     }
     
-    if (isCompleted) {
-      return <Navigate to="/employer/dashboard" replace />;
-    }
-    
-    return this.props.children;
+    // All checks passed, render children
+    return <>{this.props.children}</>;
   }
 }

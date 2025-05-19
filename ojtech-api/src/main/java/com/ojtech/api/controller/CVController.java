@@ -1,82 +1,44 @@
 package com.ojtech.api.controller;
 
 import com.ojtech.api.model.CV;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.model.Profile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.security.UserDetailsImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.service.CVService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.ojtech.api.service.ProfileService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.media.Content;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/cvs")
-
-
 @Tag(name = "CV Management", description = "APIs for CV upload, parsing, and analysis")
 public class CVController {
 
+    private static final Logger log = LoggerFactory.getLogger(CVController.class);
     private final CVService cvService;
     private final ProfileService profileService;
+    
+    public CVController(CVService cvService, ProfileService profileService) {
+        this.cvService = cvService;
+        this.profileService = profileService;
+    }
 
     /**
      * Get the current user's active CV

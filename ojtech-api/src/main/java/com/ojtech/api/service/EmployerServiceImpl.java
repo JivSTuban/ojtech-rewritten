@@ -33,13 +33,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
-
 @Transactional
-
 public class EmployerServiceImpl implements EmployerService {
 
     private final EmployerRepository employerRepository;
     private final ProfileRepository profileRepository;
+    
+    public EmployerServiceImpl(EmployerRepository employerRepository, ProfileRepository profileRepository) {
+        this.employerRepository = employerRepository;
+        this.profileRepository = profileRepository;
+    }
 
     @Override
     public List<Employer> getAllEmployers() {

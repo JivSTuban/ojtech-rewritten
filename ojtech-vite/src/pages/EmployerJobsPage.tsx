@@ -170,8 +170,13 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
   render() {
     const { isLoading, error, isEmployerVerified } = this.state;
     
+    // If not authenticated, redirect to login
+    if (!this.context.session) {
+      return <Navigate to="/login" state={{ returnTo: '/employer/jobs' }} />;
+    }
+    
     if (error === 'Authentication required') {
-      return <Navigate to="/auth/login" state={{ returnTo: '/employer/jobs' }} />;
+      return <Navigate to="/login" state={{ returnTo: '/employer/jobs' }} />;
     }
     
     if (error === 'Access denied') {

@@ -47,8 +47,8 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
 
   async componentDidMount() {
     // Check if user is authenticated
-    if (!this.context.isAuthenticated) {
-      // Don't call toast in componentDidMount to avoid infinite updates
+    const user = this.context.user;
+    if (!user) {
       this.setState({ 
         error: 'Authentication required',
         isLoading: false
@@ -202,8 +202,10 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
   render() {
     const { isLoading, error, view } = this.state;
     
-    if (error === 'Authentication required') {
-      return <Navigate to="/auth/login" state={{ returnTo: '/track' }} />;
+    // If not authenticated, redirect to login
+    const user = this.context.user;
+    if (!user) {
+      return <Navigate to="/login" state={{ returnTo: '/track' }} />;
     }
     
     if (isLoading) {

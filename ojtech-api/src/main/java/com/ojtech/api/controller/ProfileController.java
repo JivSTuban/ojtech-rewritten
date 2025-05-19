@@ -473,11 +473,16 @@ public class ProfileController {
         try {
             UUID userId = getCurrentUserId();
             Optional<StudentProfile> profileOpt = profileService.getStudentProfileByUserId(userId);
-            return profileOpt.map(ResponseEntity::ok)
-                             .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MessageResponse("Student profile not found.")));
+            if (profileOpt.isPresent()) {
+                return ResponseEntity.ok(profileOpt.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Student profile not found."));
+            }
         } catch (Exception e) {
             log.error("Error fetching current student profile: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse("Error fetching student profile: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Error fetching student profile: " + e.getMessage()));
         }
     }
 
@@ -527,11 +532,16 @@ public class ProfileController {
         try {
             UUID userId = getCurrentUserId();
             Optional<EmployerProfile> profileOpt = profileService.getEmployerProfileByUserId(userId);
-            return profileOpt.map(ResponseEntity::ok)
-                             .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MessageResponse("Employer profile not found.")));
+            if (profileOpt.isPresent()) {
+                return ResponseEntity.ok(profileOpt.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Employer profile not found."));
+            }
         } catch (Exception e) {
             log.error("Error fetching current employer profile: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new MessageResponse("Error fetching employer profile: " + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Error fetching employer profile: " + e.getMessage()));
         }
     }
 } 

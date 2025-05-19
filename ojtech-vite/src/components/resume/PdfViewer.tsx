@@ -6,30 +6,31 @@ interface PdfViewerProps {
 }
 
 interface PdfViewerState {
-  // TODO: Add state properties
+  loading: boolean;
 }
 
-class PdfViewer extends Component<PdfViewerProps, PdfViewerState> {
+export class PdfViewer extends Component<PdfViewerProps, PdfViewerState> {
   constructor(props: PdfViewerProps) {
     super(props);
     this.state = {
-      // TODO: Initialize state from useState hooks
+      loading: true
     };
   }
 
-  componentDidMount() {
-    // TODO: Move useEffect with empty dependency array here
-  }
-
-  componentDidUpdate(prevProps: PdfViewerProps, prevState: PdfViewerState) {
-    // TODO: Move useEffect with dependencies here
-  }
-
-  componentWillUnmount() {
-    // TODO: Move cleanup functions from useEffect here
-  }
+  handleIframeLoad = () => {
+    this.setState({ loading: false });
+  };
 
   render() {
+    const { url } = this.props;
+    const { loading } = this.state;
+    
+    // Use PDF.js viewer which has built-in UI controls but prevents easy downloading
+    const pdfJsViewerUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
+    
+    // Add options for better viewing experience
+    const viewerWithOptions = `${pdfJsViewerUrl}#pagemode=thumbs&zoom=page-fit`;
+    
     return (
     <div className="relative h-full w-full">
       {loading && (
@@ -42,11 +43,9 @@ class PdfViewer extends Component<PdfViewerProps, PdfViewerState> {
         className="h-full w-full"
         title="Resume Preview"
         sandbox="allow-scripts allow-same-origin"
-        onLoad={handleIframeLoad}
+          onLoad={this.handleIframeLoad}
       />
     </div>
   );
   }
 }
-
-export default PdfViewer;

@@ -1,13 +1,36 @@
 import { ToastHelper } from "../../providers/ToastContext";
 import type { ToasterToastProps } from "./Toast";
+import { ToastActionElement } from "./Toast";
 
-// Create a toast function that can be imported directly
-export const toast = (props: Omit<ToasterToastProps, 'id'>) => {
-  // Return without causing synchronous renders
-  setTimeout(() => {
-    ToastHelper.toast(props);
-  }, 0);
-  return null;
+type ToastProps = {
+  title?: string;
+  description?: string;
+  action?: ToastActionElement;
+  variant?: "default" | "destructive" | "success" | "warning";
+};
+
+// Placeholder for the actual toast function that will be provided by the ToastContext
+let showToast: (props: ToastProps) => void = () => {};
+
+// This is exported and will be overwritten by the actual implementation
+// when the ToastContext is initialized
+export const setToastFunction = (toastFn: (props: ToastProps) => void) => {
+  showToast = toastFn;
+};
+
+export const toast = {
+  default: (props: ToastProps) => {
+    showToast({ ...props, variant: "default" });
+  },
+  destructive: (props: ToastProps) => {
+    showToast({ ...props, variant: "destructive" });
+  },
+  success: (props: ToastProps) => {
+    showToast({ ...props, variant: "success" });
+  },
+  warning: (props: ToastProps) => {
+    showToast({ ...props, variant: "warning" });
+  },
 };
 
 // Export dismiss function

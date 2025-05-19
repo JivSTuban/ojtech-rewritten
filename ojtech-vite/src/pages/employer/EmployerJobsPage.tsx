@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Component } from 'react';
 import jobService from '@/lib/api/jobService';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
+import { Link, Navigate } from 'react-router-dom';
+import { AuthContext } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/Button'; // Assuming you have a Button component
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card'; // Assuming Card components
 import { PlusCircle, Edit3, Trash2, Eye } from 'lucide-react'; // Icons
@@ -27,55 +27,90 @@ interface Page<T> {
   size: number;
 }
 
-export const EmployerJobsPage: React.FC = () => {
-  const [jobsPage, setJobsPage] = useState<Page<Job> | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const { user } = useAuth();
-  const navigate = useNavigate();
+interface EmployerJobsPageState {
+  jobsPage: Page<Job> | null;
+  isLoading: boolean;
+  error: string | null;
+  currentPage: number;
+  redirectTo: string | null;
+}
 
-  const fetchJobs = useCallback(async (page: number) => {
+export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      jobsPage: null,
+      isLoading: false,
+      error: null,
+      currentPage: 0,
+      redirectTo: null
+    };
+  }
+
+  componentDidMount() {
+    this.fetchJobs(this.state.currentPage);
+  }
+
+  fetchJobs = async (page: number) => {
+    const { user } = this.context || {};
+    
     if (!user || !user.roles.includes('ROLE_EMPLOYER')) {
-        navigate('/login');
+      this.setState({ redirectTo: '/login' });
         return;
     }
-    setIsLoading(true);
-    setError(null);
+    
+    this.setState({ isLoading: true, error: null });
+    
     try {
       const data = await jobService.getEmployerJobs(page, 5); // 5 jobs per page
-      setJobsPage(data);
-      setCurrentPage(data.number);
+      this.setState({
+        jobsPage: data,
+        currentPage: data.number
+      });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch jobs.');
+      this.setState({
+        error: err.response?.data?.message || 'Failed to fetch jobs.'
+      });
     } finally {
-      setIsLoading(false);
+      this.setState({ isLoading: false });
     }
-  }, [user, navigate]);
+  };
 
-  useEffect(() => {
-    fetchJobs(currentPage);
-  }, [fetchJobs, currentPage]);
-
-  const handleDelete = async (jobId: number) => {
+  handleDelete = async (jobId: number) => {
     if (window.confirm('Are you sure you want to delete this job posting?')) {
-      setIsLoading(true);
+      this.setState({ isLoading: true });
+      
       try {
         await jobService.deleteJob(jobId);
         // Refresh the job list
-        fetchJobs(currentPage);
+        this.fetchJobs(this.state.currentPage);
         // Could also filter out the job from current state for faster UI update
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to delete job.');
+        this.setState({
+          error: err.response?.data?.message || 'Failed to delete job.'
+        });
       } finally {
-        setIsLoading(false);
+        this.setState({ isLoading: false });
       }
     }
   };
   
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
+  handlePageChange = (newPage: number) => {
+    this.setState({ currentPage: newPage }, () => {
+      this.fetchJobs(newPage);
+    });
   };
+
+  render() {
+    const { jobsPage, isLoading, error, currentPage, redirectTo } = this.state;
+    const { user } = this.context || {};
+
+    if (redirectTo) {
+      return <Navigate to={redirectTo} />;
+    }
 
   if (!user) return null; // Should be handled by ProtectedRoute or useEffect redirect
 
@@ -137,7 +172,7 @@ export const EmployerJobsPage: React.FC = () => {
                     <Edit3 className="mr-1 h-4 w-4" /> Edit
                   </Button>
                 </Link>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(job.id)} disabled={isLoading}>
+                  <Button variant="destructive" size="sm" onClick={() => this.handleDelete(job.id)} disabled={isLoading}>
                   <Trash2 className="mr-1 h-4 w-4" /> Delete
                 </Button>
               </CardFooter>
@@ -150,7 +185,7 @@ export const EmployerJobsPage: React.FC = () => {
         <div className="mt-8 flex justify-center items-center space-x-2">
           <Button 
             variant="outline" 
-            onClick={() => handlePageChange(currentPage - 1)} 
+              onClick={() => this.handlePageChange(currentPage - 1)} 
             disabled={currentPage === 0 || isLoading}
           >
             Previous
@@ -160,7 +195,7 @@ export const EmployerJobsPage: React.FC = () => {
           </span>
           <Button 
             variant="outline" 
-            onClick={() => handlePageChange(currentPage + 1)} 
+              onClick={() => this.handlePageChange(currentPage + 1)} 
             disabled={currentPage === jobsPage.totalPages - 1 || isLoading}
           >
             Next
@@ -169,4 +204,5 @@ export const EmployerJobsPage: React.FC = () => {
       )}
     </div>
   );
-}; 
+  }
+} 

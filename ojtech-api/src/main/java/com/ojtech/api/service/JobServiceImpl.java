@@ -67,7 +67,6 @@ public class JobServiceImpl implements JobService {
         EmployerProfile employerProfile = null;
         if (job.getEmployer() != null && job.getEmployer().getProfile() != null) {
             // Assuming User has a Profile, and Profile has an ID which can be used to fetch EmployerProfile
-            // This might need adjustment based on exact relations
             Optional<EmployerProfile> empProfileOpt = employerProfileRepository.findByProfile_Id(job.getEmployer().getProfile().getId());
             if (empProfileOpt.isPresent()) {
                 employerProfile = empProfileOpt.get();
@@ -78,22 +77,8 @@ public class JobServiceImpl implements JobService {
              log.warn("Job {} has no employer or employer profile information.", job.getId());
         }
 
-        return new JobDetailResponse(
-                job.getId(),
-                job.getTitle(),
-                job.getDescription(),
-                job.getLocation(),
-                job.getJobType(),
-                job.getSalaryRange(),
-                job.getSkillsRequired(), // Renamed from getRequiredSkills
-                job.getPostedDate(),
-                job.getClosingDate(), // Renamed from getApplicationDeadline
-                job.getEmployer() != null ? job.getEmployer().getId() : null,
-                job.getEmployer() != null && job.getEmployer().getProfile() != null ? job.getEmployer().getProfile().getFullName() : "N/A",
-                employerProfile != null ? employerProfile.getCompanyName() : "N/A",
-                employerProfile != null ? employerProfile.getCompanyLogoUrl() : null,
-                job.isActive()
-        );
+        // Use the constructor that takes Job and EmployerProfile
+        return new JobDetailResponse(job, employerProfile);
     }
     
     @Override
@@ -129,10 +114,10 @@ public class JobServiceImpl implements JobService {
         EmployerProfile employerProfile = employerProfileRepository.findById(employerProfileId)
             .orElseThrow(() -> new RuntimeException("EmployerProfile not found with id: " + employerProfileId));
 
-        if (employerProfile.getProfile() == null || employerProfile.getProfile().getUser() == null) {
+        if (employerProfile.getProfile() == null) {
              throw new RuntimeException("EmployerProfile " + employerProfileId + " is not properly linked to a user account.");
         }
-        User employerUser = employerProfile.getProfile().getUser();
+        Profile profileEntity = employerProfile.getProfile();
 
         Job job = Job.builder()
                 .title(jobRequest.getTitle())
@@ -142,7 +127,7 @@ public class JobServiceImpl implements JobService {
                 .salaryRange(jobRequest.getSalaryRange())
                 .skillsRequired(jobRequest.getSkillsRequired())
                 .closingDate(jobRequest.getClosingDate())
-                .employer(employerUser) // Link to the User who is the employer
+                .employer(profileEntity) // Link to the Profile entity
                 .isActive(jobRequest.getIsActive() != null ? jobRequest.getIsActive() : true)
                 // postedDate and createdAt/updatedAt are handled by @PrePersist/@PreUpdate in Job model
                 .build();

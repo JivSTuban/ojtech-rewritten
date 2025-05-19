@@ -19,7 +19,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(columnDefinition = "UUID")
+    @Column(columnDefinition = "VARCHAR(36)")
     private UUID id;
 
     @NotBlank

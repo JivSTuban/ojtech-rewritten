@@ -1,89 +1,262 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { Component } from 'react';
+import { Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { AuthContext } from '../providers/AuthProvider';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
+import { Loader2, Github } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { AuthLayout } from '../components/layouts/AuthLayout';
+import profileService from '../lib/api/profileService';
 
-export const LoginPage: React.FC = () => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+interface LoginPageState {
+  usernameOrEmail: string;
+  password: string;
+  error: string | null;
+  isLoading: boolean;
+  redirectTo: string | null;
+  message?: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+export class LoginPage extends Component<{}, LoginPageState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+  
+  // API base URL
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      usernameOrEmail: '',
+      password: '',
+      error: null,
+      isLoading: false,
+      redirectTo: null,
+      message: undefined
+    };
+  }
+  
+  componentDidMount() {
+    // Check if already logged in
+    if (this.context && this.context.user) {
+      this.setState({ redirectTo: '/' });
+    }
+    
+    // Check if we have stored email from registration
+    const storedEmail = sessionStorage.getItem('registrationEmail');
+    if (storedEmail) {
+      this.setState({ usernameOrEmail: storedEmail });
+    }
+    
+    // Check if redirected from registration
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromRegistration = urlParams.get('fromRegistration');
+    if (fromRegistration === 'true') {
+      this.setState({
+        message: 'Registration successful! Please log in with your credentials.'
+      });
+    }
+  }
+  
+  handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    this.setState({ 
+      ...this.state, 
+      [name]: value,
+      error: null
+    } as Pick<LoginPageState, keyof LoginPageState>);
+  };
+  
+  // Helper method to create initial profile if needed
+  createInitialProfileIfNeeded = async () => {
     try {
-      await login({ usernameOrEmail, password });
-      navigate('/'); // Redirect to homepage or dashboard after login
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // Check if we have stored full name from registration
+      const fullName = sessionStorage.getItem('registrationFullName');
+      
+      if (fullName) {
+        console.log('Creating initial profile with stored full name:', fullName);
+        await profileService.createInitialProfile(fullName);
+        
+        // Clear stored registration data after successful profile creation
+        sessionStorage.removeItem('registrationEmail');
+        sessionStorage.removeItem('registrationFullName');
+      }
+    } catch (error) {
+      console.error('Error creating initial profile:', error);
+      // Don't block the login flow if this fails
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">Login</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Username or Email
-            </label>
-            <input
-              id="usernameOrEmail"
-              name="usernameOrEmail"
-              type="text"
-              autoComplete="email"
-              required
-              value={usernameOrEmail}
-              onChange={(e) => setUsernameOrEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-            />
+  
+  handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const { usernameOrEmail, password } = this.state;
+    
+    // Make sure the context is defined
+    if (!this.context || !this.context.login) {
+      this.setState({ error: "Authentication service not available" });
+      return;
+    }
+    
+    const { login } = this.context;
+    
+    this.setState({ error: null, isLoading: true });
+    
+    try {
+      // Use the login method from AuthContext
+      await login({ usernameOrEmail, password });
+      
+      // After successful login, try to create initial profile if needed
+      await this.createInitialProfileIfNeeded();
+      
+      // Check user role and determine where to redirect
+      if (this.context && this.context.user) {
+        const { user } = this.context;
+        
+        // Redirect based on user role and onboarding status
+        if (user.roles?.includes('ROLE_ADMIN')) {
+          this.setState({ redirectTo: '/admin/dashboard' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
+          this.setState({ redirectTo: '/onboarding/employer' });
+        } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
+          this.setState({ redirectTo: '/onboarding/student' });
+        } else {
+          this.setState({ redirectTo: '/' });
+        }
+      } else {
+        // If context or user is not available after login, redirect to home
+        this.setState({ redirectTo: '/' });
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      this.setState({ 
+        error: error.response?.data?.message || error.message || 'Login failed. Please try again.',
+        isLoading: false
+      });
+    }
+  };
+  
+  render() {
+    const { usernameOrEmail, password, error, isLoading, redirectTo, message } = this.state;
+    
+    if (redirectTo) {
+      return <Navigate to={redirectTo} />;
+    }
+    
+    return (
+      <AuthLayout>
+        <Card className="w-full p-6 space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Welcome back</h1>
+            <p className="text-muted-foreground">Sign in to your account</p>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-
-          {error && (
-            <div className="text-red-500 text-sm text-center">
-              {error}
+          
+          {message && (
+            <div className="bg-green-50 text-green-500 p-3 rounded-md">
+              {message}
             </div>
           )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 dark:focus:ring-offset-gray-800"
-            >
-              {isLoading ? 'Logging in...' : 'Login'}
-            </button>
+          
+          <form onSubmit={this.handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="usernameOrEmail">Email</Label>
+                <Input
+                  id="usernameOrEmail"
+                  name="usernameOrEmail"
+                  type="text"
+                  value={usernameOrEmail}
+                  onChange={this.handleInputChange}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={password}
+                  onChange={this.handleInputChange}
+                  required
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            {error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md">
+                {error}
+              </div>
+            )}
+            
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </Button>
+          </form>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-background text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
           </div>
-        </form>
-        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
-            Register here
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
-}; 
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" className="w-full flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 mr-2" aria-hidden="true">
+                <path
+                  d="M12.0003 4.75C13.7703 4.75 15.3553 5.36002 16.6053 6.54998L20.0303 3.125C17.9502 1.19 15.2353 0 12.0003 0C7.31028 0 3.25527 2.69 1.28027 6.60998L5.27028 9.70498C6.21525 6.86002 8.87028 4.75 12.0003 4.75Z"
+                  fill="#EA4335"
+                />
+                <path
+                  d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.25 12.0004 19.25C8.8704 19.25 6.21537 17.14 5.2654 14.295L1.27539 17.39C3.25539 21.31 7.3104 24.0001 12.0004 24.0001Z"
+                  fill="#34A853"
+                />
+              </svg>
+              Google
+            </Button>
+            <Button variant="outline" className="w-full flex items-center justify-center">
+              <Github className="h-5 w-5 mr-2" />
+              GitHub
+            </Button>
+          </div>
+          
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+        </Card>
+      </AuthLayout>
+    );
+  }
+} 

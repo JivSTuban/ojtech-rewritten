@@ -1,181 +1,385 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import jobService from '@/lib/api/jobService';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ArrowLeft, Briefcase, MapPin, CalendarDays, Users, DollarSign, Settings, CheckCircle } from 'lucide-react';
+import React, { Component } from 'react';
+import axios from 'axios';
+import { Link, useParams, useNavigate, NavigateFunction, useLocation, Location } from 'react-router-dom';
+import { AuthContext } from '../providers/AuthProvider';
+import { Button } from '../components/ui/Button';
+import { Loader2, MapPin, Briefcase, DollarSign, ArrowLeft, Calendar } from 'lucide-react';
 
-// Base Job interface (could be shared from a types file)
+// Base Job interface
 interface Job {
-    id: number;
-    title: string;
-    location: string;
-    jobType: string;
-    postedDate: string; 
-    salaryRange?: string; // Made optional as it is in Job entity
-    // isActive: boolean; // isActive is part of JobDetail specific extension here for clarity
-    // description: string; // Description is handled in JobDetail
-    // skillsRequired: string[]; // Handled in JobDetail
-    // employer: any; // Handled in JobDetail with more specificity
+  id: string;
+  employer_id: string;
+  title: string;
+  description: string | null;
+  company_name: string | null;
+  company_logo_url: string | null;
+  location: string | null;
+  job_type: string | null;
+  salary_range: string | null;
+  required_skills: string[] | null;
+  application_deadline: string | null;
+  created_at: string;
+  updated_at: string | null;
+  status: string;
+  is_active: boolean;
+  match_score?: number | null;
 }
 
-// Expanded Job interface for detail view
-interface JobDetail extends Job {
-  description: string; 
-  skillsRequired: string[];
-  employer: { 
-    id: number;
-    username: string; 
-    employerProfile?: { 
-        companyName: string;
-        companyLogoUrl?: string;
-        companyDescription?: string;
-        industry?: string;
-        companyWebsite?: string;
-    }
-  };
-  closingDate?: string;
-  isActive: boolean;
+// Props for the JobDetailPage component
+interface JobDetailPageProps {
+  jobId?: string;
+  navigate: NavigateFunction;
+  location: Location;
 }
 
-export const JobDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const [job, setJob] = useState<JobDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const navigate = useNavigate();
+// State for the JobDetailPage component
+interface JobDetailPageState {
+  job: Job | null;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
+  userRole: string | null;
+}
 
-  const fetchJobDetail = useCallback(async () => {
-    if (!id) {
-      setError('Job ID is missing.');
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await jobService.getActiveJobById(id);
-      setJob(data as JobDetail); // Cast to JobDetail, assuming API returns the full structure
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch job details.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchJobDetail();
-  }, [fetchJobDetail]);
-
-  const handleApply = () => {
-    if (!user) {
-        navigate('/login', { state: { from: `/opportunities/${id}/apply` } });
-        return;
-    }
-    if (user.roles.includes('ROLE_STUDENT')) {
-        navigate(`/opportunities/apply/${id}`); 
-    } else {
-        alert("Only students can apply for jobs.");
-    }
-  };
-
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><p>Loading job details...</p></div>;
-  }
-
-  if (error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500"><p>Error: {error}</p></div>;
-  }
-
-  if (!job) {
-    return <div className="min-h-screen flex items-center justify-center"><p>Job not found.</p></div>;
-  }
-
-  const companyName = job.employer?.employerProfile?.companyName || job.employer?.username || 'A Company';
-  const companyLogo = job.employer?.employerProfile?.companyLogoUrl;
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-        <Link to="/opportunities" className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:underline mb-6">
-            <ArrowLeft size={18} className="mr-2" /> Back to Opportunities
-        </Link>
-
-        <Card className="dark:bg-gray-800 shadow-xl">
-            <CardHeader className="border-b dark:border-gray-700 pb-4">
-                <div className="flex flex-col md:flex-row items-start justify-between">
-                    <div>
-                        <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{job.title}</CardTitle>
-                        <CardDescription className="text-lg text-gray-600 dark:text-gray-400">
-                           {/* Link to a future company detail page if needed */}
-                           {/* <Link to={`/company/${job.employer?.id}`} className="hover:underline">{companyName}</Link> */}
-                           {companyName}
-                        </CardDescription>
-                    </div>
-                    {companyLogo && (
-                        <img src={companyLogo} alt={`${companyName} logo`} className="w-20 h-20 object-contain rounded-md mt-4 md:mt-0 md:ml-6" />
-                    )}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="inline-flex items-center"><MapPin size={16} className="mr-1.5" /> {job.location}</span>
-                    <span className="inline-flex items-center"><Briefcase size={16} className="mr-1.5" /> {job.jobType}</span>
-                    <span className="inline-flex items-center"><CalendarDays size={16} className="mr-1.5" /> Posted: {new Date(job.postedDate).toLocaleDateString()}</span>
-                    {job.closingDate && <span className="inline-flex items-center text-orange-600 dark:text-orange-400"><CalendarDays size={16} className="mr-1.5" /> Closes: {new Date(job.closingDate).toLocaleDateString()}</span>}
-                    {job.salaryRange && <span className="inline-flex items-center"><DollarSign size={16} className="mr-1.5" /> {job.salaryRange}</span>}
-                </div>
-            </CardHeader>
-            <CardContent className="py-6">
-                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Job Description</h3>
-                    {/* Using dangerouslySetInnerHTML assumes description is safe HTML or needs sanitization */}
-                    <div dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br />') }} /> 
-                </div>
-
-                {job.skillsRequired && job.skillsRequired.length > 0 && (
-                    <div className="mt-6">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">Skills Required</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {job.skillsRequired.map(skill => (
-                                <span key={skill} className="px-3 py-1 text-sm bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
-                                    {skill}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                
-                {job.employer?.employerProfile?.companyDescription && (
-                    <div className="mt-8 pt-6 border-t dark:border-gray-700">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">About {companyName}</h3>
-                        <p className="text-gray-600 dark:text-gray-400 whitespace-pre-line">{job.employer.employerProfile.companyDescription}</p>
-                        {job.employer.employerProfile.companyWebsite && 
-                            <p className="mt-2">
-                                <a href={job.employer.employerProfile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                                    Visit company website
-                                </a>
-                            </p>
-                        }
-                    </div>
-                )}
-
-                <div className="mt-8 text-center">
-                    {job.isActive ? (
-                        <Button size="lg" onClick={handleApply} className="w-full md:w-auto" disabled={!user?.roles.includes('ROLE_STUDENT') && user !== null}>
-                            Apply Now
-                        </Button>
-                    ) : (
-                        <p className="text-red-500 font-semibold">This job posting is no longer active.</p>
-                    )}
-                     {user && !user.roles.includes('ROLE_STUDENT') && job.isActive &&
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-2">Only students can apply for jobs.</p> }
-                </div>
-            </CardContent>
-        </Card>
-    </div>
-  );
+// Helper function to get match score color
+const getScoreColor = (score: number | null): string => {
+  if (score === null || score === undefined) return "text-gray-400";
+  if (score >= 80) return "text-green-500";
+  if (score >= 60) return "text-blue-500";
+  if (score >= 40) return "text-yellow-500";
+  return "text-red-500";
 };
 
-export const JobDetailPageWrapper: React.FC = () => {
-    return <JobDetailPage />;
-}; 
+// Helper function to get human-readable match score label
+const getScoreLabel = (score: number | null): string => {
+  if (score === null || score === undefined) return "No match data";
+  if (score >= 80) return "Strong Match";
+  if (score >= 60) return "Good Match";
+  if (score >= 40) return "Potential Match";
+  return "Low Match";
+};
+
+class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+  
+  // API base URL
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  
+  constructor(props: JobDetailPageProps) {
+    super(props);
+    this.state = {
+      job: null,
+      loading: true,
+      error: null,
+      isAuthenticated: false,
+      userRole: null
+    };
+  }
+  
+  componentDidMount() {
+    // Check authentication status
+    if (this.context?.user) {
+      this.setState({
+        isAuthenticated: true,
+        userRole: this.context.user.roles?.[0] || null
+      });
+    }
+    
+    this.fetchJobDetails();
+  }
+  
+  fetchJobDetails = async () => {
+    const { jobId } = this.props;
+    if (!jobId) {
+      this.setState({
+        error: "Job ID is missing",
+        loading: false
+      });
+      return;
+    }
+    
+    this.setState({ loading: true, error: null });
+    
+    try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await axios.get(`${this.API_BASE_URL}/jobs/${jobId}`, {
+        headers
+      });
+      
+      if (response.data) {
+        this.setState({
+          job: {
+            id: response.data.id,
+            employer_id: response.data.employerId,
+            title: response.data.title,
+            description: response.data.description,
+            company_name: response.data.companyName,
+            company_logo_url: response.data.companyLogoUrl,
+            location: response.data.location,
+            job_type: response.data.jobType,
+            salary_range: response.data.salaryRange,
+            required_skills: Array.isArray(response.data.requiredSkills) ? response.data.requiredSkills : [],
+            application_deadline: response.data.applicationDeadline,
+            created_at: response.data.createdAt,
+            updated_at: response.data.updatedAt,
+            status: response.data.status,
+            is_active: response.data.isActive,
+            match_score: response.data.matchScore
+          },
+          loading: false
+        });
+      } else {
+        this.setState({
+          error: "Job not found",
+          loading: false
+        });
+      }
+    } catch (err) {
+      console.error("Fetch job details error:", err);
+      this.setState({
+        error: "Failed to load job details",
+        loading: false
+      });
+    }
+  };
+  
+  handleApplyClick = async () => {
+    const { job } = this.state;
+    const { navigate } = this.props;
+    const { isAuthenticated, userRole } = this.state;
+    
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { returnUrl: `/opportunities/${job?.id}` } });
+      return;
+    }
+    
+    if (!job) return;
+    
+    // Get the context safely
+    const authContext = this.context;
+    if (!authContext) {
+      console.error("Auth context is undefined");
+      return;
+    }
+    
+    const { user } = authContext;
+    
+    if (!user) {
+      // Redirect to login page
+      navigate('/login', { state: { returnUrl: `/opportunities/${job?.id}` } });
+      return;
+    }
+    
+    // Check if user is a student
+    if (user.roles && user.roles.includes('ROLE_STUDENT')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.post(
+          `${this.API_BASE_URL}/job-applications/apply`,
+          { jobId: job.id },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        // Redirect to applications tracking page
+        navigate('/track');
+      } catch (err) {
+        console.error("Error applying for job:", err);
+        // Show error notification
+      }
+    } else {
+      // Show message that only students can apply
+      console.error("Only students can apply for jobs");
+    }
+  };
+  
+  render() {
+    const { job, loading, error } = this.state;
+    
+    if (loading) {
+      return (
+        <div className="container max-w-4xl mx-auto py-8 px-4 min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <p className="mt-4 text-lg">Loading job details...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="container max-w-4xl mx-auto py-8 px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h2 className="text-red-600 text-xl font-semibold mb-2">Error Loading Job</h2>
+            <p className="text-red-800">{error}</p>
+            <Link to="/opportunities">
+              <Button className="mt-4" variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Opportunities
+            </Button>
+          </Link>
+          </div>
+        </div>
+      );
+    }
+
+    if (!job) {
+    return (
+        <div className="container max-w-4xl mx-auto py-8 px-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+            <h2 className="text-amber-600 text-xl font-semibold mb-2">Job Not Found</h2>
+            <p className="text-amber-800">The job you're looking for doesn't exist or has been removed.</p>
+            <Link to="/opportunities">
+              <Button className="mt-4" variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Opportunities
+              </Button>
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <div className="mb-6">
+          <Link to="/opportunities">
+            <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Opportunities
+            </Button>
+          </Link>
+                </div>
+                
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          {/* Header Section */}
+          <div className="p-6 border-b">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-semibold">{job.title}</h1>
+                <p className="text-lg text-gray-600 mt-1">{job.company_name}</p>
+                </div>
+                
+              {job.match_score !== undefined && job.match_score !== null && (
+                <div className="bg-gray-50 px-3 py-2 rounded-lg border text-center min-w-[100px]">
+                  <span className={`text-2xl font-bold ${getScoreColor(job.match_score)}`}>
+                      {job.match_score}%
+                    </span>
+                  <p className="text-xs text-gray-500">{getScoreLabel(job.match_score)}</p>
+                  </div>
+                )}
+            </div>
+            
+            <div className="flex flex-wrap gap-y-2 text-gray-600">
+                {job.location && (
+                <div className="flex items-center mr-6">
+                  <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                  <span>{job.location}</span>
+                  </div>
+                )}
+                
+                {job.job_type && (
+                <div className="flex items-center mr-6">
+                  <Briefcase className="h-4 w-4 mr-1 text-gray-400" />
+                  <span>{job.job_type}</span>
+                  </div>
+                )}
+                
+                {job.salary_range && (
+                <div className="flex items-center mr-6">
+                  <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
+                  <span>{job.salary_range}</span>
+                    </div>
+              )}
+              
+              {job.application_deadline && (
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                  <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+              
+            <div className="mt-4">
+              <Button 
+                className="w-full sm:w-auto" 
+                size="lg"
+                onClick={this.handleApplyClick}
+              >
+                Apply Now
+              </Button>
+            </div>
+          </div>
+          
+          {/* Description Section */}
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4">About this position</h2>
+            <div className="prose max-w-none">
+              {job.description ? (
+                <div dangerouslySetInnerHTML={{ __html: job.description }} />
+              ) : (
+                <p className="text-gray-500">No description provided.</p>
+              )}
+                </div>
+              </div>
+              
+          {/* Skills Section */}
+          {job.required_skills && job.required_skills.length > 0 && (
+            <div className="p-6 border-t">
+              <h2 className="text-xl font-semibold mb-4">Required Skills</h2>
+                  <div className="flex flex-wrap gap-2">
+                {job.required_skills.map((skill, index) => (
+                      <span
+                    key={index}
+                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Apply Button */}
+          <div className="p-6 border-t bg-gray-50">
+                <Button 
+              className="w-full sm:w-auto" 
+                  size="lg"
+                  onClick={this.handleApplyClick}
+                >
+              Apply Now
+                </Button>
+              </div>
+            </div>
+          </div>
+    );
+  }
+}
+
+// React Router v6 wrapper using hooks
+export function JobDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  return (
+    <JobDetailPageClass 
+      jobId={id} 
+      navigate={navigate}
+      location={location}
+    />
+  );
+} 

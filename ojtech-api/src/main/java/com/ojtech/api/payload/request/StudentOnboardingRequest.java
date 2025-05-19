@@ -23,6 +23,12 @@ public class StudentOnboardingRequest {
     @Size(max = 100)
     private String major;
 
+    @Size(max = 100)
+    private String course;
+
+    @Size(max = 50)
+    private String yearLevel;
+
     private Integer graduationYear;
 
     @Size(max = 2000)
@@ -62,4 +68,10 @@ public class StudentOnboardingRequest {
     public void setLinkedinUrl(String linkedinUrl) { this.linkedinUrl = linkedinUrl; }
     public String getPortfolioUrl() { return portfolioUrl; }
     public void setPortfolioUrl(String portfolioUrl) { this.portfolioUrl = portfolioUrl; }
+
+    // Additional getters and setters
+    public String getCourse() { return major; } // Using major as course for compatibility
+    public String getYearLevel() { return graduationYear != null ? graduationYear.toString() : null; }
+    public void setCourse(String course) { this.course = course; }
+    public void setYearLevel(String yearLevel) { this.yearLevel = yearLevel; }
 } 

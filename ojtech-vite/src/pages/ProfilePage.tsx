@@ -1,13 +1,12 @@
 import React, { Component, ChangeEvent, createRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
-import { ToastHelper } from '../providers/ToastContext';
-import { Loader2, Upload } from 'lucide-react';
-import { useAuth, AppUser } from '@/providers/AuthProvider';
+import { AuthContext } from '../providers/AuthProvider';
+import { Loader2, Upload, Download, Github, Linkedin, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Define interfaces for our component
@@ -20,95 +19,119 @@ interface ProfilePageState {
   currentTab: string;
   resumeUrl: string | null;
   cvData: any | null;
-  userId: string | null;
   skills: string[];
+  studentProfile: StudentProfileData | null;
+  employerProfile: EmployerProfileData | null;
 }
 
-// Define more specific profile types if needed, or use 'any' if profile structure varies greatly
-interface StudentProfileViewData {
-    firstName?: string;
-    lastName?: string;
-    email?: string; // from AppUser
-    username?: string; // from AppUser
-    phoneNumber?: string;
-    university?: string;
-    major?: string;
-    graduationYear?: number;
-    bio?: string;
-    skills?: string[];
-    cvUrl?: string;
-    cvFilename?: string;
-    githubUrl?: string;
-    linkedinUrl?: string;
-    portfolioUrl?: string;
+// Student profile data structure
+interface StudentProfileData {
+  id?: number;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  university?: string;
+  major?: string;
+  graduationYear?: number;
+  bio?: string;
+  skills?: string[];
+  cvUrl?: string;
+  cvFilename?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
+  hasCompletedOnboarding?: boolean;
 }
 
-interface EmployerProfileViewData {
-    companyName?: string;
-    email?: string; // from AppUser
-    username?: string; // from AppUser
-    companySize?: string;
-    industry?: string;
-    companyWebsite?: string;
-    companyDescription?: string;
-    companyLogoUrl?: string;
-    companyAddress?: string;
-    contactPersonName?: string;
-    contactPersonPosition?: string;
-    contactPersonEmail?: string;
-    contactPersonPhone?: string;
-    verified?: boolean;
+// Employer profile data structure
+interface EmployerProfileData {
+  id?: number;
+  companyName: string;
+  companySize?: string;
+  industry?: string;
+  companyWebsite?: string;
+  companyDescription?: string;
+  companyLogoUrl?: string;
+  companyAddress?: string;
+  contactPersonName?: string;
+  contactPersonPosition?: string;
+  contactPersonEmail?: string;
+  contactPersonPhone?: string;
+  verified?: boolean;
+  hasCompletedOnboarding?: boolean;
 }
 
-const StudentProfileDisplay: React.FC<{ profile: StudentProfileViewData, user: AppUser }> = ({ profile, user }) => (
-    <div className="space-y-4">
-        <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({user.username})</h3>
-        <p><strong>Email:</strong> {user.email}</p>
-        {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
-        {profile.university && <p><strong>University:</strong> {profile.university}</p>}
-        {profile.major && <p><strong>Major:</strong> {profile.major}</p>}
-        {profile.graduationYear && <p><strong>Graduation Year:</strong> {profile.graduationYear}</p>}
-        {profile.bio && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p className="italic">{profile.bio}</p></div>}
-        {profile.skills && profile.skills.length > 0 && (
-            <div><strong>Skills:</strong> {profile.skills.join(', ')}</div>
-        )}
-        {profile.cvUrl && (
-            <p><strong>CV:</strong> <a href={profile.cvUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{profile.cvFilename || 'Download CV'}</a></p>
-        )}
-        <div className="flex space-x-4 mt-2">
-            {profile.githubUrl && <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">GitHub</a>}
-            {profile.linkedinUrl && <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">LinkedIn</a>}
-            {profile.portfolioUrl && <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Portfolio</a>}
-        </div>
-        <Link to="/onboarding/student" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+// Component to display student profile
+const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: string, username: string }> = ({ profile, email, username }) => (
+  <div className="space-y-4">
+    <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({username})</h3>
+    <p><strong>Email:</strong> {email}</p>
+    {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
+    {profile.university && <p><strong>University:</strong> {profile.university}</p>}
+    {profile.major && <p><strong>Major:</strong> {profile.major}</p>}
+    {profile.graduationYear && <p><strong>Graduation Year:</strong> {profile.graduationYear}</p>}
+    {profile.bio && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p className="italic">{profile.bio}</p></div>}
+    {profile.skills && profile.skills.length > 0 && (
+      <div><strong>Skills:</strong> {profile.skills.join(', ')}</div>
+    )}
+    {profile.cvUrl && (
+      <p><strong>CV:</strong> <a href={profile.cvUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{profile.cvFilename || 'Download CV'}</a></p>
+    )}
+    <div className="flex space-x-4 mt-2">
+      {profile.githubUrl && (
+        <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+          <Github className="h-4 w-4 mr-1" /> GitHub
+        </a>
+      )}
+      {profile.linkedinUrl && (
+        <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+          <Linkedin className="h-4 w-4 mr-1" /> LinkedIn
+        </a>
+      )}
+      {profile.portfolioUrl && (
+        <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+          <Globe className="h-4 w-4 mr-1" /> Portfolio
+        </a>
+      )}
     </div>
+    <Link to="/onboarding/student" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+  </div>
 );
 
-const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileViewData, user: AppUser }> = ({ profile, user }) => (
-    <div className="space-y-4">
-        <h3 className="text-xl font-semibold">{profile.companyName} ({user.username})</h3>
-        {profile.companyLogoUrl && <img src={profile.companyLogoUrl} alt={`${profile.companyName} logo`} className="h-24 w-auto rounded my-2" />}
-        <p><strong>Contact Email (User):</strong> {user.email}</p>
-        {profile.verified && <p className="text-green-600 dark:text-green-400 font-semibold">Verified Employer</p>}
-        {profile.industry && <p><strong>Industry:</strong> {profile.industry}</p>}
-        {profile.companySize && <p><strong>Company Size:</strong> {profile.companySize}</p>}
-        {profile.companyWebsite && <p><strong>Website:</strong> <a href={profile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">{profile.companyWebsite}</a></p>}
-        {profile.companyDescription && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p>{profile.companyDescription}</p></div>}
-        {profile.companyAddress && <p><strong>Address:</strong> {profile.companyAddress}</p>}
-        <h4 class="text-md font-semibold pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">Contact Person</h4>
-        {profile.contactPersonName && <p><strong>Name:</strong> {profile.contactPersonName}</p>}
-        {profile.contactPersonPosition && <p><strong>Position:</strong> {profile.contactPersonPosition}</p>}
-        {profile.contactPersonEmail && <p><strong>Email:</strong> {profile.contactPersonEmail}</p>}
-        {profile.contactPersonPhone && <p><strong>Phone:</strong> {profile.contactPersonPhone}</p>}
-        <Link to="/onboarding/employer" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Company Profile</Link>
-    </div>
+// Component to display employer profile
+const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: string, username: string }> = ({ profile, email, username }) => (
+  <div className="space-y-4">
+    <h3 className="text-xl font-semibold">{profile.companyName} ({username})</h3>
+    {profile.companyLogoUrl && <img src={profile.companyLogoUrl} alt={`${profile.companyName} logo`} className="h-24 w-auto rounded my-2" />}
+    <p><strong>Contact Email (User):</strong> {email}</p>
+    {profile.verified && <p className="text-green-600 dark:text-green-400 font-semibold">Verified Employer</p>}
+    {profile.industry && <p><strong>Industry:</strong> {profile.industry}</p>}
+    {profile.companySize && <p><strong>Company Size:</strong> {profile.companySize}</p>}
+    {profile.companyWebsite && (
+      <p>
+        <strong>Website:</strong> 
+        <a href={profile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">
+          {profile.companyWebsite}
+        </a>
+      </p>
+    )}
+    {profile.companyDescription && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p>{profile.companyDescription}</p></div>}
+    {profile.companyAddress && <p><strong>Address:</strong> {profile.companyAddress}</p>}
+    <h4 className="text-md font-semibold pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">Contact Person</h4>
+    {profile.contactPersonName && <p><strong>Name:</strong> {profile.contactPersonName}</p>}
+    {profile.contactPersonPosition && <p><strong>Position:</strong> {profile.contactPersonPosition}</p>}
+    {profile.contactPersonEmail && <p><strong>Email:</strong> {profile.contactPersonEmail}</p>}
+    {profile.contactPersonPhone && <p><strong>Phone:</strong> {profile.contactPersonPhone}</p>}
+    <Link to="/onboarding/employer" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Company Profile</Link>
+  </div>
 );
 
-export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
-  private supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  );
+export class ProfilePageClass extends Component<ProfilePageProps, ProfilePageState> {
+  static contextType = AuthContext;
+  declare context: React.ContextType<typeof AuthContext>;
+  
+  // API base URL
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
   
   private fileInputRef = createRef<HTMLInputElement>();
   
@@ -122,92 +145,115 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       currentTab: 'info',
       resumeUrl: null,
       cvData: null,
-      userId: null,
-      skills: []
+      skills: [],
+      studentProfile: null,
+      employerProfile: null
     };
   }
   
   componentDidMount() {
-    this.checkAuthAndLoadProfile();
+    this.loadUserProfile();
   }
   
-  // Check if user is authenticated and load profile data
-  checkAuthAndLoadProfile = async () => {
+  // Load user profile data
+  loadUserProfile = async () => {
     try {
-      const { data: { session } } = await this.supabase.auth.getSession();
+      const { user } = this.context;
       
-      if (!session) {
-        // Redirect to login if not authenticated
-        window.location.href = '/auth/login';
+      if (!user) {
+        // Handle not authenticated
+        console.log("Not authenticated, redirecting to login");
+        localStorage.removeItem('user');
+        localStorage.removeItem('user-profile');
+        window.location.href = '/login';
         return;
       }
       
-      const userId = session.user.id;
-      this.setState({ userId });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log("No token found, redirecting to login");
+        localStorage.removeItem('user');
+        localStorage.removeItem('user-profile');
+        window.location.href = '/login';
+        return;
+      }
       
-      await this.loadUserProfile(userId);
-      await this.loadResumeData(userId);
+      // Determine if the user is a student or employer
+      const isStudent = user.roles?.includes('ROLE_STUDENT');
+      const isEmployer = user.roles?.includes('ROLE_EMPLOYER');
       
+      if (isStudent) {
+        await this.loadStudentProfile(token);
+        await this.loadResumeData(token);
+      } else if (isEmployer) {
+        await this.loadEmployerProfile(token);
+      }
     } catch (error) {
-      console.error('Error checking authentication:', error);
+      console.error('Error loading user profile:', error);
     } finally {
       this.setState({ loading: false });
     }
   };
   
-  // Load user profile data from Supabase
-  loadUserProfile = async (userId: string) => {
+  // Load student profile
+  loadStudentProfile = async (token: string) => {
     try {
-      const { data, error } = await this.supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-        
-      if (error) throw error;
+      const response = await axios.get(`${this.API_BASE_URL}/students/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      if (data && data.cv_data) {
-        this.setState({ 
-          cvData: data.cv_data,
-          hasResume: true 
-        });
+      if (response.data) {
+        this.setState({ studentProfile: response.data });
         
-        // Extract skills from CV data if available
-        if (data.cv_data.skills) {
-          this.setState({
-            skills: this.processSkills(data.cv_data.skills)
-          });
+        // Set skills if available
+        if (response.data.skills && Array.isArray(response.data.skills)) {
+          this.setState({ skills: response.data.skills });
         }
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('Error loading student profile:', error);
     }
   };
   
-  // Load resume data
-  loadResumeData = async (userId: string) => {
+  // Load employer profile
+  loadEmployerProfile = async (token: string) => {
     try {
-      const { data, error } = await this.supabase
-        .from('cvs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1);
-        
-      if (error) throw error;
+      const response = await axios.get(`${this.API_BASE_URL}/employers/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      if (data && data.length > 0) {
+      if (response.data) {
+        this.setState({ employerProfile: response.data });
+      }
+    } catch (error) {
+      console.error('Error loading employer profile:', error);
+    }
+  };
+  
+  // Load resume data for students
+  loadResumeData = async (token: string) => {
+    try {
+      const response = await axios.get(`${this.API_BASE_URL}/cvs/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.data && response.data.length > 0) {
+        const latestCv = response.data[0]; // Assuming sorted by date
+        
         this.setState({ 
           hasResume: true,
-          resumeUrl: data[0].file_url || null
+          resumeUrl: latestCv.fileUrl || null,
+          cvData: latestCv.parsedData || null
         });
         
-        // Only set CV data if not already set from profile
-        if (!this.state.cvData && data[0].skills) {
-          this.setState({ 
-            cvData: data[0].skills,
-            skills: this.processSkills(data[0].skills)
-          });
+        if (latestCv.parsedData && latestCv.parsedData.skills) {
+          this.setState({ skills: this.processSkills(latestCv.parsedData) });
         }
       }
     } catch (error) {
@@ -215,13 +261,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     }
   };
   
-  // Process and clean up skills from CV data
+  // Process skills from CV data
   processSkills = (cvData: any): string[] => {
     if (!cvData || !cvData.skills || !Array.isArray(cvData.skills)) {
       return [];
     }
     
-    // Filter out category labels from skills
     return this.filterSkillCategoryLabels(cvData.skills);
   };
   
@@ -256,7 +301,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         return false;
       }
       
-      // Filter out long items
+      // Filter out too long items
       if (skill.length > 30) {
         return false;
       }
@@ -265,68 +310,66 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     });
   };
   
-  // Handle file input click
+  // Handle upload button click
   handleUploadClick = () => {
-    // Trigger file input click
     if (this.fileInputRef.current) {
       this.fileInputRef.current.click();
     }
   };
   
-  // Handle file selection
+  // Handle file upload
   handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !this.state.userId) {
-      return;
-    }
+    if (!e.target.files || !e.target.files[0]) return;
     
     const file = e.target.files[0];
     
-    // Validate file type
+    // Validate file is PDF
     if (file.type !== 'application/pdf') {
-      ToastHelper.toast({
-        title: "Error",
-        description: "Please upload a valid PDF file",
-        variant: "destructive",
-      });
+      alert('Please upload a PDF file');
       return;
     }
     
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      ToastHelper.toast({
-        title: "Error",
-        description: "Resume must be less than 10MB",
-        variant: "destructive",
-      });
+      alert('File size must be less than 10MB');
       return;
     }
     
     this.setState({ uploadLoading: true });
     
     try {
-      // In a real implementation, we would upload to Supabase Storage
-      // and then call a server action to parse the CV
-      // For now, we'll just simulate uploading
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create form data for file upload
+      const formData = new FormData();
+      formData.append('file', file);
       
-      // Mock successful upload
-      ToastHelper.toast({
-        title: "Success",
-        description: "Resume uploaded successfully",
-      });
+      // Upload CV file
+      const response = await axios.post(
+        `${this.API_BASE_URL}/cvs/upload`, 
+        formData, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
       
-      // Set has resume to true and reload data
-      this.setState({ hasResume: true });
-      await this.loadResumeData(this.state.userId);
-      
+      if (response.status === 200 || response.status === 201) {
+        alert('Resume uploaded successfully!');
+        
+        // Reload user profile after successful upload
+        await this.loadUserProfile();
+      } else {
+        throw new Error('Failed to upload resume');
+      }
     } catch (error) {
       console.error('Error uploading resume:', error);
-      ToastHelper.toast({
-        title: "Error",
-        description: "Failed to upload resume",
-        variant: "destructive",
-      });
+      alert('Failed to upload resume');
     } finally {
       this.setState({ uploadLoading: false });
     }
@@ -338,246 +381,167 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   };
   
   render() {
-    const { 
-      loading, 
-      uploadLoading, 
-      hasResume, 
-      currentTab, 
-      skills,
-      cvData
-    } = this.state;
+    const { loading, uploadLoading, hasResume, currentTab, studentProfile, employerProfile, resumeUrl, skills } = this.state;
+    const { user } = this.context || {};
     
     if (loading) {
       return (
-        <div className="flex justify-center items-center min-h-[80vh]">
-          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
     }
     
+    // Determine user roles
+    const isStudent = user?.roles?.includes('ROLE_STUDENT');
+    const isEmployer = user?.roles?.includes('ROLE_EMPLOYER');
+    
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">User Profile</h1>
         
-        <Tabs
-          value={currentTab}
-          onValueChange={this.handleTabChange}
-          className="w-full"
-        >
-          <TabsList className="mb-6">
-            <TabsTrigger value="info">Profile Info</TabsTrigger>
-            <TabsTrigger value="resume">Resume</TabsTrigger>
-            <TabsTrigger value="skills">Skills</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="info" className="space-y-4">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
-              {cvData?.personal_info ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" value={cvData.personal_info.name || 'N/A'} readOnly />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" value={cvData.personal_info.email || 'N/A'} readOnly />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" value={cvData.personal_info.phone || 'N/A'} readOnly />
-                    </div>
-                    <div>
-                      <Label htmlFor="location">Location</Label>
-                      <Input id="location" value={cvData.personal_info.location || 'N/A'} readOnly />
-                    </div>
+        {isStudent && (
+          <Card className="p-6">
+            <Tabs defaultValue={currentTab} onValueChange={this.handleTabChange}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="info">Profile Info</TabsTrigger>
+                <TabsTrigger value="resume">Resume & Skills</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info">
+                {studentProfile ? (
+                  <StudentProfileDisplay 
+                    profile={studentProfile} 
+                    email={user?.email || ''} 
+                    username={user?.username || ''}
+                  />
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500 mb-4">Student profile not found. Please complete your onboarding.</p>
+                    <Link to="/onboarding/student">
+                      <Button>Complete Onboarding</Button>
+                    </Link>
                   </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No personal information available. Upload your resume to see these details.</p>
-              )}
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Education</h2>
-              {cvData?.education && cvData.education.length > 0 ? (
-                <div className="space-y-4">
-                  {cvData.education.map((edu: any, index: number) => (
-                    <div key={index} className="border-b pb-4 last:border-0">
-                      <h3 className="font-medium">{edu.institution || 'Unknown Institution'}</h3>
-                      <p className="text-sm">{edu.degree || 'Degree not specified'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {edu.start_date || 'Start date unknown'} - {edu.end_date || 'Present'}
+                )}
+              </TabsContent>
+              
+              <TabsContent value="resume">
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                      <h3 className="text-xl font-semibold">Resume Management</h3>
+                      <p className="text-gray-500 text-sm mt-1">
+                        Upload your resume to help us find the best matches for you
                       </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No education history available. Upload your resume to see these details.</p>
-              )}
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="resume" className="space-y-4">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Resume Management</h2>
-              
-              {hasResume ? (
-                <div className="space-y-4">
-                  <p className="text-green-600 font-medium">Your resume has been uploaded and processed.</p>
-                  
-                  <div className="flex space-x-4">
-                    {this.state.resumeUrl && (
-                      <Button variant="outline" onClick={() => window.open(this.state.resumeUrl || '#', '_blank')}>
-                        View Resume
-                      </Button>
-                    )}
                     
-                    <Button onClick={this.handleUploadClick} disabled={uploadLoading}>
-                      {uploadLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload New Version
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p>Upload your resume to enable AI-powered job matching and skill assessment.</p>
-                  
-                  <Button onClick={this.handleUploadClick} disabled={uploadLoading}>
-                    {uploadLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Resume
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-              
-              <input
-                type="file"
-                ref={this.fileInputRef}
-                className="hidden"
-                accept=".pdf"
-                onChange={this.handleFileChange}
-              />
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Resume Tips</h2>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>Use a clean, professional format</li>
-                <li>Include relevant skills and experience</li>
-                <li>Quantify achievements when possible</li>
-                <li>Proofread carefully for errors</li>
-                <li>Tailor your resume to each job application</li>
-                <li>Use action verbs to describe responsibilities</li>
-              </ul>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="skills" className="space-y-4">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Skills Assessment</h2>
-              
-              {skills.length > 0 ? (
-                <div className="space-y-4">
-                  <p className="mb-4">Skills detected from your resume:</p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {skills.map((skill, index) => (
-                      <div 
-                        key={index}
-                        className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                    {/* File upload */}
+                    <div>
+                      <Input 
+                        type="file" 
+                        ref={this.fileInputRef} 
+                        className="hidden" 
+                        onChange={this.handleFileChange}
+                        accept=".pdf" 
+                      />
+                      <Button 
+                        onClick={this.handleUploadClick} 
+                        disabled={uploadLoading}
+                        className="flex items-center gap-2"
                       >
-                        {skill}
+                        {uploadLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            <span>{hasResume ? 'Update Resume' : 'Upload Resume'}</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Resume file info */}
+                  {resumeUrl && (
+                    <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50 dark:bg-gray-800">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-md">
+                          <Download className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Your Resume</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Last updated: {new Date().toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    ))}
+                      <a 
+                        href={resumeUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  )}
+                  
+                  {/* Skills section */}
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-4">Extracted Skills</h3>
+                    
+                    {skills.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map((skill, index) => (
+                          <span 
+                            key={index}
+                            className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-sm"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">
+                        {hasResume 
+                          ? 'No skills were extracted from your resume. Try uploading a more detailed resume.' 
+                          : 'Upload your resume to extract skills.'}
+                      </p>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  No skills detected. Upload your resume to analyze your skill set.
-                </p>
-              )}
-            </Card>
-            
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Job Matching</h2>
-              
-              {hasResume ? (
-                <div className="space-y-4">
-                  <p>Find jobs that match your skills and experience.</p>
-                  <Button>View Matching Jobs</Button>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  Upload your resume to enable job matching functionality.
-                </p>
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        )}
+        
+        {isEmployer && (
+          <Card className="p-6">
+            {employerProfile ? (
+              <EmployerProfileDisplay 
+                profile={employerProfile} 
+                email={user?.email || ''} 
+                username={user?.username || ''}
+              />
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-gray-500 mb-4">Employer profile not found. Please complete your onboarding.</p>
+                <Link to="/onboarding/employer">
+                  <Button>Complete Onboarding</Button>
+                </Link>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     );
   }
 }
 
-export const ProfilePage: React.FC = () => {
-  const { user, isLoading, fetchUserProfile } = useAuth();
-
-  React.useEffect(() => {
-    // Fetch profile data when component mounts or user changes, 
-    // especially if it might have been updated via an onboarding page.
-    fetchUserProfile();
-  }, []); // Consider adding user.id or similar to dependencies if needed for re-fetch on user switch without full reload.
-
-  if (isLoading || !user) {
-    return <div className="min-h-screen flex items-center justify-center"><p>Loading profile...</p></div>;
-  }
-
-  // Assuming user.profile contains the specific profile data (student or employer)
-  // and user.roles indicates the type.
-  const profileData = user.profile;
-
-  return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">User Profile</h2>
-        
-        {user.roles.includes('ROLE_STUDENT') && profileData && (
-          <StudentProfileDisplay profile={profileData as StudentProfileViewData} user={user} />
-        )}
-
-        {user.roles.includes('ROLE_EMPLOYER') && profileData && (
-          <EmployerProfileDisplay profile={profileData as EmployerProfileViewData} user={user} />
-        )}
-
-        {(!profileData && !isLoading) && (
-            <div className="text-center">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">Your profile information is not yet complete.</p>
-                {user.roles.includes('ROLE_STUDENT') && 
-                    <Link to="/onboarding/student" className="text-indigo-600 hover:underline">Complete Student Profile</Link>}
-                {user.roles.includes('ROLE_EMPLOYER') && 
-                    <Link to="/onboarding/employer" className="text-indigo-600 hover:underline">Complete Company Profile</Link>}
-            </div>
-        )}
-      </div>
-    </div>
-  );
-}; 
+// Wrapper component using the AuthContext hook
+export function ProfilePage() {
+  return <ProfilePageClass />;
+} 

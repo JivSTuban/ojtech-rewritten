@@ -59,7 +59,7 @@ public class Employer {
     @UpdateTimestamp
     private OffsetDateTime updatedAt;
 
-    @Column(columnDefinition = "jsonb")
+    @Column(columnDefinition = "TEXT")
     private String onboardingProgress = "{\"company_info\": false, \"company_logo\": false, \"contact_details\": false}";
     
     // Default constructor

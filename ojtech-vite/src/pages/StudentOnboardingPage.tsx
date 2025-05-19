@@ -147,7 +147,7 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         
         // Redirect to login after a short delay
         setTimeout(() => {
-          window.location.href = '/auth/login';
+          window.location.href = '/login';
         }, 1000);
       }
     }, 100); // Short delay to ensure context is initialized
@@ -258,7 +258,7 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         
         // Redirect to login page after a short delay
         setTimeout(() => {
-          window.location.href = '/auth/login';
+          window.location.href = '/login';
         }, 1500);
       }
     } finally {
@@ -894,4 +894,11 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       </div>
     );
   }
+
+  // Logout function
+  logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
 } 

@@ -25,6 +25,10 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
     
     List<Job> findByStatus(JobStatus status);
     
+    // String-based status finder for compatibility
+    @Query("SELECT j FROM Job j WHERE LOWER(j.jobType) = LOWER(:status)")
+    List<Job> findByStatus(@Param("status") String status);
+    
     List<Job> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description);
     
     List<Job> findByLocationContainingIgnoreCase(String location);

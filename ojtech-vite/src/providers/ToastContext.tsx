@@ -1,5 +1,6 @@
 import React, { Component, createContext } from 'react';
 import type { ToastActionElement, ToasterToastProps } from '@/components/ui/Toast';
+import { setToastFunction } from '@/components/ui/toast-utils';
 
 // Constants
 const TOAST_LIMIT = 1;
@@ -84,6 +85,15 @@ export class ToastProvider extends Component<ToastProviderProps, ToastProviderSt
     this.state = {
       toasts: [],
     };
+    
+    // Register the toast function with the toast-utils
+    setToastFunction((props) => {
+      this.toast({
+        ...props,
+        // Ensure open is true by default
+        open: true,
+      });
+    });
   }
   
   private addToRemoveQueue = (toastId: string) => {

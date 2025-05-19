@@ -9,12 +9,14 @@ import com.ojtech.api.payload.response.JwtResponse;
 import com.ojtech.api.payload.response.MessageResponse;
 import com.ojtech.api.repository.RoleRepository;
 import com.ojtech.api.repository.UserRepository;
+import com.ojtech.api.security.UserDetailsImpl;
 import com.ojtech.api.security.jwt.JwtUtils;
-import com.ojtech.api.security.services.UserDetailsImpl;
+import com.ojtech.api.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,15 +33,25 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
-@Tag(name = "Authentication", description = "Authentication endpoints")
+@Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder encoder;
     private final JwtUtils jwtUtils;
+    private final ProfileService profileService;
+
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils, ProfileService profileService) {
+        this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.encoder = encoder;
+        this.jwtUtils = jwtUtils;
+        this.profileService = profileService;
+    }
 
     @PostMapping("/signin")
     @Operation(summary = "Login", description = "Authenticate a user and generate a JWT token")

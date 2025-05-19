@@ -1,137 +1,89 @@
-# OJTech Vite Migration
+# OJTech - React Vite Frontend
 
-This project is a migration of the OJTech application from Next.js to Vite with React class components.
-
-## Project Overview
-
-OJTech is an AI-driven OJT (On-the-Job Training) Management Portal designed to connect Computer Studies students with relevant job opportunities through advanced matching algorithms. The platform serves three primary user groups: Students, Employers, and Administrators, with tailored experiences for each.
+This is the React Vite frontend for the OJTech job matching application. It's a migration from the original Next.js application to React Vite, using class components and integrating with the Spring Boot API.
 
 ## Technology Stack
 
-- **Frontend Framework**: Vite + React 18.2
-- **Component Structure**: Class-based React components
-- **Styling**: Tailwind CSS
-- **State Management**: Class component state + React Context API
-- **Authentication**: Supabase Auth
-- **Database**: Supabase PostgreSQL
-- **File Storage**: Cloudinary
+- **React**: Frontend library
+- **Vite**: Build tool and development server
+- **TypeScript**: Type safety for JavaScript
+- **React Router**: Client-side routing
+- **Tailwind CSS**: Utility-first CSS framework
+- **Axios**: HTTP client for API requests
+- **Spring Boot API**: Backend RESTful API
 
-## Migration Status
+## Key Features
 
-We're in the process of migrating the application from Next.js with functional components to Vite with class components. The current migration status can be found in [MIGRATION_STATUS.md](./src/MIGRATION_STATUS.md).
+- User authentication and authorization
+- Job opportunity discovery and application
+- Resume upload and parsing
+- Profile management for students and employers
+- Job posting management for employers
 
-### Key Differences From Original App
+## Architecture
 
-1. **Class-Based Components**: All React components are now class-based instead of functional components.
-2. **Routing**: Using React Router v6 instead of Next.js App Router.
-3. **State Management**: Using class state instead of React hooks.
-4. **Build Tool**: Using Vite instead of Next.js.
-5. **API Handling**: Using direct API calls instead of Next.js's server actions.
+The application follows a class component architecture, making use of React's context API for state management. Key patterns:
 
-### Migrated Features
+- **Class Components**: Most components are implemented as ES6 classes extending React.Component
+- **Context API**: Used for global state like auth context
+- **HOC Pattern**: Used for protected routes and authentication wrappers
+- **API Service Layer**: Clean separation of API calls in dedicated service modules
 
-- Basic authentication flow
-- Job browsing interface
-- Job detail page
-- Core UI components
+## Pages Migrated from Next.js
 
-## Getting Started
+The following pages have been migrated from the Next.js application:
 
-### Prerequisites
+1. **HomePage**: Landing page with feature overview
+2. **OpportunitiesPage**: Job opportunities with swipe interface
+3. **JobDetailPage**: Detailed job information
+4. **JobApplicationPage**: Application form for jobs
+5. **ProfilePage**: User profile management
 
-- Node.js (v18+)
-- npm
-- Supabase account
+## Spring Boot API Integration
 
-### Installation
+The application integrates with a Spring Boot backend API. Key integration points:
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-```
-
-2. Navigate to the project directory:
-```bash
-cd ojtech-vite
-```
-
-3. Install dependencies:
-```bash
-npm install --legacy-peer-deps
-```
-
-4. Create a `.env.local` file in the root directory and add your Supabase credentials:
-```
-VITE_SUPABASE_URL=your_supabase_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
-
-5. Start the development server:
-```bash
-npm run dev
-```
-
-## Project Structure
-
-```
-ojtech-vite/
-├── public/             # Static assets
-├── src/
-│   ├── assets/         # Project assets (images, fonts, etc.)
-│   ├── components/     # Reusable components
-│   │   ├── ui/         # UI components
-│   │   ├── jobs/       # Job-related components
-│   │   └── auth/       # Authentication components
-│   ├── lib/
-│   │   └── utils/      # Utility functions
-│   ├── pages/          # Page components
-│   ├── providers/      # Context providers
-│   ├── hooks/          # Custom hooks (for compatibility)
-│   ├── App.tsx         # Main application component
-│   └── main.tsx        # Entry point
-├── .env.local.example  # Example environment variables
-├── index.html          # HTML template
-├── tailwind.config.js  # Tailwind CSS configuration
-└── vite.config.ts      # Vite configuration
-```
-
-## Working with Class Components
-
-If you're used to functional components with hooks, here's a quick guide to transitioning to class components:
-
-| Functional Component Pattern | Class Component Equivalent                            |
-|------------------------------|------------------------------------------------------|
-| `useState`                   | Class state with `this.state` and `this.setState`    |
-| `useEffect`                  | `componentDidMount`, `componentDidUpdate`, `componentWillUnmount` |
-| `useContext`                 | `static contextType` or `<Context.Consumer>`         |
-| `useRef`                     | Create refs in constructor with `React.createRef()`  |
-| `useMemo`                    | Implement caching patterns in class methods          |
-| Custom hooks                 | Helper methods within the class or utility classes   |
+- **Authentication**: JWT-based authentication
+- **Job Matching**: AI-powered job matching algorithms
+- **Profile Management**: Student and employer profile handling
+- **Resume Parsing**: CV upload and parsing capabilities
+- **Application Tracking**: Job application status tracking
 
 ## Development
 
-### Building for Production
+To run the application in development mode:
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+To build the application for production:
 
 ```bash
 npm run build
 ```
 
-### Previewing the Production Build
+## Future Improvements
 
-```bash
-npm run preview
-```
+- Add real-time notifications
+- Implement complete test coverage
+- Add CI/CD pipeline
+- Enhance mobile responsiveness
+- Implement offline capabilities
 
-## Contributing to the Migration
+## Migration Notes
 
-If you want to help with the migration process:
+This application was migrated from Next.js to React Vite with the following changes:
 
-1. Check the [MIGRATION_STATUS.md](./src/MIGRATION_STATUS.md) to see what needs to be migrated
-2. Pick a component or page from the original Next.js app
-3. Convert it to a class component following the pattern in existing files
-4. Test the component thoroughly
-5. Update the migration status document
+1. Converted functional components to class components
+2. Changed from Next.js API routes to Spring Boot API endpoints
+3. Replaced Next.js routing with React Router
+4. Replaced server-side rendering with client-side rendering
+5. Replaced Supabase integration with direct Spring Boot API integration
 
 ## License
 
-[MIT](LICENSE)
+MIT

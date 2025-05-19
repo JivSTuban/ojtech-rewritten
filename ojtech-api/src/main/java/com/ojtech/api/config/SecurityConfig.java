@@ -54,16 +54,17 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/jobs/active", "/api/jobs/search", "/api/jobs/{id}").permitAll()
                 
-                // This is THE CRITICAL CONFIGURATION FOR PROFILES/ME ENDPOINT
-                // Note: Moving this earlier in the chain to ensure it takes precedence
-                .requestMatchers(HttpMethod.GET, "/api/profiles/me").permitAll()
+                // Profile endpoints
+                .requestMatchers(HttpMethod.GET, "/api/profile/me").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/profile/student/me").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.GET, "/api/profile/employer/me").hasRole("EMPLOYER")
                 
                 // Allow CV "me" endpoint access for any authenticated user (important!)
                 .requestMatchers(HttpMethod.GET, "/api/cvs/me").authenticated()
                 
                 // Admin-only endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/profiles/role/**").hasRole("ADMIN")
+                .requestMatchers("/api/profile/role/**").hasRole("ADMIN")
                 
                 // Employer-specific endpoints
                 .requestMatchers("/api/employers/**").hasAnyRole("ADMIN", "EMPLOYER")

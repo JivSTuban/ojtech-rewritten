@@ -1,93 +1,148 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { ToastProvider } from '@/providers/ToastContext';
 import { Toaster } from '@/components/ui/Toaster';
 import { Navbar } from '@/components/Navbar';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
+import { VerifyEmailPage } from '@/pages/VerifyEmailPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { HomePage } from '@/pages/HomePage';
 import { OpportunitiesPage } from '@/pages/OpportunitiesPage';
-import { JobDetailPageWrapper } from '@/pages/JobDetailPage';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { JobDetailPage } from '@/pages/JobDetailPage';
+import { JobApplicationPage } from '@/pages/JobApplicationPage';
+import { ProtectedRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from '@/pages/onboarding/StudentOnboardingPage';
 import { EmployerOnboardingPage } from '@/pages/onboarding/EmployerOnboardingPage';
 import { EmployerJobsPage } from '@/pages/employer/EmployerJobsPage';
 import { JobFormPage } from '@/pages/employer/JobFormPage';
+import { JobApplicationsPage } from '@/pages/employer/JobApplicationsPage';
 import { useAuth } from '@/providers/AuthProvider';
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
+import { TrackApplicationsPage } from '@/pages/TrackApplicationsPage';
 import './index.css';
 
-// Layout component with navigation
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Main layout with navigation for all non-auth pages
+const MainLayout: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
+  // Check onboarding status on route change
+  React.useEffect(() => {
     if (!isLoading && user && !user.hasCompletedOnboarding) {
       const isOnboardingRoute = location.pathname.startsWith('/onboarding');
       const isProfileRoute = location.pathname === '/profile';
+      const isAuthRoute = location.pathname.startsWith('/login') || 
+                         location.pathname.startsWith('/register') || 
+                         location.pathname.startsWith('/auth');
 
-      if (user.roles.includes('ROLE_STUDENT') && location.pathname !== '/onboarding/student' && !isOnboardingRoute && !isProfileRoute) {
-        navigate('/onboarding/student', { replace: true });
-      } else if (user.roles.includes('ROLE_EMPLOYER') && location.pathname !== '/onboarding/employer' && !isOnboardingRoute && !isProfileRoute) {
-        navigate('/onboarding/employer', { replace: true });
+      if (user?.roles?.includes('ROLE_STUDENT') && 
+          location.pathname !== '/onboarding/student' && 
+          !isOnboardingRoute && !isProfileRoute && !isAuthRoute) {
+        window.location.href = '/onboarding/student';
+      } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
+                location.pathname !== '/onboarding/employer' && 
+                !isOnboardingRoute && !isProfileRoute && !isAuthRoute) {
+        window.location.href = '/onboarding/employer';
       }
     }
-  }, [user, isLoading, navigate, location.pathname]);
+  }, [user, isLoading, location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">
-        {children}
+        <Outlet />
       </main>
     </div>
   );
 };
 
-// Simple Placeholder for JobApplicationsPage
-const JobApplicationsPagePlaceholder: React.FC = () => (
-    <div>
-        <h2 className="text-xl font-semibold">Job Applications</h2>
-        <p>Applications for this job will be listed here. (To be implemented)</p>
-        <Link to="/employer/jobs" className="text-indigo-600 hover:underline mt-4 inline-block">Back to My Jobs</Link>
+// Auth layout without navigation for auth pages
+const AuthLayout: React.FC = () => {
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <main className="flex-grow">
+        <Outlet />
+      </main>
     </div>
-);
+  );
+};
 
-// App component
+// Email verification redirect component
+const EmailVerificationRedirect: React.FC = () => {
+  const { user } = useAuth();
+  
+  // Determine where to redirect based on user role
+  if (user) {
+    if (user.roles?.includes('ROLE_STUDENT')) {
+      return <Navigate to="/onboarding/student" replace />;
+    } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+      return <Navigate to="/onboarding/employer" replace />;
+    }
+  }
+  
+  // Default redirect to login if no user is found
+  return <Navigate to="/login" replace />;
+};
+
+// Main App component
 export const App: React.FC = () => {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ToastProvider>
-        <AppLayout>
-          <Routes>
+        <Routes>
+          {/* Auth routes without navigation - public only */}
+          <Route element={<PublicOnlyRoute />}>
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              {/* Keep verify-email route for backward compatibility, but redirect to appropriate page */}
+              <Route path="/verify-email" element={<EmailVerificationRedirect />} />
+            </Route>
+          </Route>
+          
+          {/* All non-auth routes with the main layout and navbar */}
+          <Route element={<MainLayout />}>
+            {/* Public routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/opportunities" element={<OpportunitiesPage />} />
+            <Route path="/opportunities/:id" element={<JobDetailPage />} />
             
+            {/* Protected routes for all authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
               <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
             </Route>
             
+            {/* Employer-specific routes */}
             <Route element={<ProtectedRoute allowedRoles={['ROLE_EMPLOYER']} />}>
               <Route path="/employer/jobs" element={<EmployerJobsPage />} />
               <Route path="/employer/jobs/create" element={<JobFormPage />} />
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
-              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPagePlaceholder />} />
+              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
             </Route>
             
-            <Route path="/opportunities" element={<OpportunitiesPage />} />
-            <Route path="/opportunities/:id" element={<JobDetailPageWrapper />} />
+            {/* Student-specific routes */}
+            <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
+              <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
+              <Route path="/track" element={<TrackApplicationsPage />} />
+            </Route>
             
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AppLayout>
+            {/* Admin routes */}
+            <Route element={<ProtectedRoute allowedRoles={["ROLE_ADMIN"]} />}>
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<UsersAdminPage />} />
+            </Route>
+          </Route>
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
         <Toaster /> 
       </ToastProvider>
     </ThemeProvider>
   );
-};
+}

@@ -54,15 +54,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service
-
 @Transactional
-
 public class CVServiceImpl implements CVService {
 
     private final CVRepository cvRepository;
     private final ProfileRepository profileRepository;
     private final ObjectMapper objectMapper;
     private final JobMatchingService jobMatchingService;
+    
+    public CVServiceImpl(CVRepository cvRepository, 
+                        ProfileRepository profileRepository,
+                        ObjectMapper objectMapper,
+                        JobMatchingService jobMatchingService) {
+        this.cvRepository = cvRepository;
+        this.profileRepository = profileRepository;
+        this.objectMapper = objectMapper;
+        this.jobMatchingService = jobMatchingService;
+    }
 
     @Override
     public CV uploadCV(UUID userId, MultipartFile file) {

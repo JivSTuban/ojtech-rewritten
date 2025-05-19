@@ -8,6 +8,9 @@
 4. **Component import case sensitivity** - Some components have incorrect casing in import statements
 5. **Missing exported components** - Some files are not exporting components correctly (default vs named exports)
 6. **React hooks in class components** - Form components using React Hook Form need to be refactored to use class state
+7. **UI Inconsistency** - Inconsistent navbar styling between main pages and auth pages
+8. **Email Verification Step** - Unnecessary email verification step in the registration flow
+9. **Registration/Login Flow Issues** - Authentication errors during registration and login process
 
 ## Recently Fixed Issues
 
@@ -24,6 +27,20 @@
    - EmployerJobCard.tsx - Implemented fully-featured job card with proper component structure
    - Table.tsx - Converted to use named exports for all table components
    - Spinner.tsx - Fixed export to use named export
+
+3. **UI Consistency** - Improved visual consistency across the application:
+   - Updated AuthLayout to match the main Navbar styling (black background, font sizes, etc.)
+   - Ensured consistent button styling between auth pages and main pages
+   - Added proper spacing and alignment in auth pages
+
+4. **Registration Flow** - Improved the registration flow:
+   - Removed the email verification step
+   - Implemented automatic login after registration
+   - User is now redirected directly to onboarding after registration
+   - Added profile creation with full name after successful login
+   - Fixed authentication issues by using username instead of email for login
+   - Added graceful fallback to manual login if automatic login fails
+   - Improved error handling and user feedback
 
 ## Automated Fixes
 
@@ -111,14 +128,81 @@ Ensure all component imports match the actual file names. Common issues:
 - `Button.tsx` but imported as `button.tsx`
 - `Card.tsx` but imported as `card.tsx`
 
+## Authentication Flow Improvements
+
+### Issues Addressed
+
+1. **Auth Pages Navigation Issue**: The login and signup pages lacked a navbar, making it difficult for users to return to the homepage.
+   - **Solution**: Created an improved `AuthLayout` class component with a prominent home link and better styling.
+
+2. **UI Centering**: The auth components needed better vertical centering.
+   - **Solution**: Updated the `AuthLayout` to use proper flex styling for consistent centering.
+
+3. **Email Validation Change**: The registration form was updated to accept any valid email address instead of requiring educational emails (.edu domains).
+   - **Solution**: Modified the email validation regex to accept standard email formats.
+
+4. **Username Field Removal**: The registration form had an unnecessary username field.
+   - **Solution**: Removed the username field from the registration form and auto-generate a username from the email address.
+
+5. **Registration Error (403)**: Registration attempts returned 403 errors because the backend's `SignupRequest` class doesn't accept the `fullName` field.
+   - **Solution**: The fullName is now stored in session storage during registration and removed from the API request to the backend.
+
+6. **Profile Data Handling**: The `Profile` model requires a `fullName`, but the `SignupRequest` doesn't accept it.
+   - **Solution**: Implemented a `createInitialProfile` method that updates the profile with the full name after successful login.
+
+7. **UI Inconsistency**: The navbar in auth pages had different styling than the main navbar.
+   - **Solution**: Updated the AuthLayout to match the main Navbar styling with the same black background, font sizes, and button styles.
+
+8. **Email Verification Step**: The registration flow included an unnecessary email verification step.
+   - **Solution**: Removed the email verification step and implemented automatic login after registration, redirecting users directly to onboarding.
+
+9. **Authentication Errors**: The automatic login after registration was failing due to using email instead of username.
+   - **Solution**: Updated the AuthProvider to use the generated username for login instead of email, and added graceful fallback to manual login if automatic login fails.
+
+### Implementation Details
+
+1. **AuthLayout Component**:
+   - Updated to use the same black background and styling as the main navbar
+   - Maintained the "Back to Home" link but styled it consistently with the main UI
+   - Improved vertical centering with flex layout
+   - Added consistent padding and container width
+
+2. **Registration Flow**:
+   - Removed username field from the form
+   - Auto-generate username from email to satisfy backend requirements
+   - Store fullName in session storage for later use
+   - Updated validation to accept any valid email format
+   - Implemented automatic login after registration using the generated username
+   - Removed the email verification step
+   - Redirected users directly to onboarding after registration
+   - Added graceful fallback to manual login if automatic login fails
+   - Improved error handling with clear user feedback
+
+3. **Login Flow**:
+   - Pre-fill email field if coming from registration
+   - Create initial profile with stored fullName after successful login
+   - Clear session storage after successful profile creation
+   - Added success message when redirected from registration
+   - Improved error handling with more specific error messages
+
+4. **Error Handling**:
+   - Improved error display with consistent styling
+   - Added specific error handling for API responses
+   - Added graceful fallback for authentication errors
+   - Provided clear user feedback for all error scenarios
+
 ## Next Steps
 
-1. Fix any remaining duplicate import statements
-2. Check browser console for any runtime errors
-3. Convert any remaining functional components with hooks to class components
-4. Replace any remaining Next.js specific components
-5. Fix any remaining TypeScript errors
-6. Test component functionality
+1. **Testing**: Thoroughly test the authentication flow to ensure it works as expected.
+2. **Documentation**: Update documentation to reflect the changes.
+3. **User Feedback**: Gather feedback from users to identify any remaining issues.
+
+## Technical Debt
+
+1. **Backend API Consistency**: The backend API should be updated to accept fullName in the SignupRequest.
+2. **Error Handling**: Improve error handling with more specific error messages.
+3. **Form Validation**: Add more comprehensive form validation.
+4. **Authentication Flow**: Consider implementing a more robust authentication flow that doesn't rely on username for login.
 
 ## Testing Plan
 
@@ -128,6 +212,8 @@ After fixing the issues:
 3. Test the employer onboarding process
 4. Test form submissions
 5. Verify all UI components render correctly
+6. Check navbar consistency across all pages
+7. Test error handling and fallback mechanisms
 
 ## List of Files with Remaining Issues
 
