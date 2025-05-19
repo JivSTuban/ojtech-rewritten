@@ -75,16 +75,37 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public Profile saveProfile(Profile profile) {
-        log.info("Saving new profile for email: {}", profile.getEmail());
-        if (profileRepository.existsByEmail(profile.getEmail())) {
-            throw new RuntimeException("Error: Email is already in use!");
+        log.info("Saving new profile for email: {}, role: {}", profile.getEmail(), profile.getRole());
+        
+        try {
+            if (profileRepository.existsByEmail(profile.getEmail())) {
+                log.error("Failed to save profile: Email already exists: {}", profile.getEmail());
+                throw new RuntimeException("Error: Email is already in use!");
+            }
+            
+            // If password is set on Profile and needs encoding:
+            if (profile.getPassword() != null && !profile.getPassword().isEmpty()) {
+                log.debug("Processing password for profile: {}", profile.getEmail());
+                // Don't re-encode if it's already encoded (BCrypt passwords start with $2a$)
+                if (!profile.getPassword().startsWith("$2a$")) {
+                    log.debug("Encoding plain password for profile: {}", profile.getEmail());
+                    profile.setPassword(passwordEncoder.encode(profile.getPassword()));
+                } else {
+                    log.debug("Password already encoded, skipping encoding for profile: {}", profile.getEmail());
+                }
+            } else {
+                log.warn("Profile being saved without password: {}", profile.getEmail());
+            }
+            
+            Profile savedProfile = profileRepository.save(profile);
+            log.info("Profile saved successfully: id={}, email={}, role={}", 
+                    savedProfile.getId(), savedProfile.getEmail(), savedProfile.getRole());
+            
+            return savedProfile;
+        } catch (Exception e) {
+            log.error("Error saving profile for email {}: {}", profile.getEmail(), e.getMessage(), e);
+            throw e;
         }
-        // Assuming User is created separately or this is for an admin creating a Profile directly
-        // If password is set on Profile and needs encoding:
-        if (profile.getPassword() != null && !profile.getPassword().isEmpty()) {
-             profile.setPassword(passwordEncoder.encode(profile.getPassword()));
-        }
-        return profileRepository.save(profile);
     }
 
     @Override

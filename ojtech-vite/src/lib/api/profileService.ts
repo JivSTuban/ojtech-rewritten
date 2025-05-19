@@ -41,13 +41,42 @@ const createInitialProfile = async (fullName: string) => {
       throw new Error("User must be logged in to create profile");
     }
     
-    const response = await axios.post(`${API_URL}/create`, 
-      { fullName },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+    console.log(`Creating initial profile for user ${user.username} with full name: ${fullName}`);
+    
+    // First check if profile already exists to avoid duplicate creation
+    try {
+      const existingProfile = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+      console.log('Profile already exists:', existingProfile.data);
+      
+      // If profile exists but doesn't have a fullName, update it
+      if (existingProfile.data && (!existingProfile.data.fullName || existingProfile.data.fullName.trim() === '')) {
+        console.log('Updating existing profile with full name');
+        return await axios.post(`${API_URL}/update`, 
+          { fullName },
+          { headers: getAuthHeaders() }
+        );
+      }
+      
+      return existingProfile.data;
+    } catch (error: any) {
+      // If profile doesn't exist (404) or other error, create a new one
+      if (error.response?.status === 404 || !error.response) {
+        console.log('No existing profile found, creating new profile');
+        const response = await axios.post(`${API_URL}/create`, 
+          { fullName },
+          { headers: getAuthHeaders() }
+        );
+        console.log('Profile creation response:', response.data);
+        return response.data;
+      } else {
+        throw error; // Re-throw if it's not a 404
+      }
+    }
   } catch (error: any) {
     console.error("Error creating initial profile:", error.message);
+    if (error.response?.data) {
+      console.error("Server error details:", error.response.data);
+    }
     throw error;
   }
 };
@@ -82,14 +111,37 @@ const uploadStudentCv = async (cvFile: File) => {
 
 const getCurrentStudentProfile = async () => {
   try {
-    const response = await axios.get(`${API_URL}/student/me`, { headers: getAuthHeaders() });
+    // First try to get the main profile
+    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+    console.log('Successfully retrieved profile:', response.data);
+    
+    // If we have a profile and it has completed onboarding, return it
+    if (response.data && response.data.hasCompletedOnboarding) {
+      return response.data;
+    }
+    
+    // If profile exists but onboarding not completed, return it anyway
+    // The frontend will handle redirecting to onboarding
     return response.data;
   } catch (error: any) {
     if (error.response?.status === 404) {
-      console.warn("Student profile not found - this may be normal for new users");
+      console.warn("Profile not found - this may be normal for new users");
     } else {
-      console.error("Error fetching student profile:", error.message);
+      console.error("Error fetching profile:", error.message);
     }
+    // Return null to indicate profile needs to be created
+    return null;
+  }
+};
+
+const submitStudentOnboarding = async (data: any) => {
+  try {
+    console.log('Submitting student onboarding data:', data);
+    const response = await axios.post(`${API_URL}/student/onboarding`, data, { headers: getAuthHeaders() });
+    console.log('Student onboarding successful:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error submitting student onboarding:', error.message);
     throw error;
   }
 };
@@ -143,6 +195,7 @@ const profileService = {
   completeStudentOnboarding,
   uploadStudentCv,
   getCurrentStudentProfile,
+  submitStudentOnboarding,
   completeEmployerOnboarding,
   uploadEmployerLogo,
   getCurrentEmployerProfile,

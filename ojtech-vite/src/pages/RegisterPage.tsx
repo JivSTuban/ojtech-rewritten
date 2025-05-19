@@ -132,12 +132,15 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       // Generate a username from email
       const username = this.generateUsername(email);
       
-      // Store full name in session storage before registration
-      // This will be used to create the profile after login
+      // Store full name and email in session storage before registration
+      // This will be used for profile creation and login
       sessionStorage.setItem('registrationFullName', fullName);
+      sessionStorage.setItem('registrationEmail', email);
+      // Also store the generated username for login after registration
+      sessionStorage.setItem('registrationUsername', username);
       
       // Call register function from context with STUDENT role
-      // The register function now automatically logs in the user
+      // Note: We don't include fullName in the request as the backend doesn't accept it
       await this.context.register({
         username,
         email,
@@ -175,14 +178,11 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         // Handle login failure after successful registration
         this.setState({ 
           errors: { 
-            general: 'Registration successful, but automatic login failed. Please go to the login page and sign in manually.' 
+            general: `Registration successful, but automatic login failed. Please go to the login page and sign in with your email address and password.` 
           },
           isLoading: false,
           redirectTo: '/login?fromRegistration=true'  // Redirect to login page with query parameter
         });
-        
-        // Store email in session storage for login page
-        sessionStorage.setItem('registrationEmail', email);
       } else {
         // Generic error
         this.setState({ 
@@ -213,10 +213,6 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         <Card className="w-full p-6 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Create your account</h1>
-            <p className="text-muted-foreground">Sign up to get started with OJTech</p>
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> Only students can register directly. Employer accounts are created by administrators.
-            </p>
           </div>
           
           <form onSubmit={this.handleSubmit} className="space-y-4">

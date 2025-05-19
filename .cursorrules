@@ -1,0 +1,190 @@
+# OJTech Project Rules
+
+## Project Structure
+
+1. Backend Spring Boot API is in `ojtech-api/`
+2. Frontend React Vite application is in `ojtech-vite/`
+
+## Frontend Patterns
+
+1. **Class Components**: All components should be implemented as ES6 classes extending React.Component
+   ```typescript
+   export class MyComponent extends Component<MyComponentProps, MyComponentState> {
+     constructor(props: MyComponentProps) {
+       super(props);
+       this.state = { /* initial state */ };
+     }
+     
+     render() {
+       return (/* JSX */);
+     }
+   }
+   ```
+
+2. **Import Structure**: Use relative imports instead of path aliases
+   ```typescript
+   // Correct
+   import { Button } from "../ui/Button";
+   
+   // Incorrect - path aliases are being phased out
+   import { Button } from "@/components/ui/Button";
+   ```
+
+3. **Component Naming**: Use PascalCase for component files and exports
+   ```typescript
+   // Correct
+   export class Button extends Component { /* ... */ }
+   
+   // Incorrect
+   export class button extends Component { /* ... */ }
+   ```
+
+4. **Form State Management**: Use class component state instead of React Hook Form
+   ```typescript
+   // Correct
+   handleChange = (e) => {
+     this.setState({ [e.target.name]: e.target.value });
+   }
+   
+   // Incorrect - hooks are not compatible with class components
+   const { register, handleSubmit } = useForm();
+   ```
+
+5. **Routing**: Use React Router components and hooks
+   ```typescript
+   // Correct
+   import { useNavigate, useParams } from 'react-router-dom';
+   
+   // Incorrect - Next.js specific
+   import { useRouter } from 'next/router';
+   ```
+
+## Backend Patterns
+
+1. **Package Structure**: Follow the standard Spring Boot package structure
+   ```
+   com.ojtech.api
+     ├── config
+     ├── controller
+     ├── exception
+     ├── model
+     ├── payload
+     │   ├── request
+     │   └── response
+     ├── repository
+     ├── security
+     │   ├── jwt
+     │   └── services
+     ├── service
+     └── util
+   ```
+
+2. **Entity Design**: Entities should extend BaseEntity for common fields
+   ```java
+   public class MyEntity extends BaseEntity {
+     // Entity-specific fields
+   }
+   ```
+
+3. **API Endpoints**: Follow RESTful naming conventions
+   ```
+   GET /api/resource
+   GET /api/resource/{id}
+   POST /api/resource
+   PUT /api/resource/{id}
+   DELETE /api/resource/{id}
+   ```
+
+## Styling Conventions
+
+1. **Tailwind CSS**: Use Tailwind utility classes for styling
+   ```html
+   <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow">
+     <!-- Content -->
+   </div>
+   ```
+
+2. **Component Variants**: Use class-variance-authority for component variants
+   ```typescript
+   const buttonVariants = cva(
+     "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
+     {
+       variants: {
+         variant: {
+           default: "bg-primary text-primary-foreground hover:bg-primary/90",
+           destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+         },
+         size: {
+           default: "h-10 px-4 py-2",
+           sm: "h-9 px-3",
+           lg: "h-11 px-8",
+         },
+       },
+       defaultVariants: {
+         variant: "default",
+         size: "default",
+       },
+     }
+   );
+   ```
+
+## Authentication Patterns
+
+1. **JWT Storage**: Store JWT tokens in localStorage
+   ```typescript
+   // Store token
+   localStorage.setItem('token', token);
+   
+   // Retrieve token
+   const token = localStorage.getItem('token');
+   ```
+
+2. **Protected Routes**: Use the ProtectedRoute component for authentication
+   ```typescript
+   <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
+     <Route path="/student-only" element={<StudentPage />} />
+   </Route>
+   ```
+
+## API Integration
+
+1. **API Calls**: Use Axios for API requests
+   ```typescript
+   import axios from 'axios';
+   
+   const API_URL = 'http://localhost:8080/api';
+   
+   axios.get(`${API_URL}/resource`, {
+     headers: {
+       Authorization: `Bearer ${token}`
+     }
+   })
+   .then(response => {
+     // Handle response
+   })
+   .catch(error => {
+     // Handle error
+   });
+   ```
+
+2. **Error Handling**: Use the Toast provider for error messages
+   ```typescript
+   import { useToast } from '../providers/ToastContext';
+   
+   // In component
+   const { toast } = useToast();
+   
+   // On error
+   toast({
+     title: "Error",
+     description: "Something went wrong",
+     variant: "destructive"
+   });
+   ```
+
+## Migration Notes
+
+1. The project is being migrated from Next.js to React Vite
+2. Some files may still contain Next.js specific code that needs to be replaced
+3. Path aliases (@/) are being replaced with relative imports
+4. Functional components with hooks are being converted to class components 

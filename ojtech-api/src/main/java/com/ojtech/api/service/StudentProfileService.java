@@ -10,6 +10,7 @@ public interface StudentProfileService {
     List<StudentProfile> getAllStudentProfiles();
     Optional<StudentProfile> getStudentProfileById(UUID id);
     Optional<StudentProfile> getStudentProfileByProfileId(UUID profileId);
+    Optional<StudentProfile> getStudentProfileByEmail(String email);
     StudentProfile createStudentProfile(StudentProfile studentProfile);
     StudentProfile updateStudentProfile(UUID id, StudentProfile studentProfile);
     void deleteStudentProfile(UUID id);

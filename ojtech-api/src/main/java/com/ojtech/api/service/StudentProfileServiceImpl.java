@@ -125,4 +125,28 @@ public class StudentProfileServiceImpl implements StudentProfileService {
         studentProfileRepository.deleteById(id);
         log.info("Successfully deleted student profile with ID: {}", id);
     }
+
+    @Override
+    public Optional<StudentProfile> getStudentProfileByEmail(String email) {
+        log.debug("Fetching student profile by email: {}", email);
+        
+        // First try to find the profile by email
+        Optional<Profile> profileOpt = profileRepository.findByEmail(email);
+        
+        if (profileOpt.isPresent()) {
+            Profile profile = profileOpt.get();
+            log.debug("Found profile with ID: {} for email: {}", profile.getId(), email);
+            
+            // Now find the student profile linked to this profile
+            return studentProfileRepository.findByProfile(profile);
+        }
+        
+        // If not found by profile email, try school email or personal email
+        Optional<StudentProfile> bySchoolEmail = studentProfileRepository.findBySchoolEmail(email);
+        if (bySchoolEmail.isPresent()) {
+            return bySchoolEmail;
+        }
+        
+        return studentProfileRepository.findByPersonalEmail(email);
+    }
 } 

@@ -24,35 +24,74 @@ export interface UserData {
 }
 
 const register = async (data: SignupData) => {
-  console.log('Sending registration data:', data);
+  console.log('Sending registration data:', JSON.stringify(data, null, 2));
   console.log('To URL:', `${AUTH_API_URL}/signup`);
   try {
     const response = await axios.post(`${AUTH_API_URL}/signup`, data);
-    console.log('Registration response:', response);
+    console.log('Registration response status:', response.status);
+    console.log('Registration response data:', response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration API error:', error);
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response data:', error.response.data);
+    }
     throw error;
   }
 };
 
 const login = async (data: LoginData) => {
-  const response = await axios.post(`${AUTH_API_URL}/signin`, data);
-  if (response.data.accessToken) {
-    localStorage.setItem('user', JSON.stringify(response.data));
+  console.log('Sending login request with data:', JSON.stringify(data, null, 2));
+  console.log('To URL:', `${AUTH_API_URL}/signin`);
+  
+  try {
+    // The backend expects usernameOrEmail field but treats it as email
+    const requestData = {
+      usernameOrEmail: data.usernameOrEmail,
+      password: data.password
+    };
+    
+    const response = await axios.post(`${AUTH_API_URL}/signin`, requestData);
+    console.log('Login response status:', response.status);
+    console.log('Login response data structure:', Object.keys(response.data));
+    
+    if (response.data.accessToken) {
+      console.log('Access token received, storing user data');
+      localStorage.setItem('user', JSON.stringify(response.data));
+    } else {
+      console.warn('No access token in response data');
+    }
+    return response.data;
+  } catch (error: any) {
+    console.error('Login API error:', error);
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response data:', error.response.data);
+      console.error('Error response headers:', error.response.headers);
+    }
+    throw error;
   }
-  return response.data;
 };
 
 const logout = () => {
   localStorage.removeItem('user');
+  console.log('User logged out, localStorage user data cleared');
   // Potentially call a backend endpoint to invalidate the token if implemented
 };
 
 const getCurrentUser = (): UserData | null => {
   const userStr = localStorage.getItem('user');
   if (userStr) {
-    return JSON.parse(userStr) as UserData;
+    try {
+      const userData = JSON.parse(userStr) as UserData;
+      console.log('Current user retrieved from localStorage:', userData.username);
+      return userData;
+    } catch (error) {
+      console.error('Error parsing user data from localStorage:', error);
+      localStorage.removeItem('user'); // Clear invalid data
+      return null;
+    }
   }
   return null;
 };

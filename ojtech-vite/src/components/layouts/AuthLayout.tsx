@@ -26,8 +26,8 @@ export class AuthLayout extends Component<AuthLayoutProps> {
             </Link>
           </div>
         </nav>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md mx-auto">
             {this.props.children}
           </div>
         </main>

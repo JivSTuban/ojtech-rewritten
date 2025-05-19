@@ -12,7 +12,7 @@ import { AuthLayout } from '../components/layouts/AuthLayout';
 import profileService from '../lib/api/profileService';
 
 interface LoginPageState {
-  usernameOrEmail: string;
+  email: string;
   password: string;
   error: string | null;
   isLoading: boolean;
@@ -30,7 +30,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
   constructor(props: {}) {
     super(props);
     this.state = {
-      usernameOrEmail: '',
+      email: '',
       password: '',
       error: null,
       isLoading: false,
@@ -45,18 +45,22 @@ export class LoginPage extends Component<{}, LoginPageState> {
       this.setState({ redirectTo: '/' });
     }
     
-    // Check if we have stored email from registration
+    // Use stored email from registration
     const storedEmail = sessionStorage.getItem('registrationEmail');
+    
     if (storedEmail) {
-      this.setState({ usernameOrEmail: storedEmail });
+      this.setState({ email: storedEmail });
     }
     
     // Check if redirected from registration
     const urlParams = new URLSearchParams(window.location.search);
     const fromRegistration = urlParams.get('fromRegistration');
     if (fromRegistration === 'true') {
+      const email = sessionStorage.getItem('registrationEmail');
       this.setState({
-        message: 'Registration successful! Please log in with your credentials.'
+        message: email
+          ? `Registration successful! Please log in with your email "${email}" and password.`
+          : 'Registration successful! Please log in with your credentials.'
       });
     }
   }
@@ -78,14 +82,27 @@ export class LoginPage extends Component<{}, LoginPageState> {
       
       if (fullName) {
         console.log('Creating initial profile with stored full name:', fullName);
-        await profileService.createInitialProfile(fullName);
         
-        // Clear stored registration data after successful profile creation
-        sessionStorage.removeItem('registrationEmail');
-        sessionStorage.removeItem('registrationFullName');
+        try {
+          // Try to create the initial profile
+          await profileService.createInitialProfile(fullName);
+          console.log('Successfully created initial profile');
+          
+          // Clear stored registration data after successful profile creation
+          sessionStorage.removeItem('registrationEmail');
+          sessionStorage.removeItem('registrationFullName');
+          
+          // Refresh user data to get updated profile information
+          if (this.context && this.context.fetchUserProfile) {
+            await this.context.fetchUserProfile();
+          }
+        } catch (error) {
+          console.error('Error creating initial profile:', error);
+          // Don't block the login flow if this fails
+        }
       }
     } catch (error) {
-      console.error('Error creating initial profile:', error);
+      console.error('Error in createInitialProfileIfNeeded:', error);
       // Don't block the login flow if this fails
     }
   };
@@ -93,7 +110,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
   handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { usernameOrEmail, password } = this.state;
+    const { email, password } = this.state;
     
     // Make sure the context is defined
     if (!this.context || !this.context.login) {
@@ -106,8 +123,11 @@ export class LoginPage extends Component<{}, LoginPageState> {
     this.setState({ error: null, isLoading: true });
     
     try {
-      // Use the login method from AuthContext
-      await login({ usernameOrEmail, password });
+      // Use the login method from AuthContext with both email and password
+      await login({ 
+        usernameOrEmail: email,
+        password 
+      });
       
       // After successful login, try to create initial profile if needed
       await this.createInitialProfileIfNeeded();
@@ -132,15 +152,27 @@ export class LoginPage extends Component<{}, LoginPageState> {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      this.setState({ 
-        error: error.response?.data?.message || error.message || 'Login failed. Please try again.',
-        isLoading: false
-      });
+      
+      // Provide more helpful error message for 403 errors
+      if (error.response?.status === 403) {
+        const email = sessionStorage.getItem('registrationEmail');
+        this.setState({ 
+          error: email 
+            ? `Invalid credentials. Please use your email "${email}" and password.` 
+            : "Invalid email or password. Please make sure you're using the email address you registered with.",
+          isLoading: false
+        });
+      } else {
+        this.setState({ 
+          error: error.response?.data?.message || error.message || 'Login failed. Please try again.',
+          isLoading: false
+        });
+      }
     }
   };
   
   render() {
-    const { usernameOrEmail, password, error, isLoading, redirectTo, message } = this.state;
+    const { email, password, error, isLoading, redirectTo, message } = this.state;
     
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
@@ -163,15 +195,16 @@ export class LoginPage extends Component<{}, LoginPageState> {
           <form onSubmit={this.handleSubmit} className="space-y-4">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="usernameOrEmail">Email</Label>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
-                  id="usernameOrEmail"
-                  name="usernameOrEmail"
-                  type="text"
-                  value={usernameOrEmail}
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
                   onChange={this.handleInputChange}
                   required
                   className="mt-1"
+                  placeholder="Enter your email address"
                 />
               </div>
               

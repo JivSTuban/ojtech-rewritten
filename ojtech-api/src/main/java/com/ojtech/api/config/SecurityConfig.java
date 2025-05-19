@@ -50,7 +50,8 @@ public class SecurityConfig {
                 auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/jobs/active", "/api/jobs/search", "/api/jobs/{id}").permitAll()
                 
@@ -80,6 +81,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/jobs/**").authenticated()
                 .requestMatchers("/api/job-applications/**").authenticated()
                 .requestMatchers("/api/skills/**").authenticated()
+                
+                // Allow public job listings
+                .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
+                
+                // Ensure profile endpoints are accessible to authenticated users
+                .requestMatchers("/api/profile/**").authenticated()
                 
                 .anyRequest().authenticated();
             });

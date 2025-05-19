@@ -11,10 +11,13 @@ export interface AppUser extends UserData {
 
 interface AuthContextType {
   user: AppUser | null;
-  login: (data: any) => Promise<AppUser>;
+  login: (usernameOrEmail: string, password: string) => Promise<AppUser>;
   register: (data: any) => Promise<any>; 
   logout: () => void;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  profile: any;
+  needsOnboarding: boolean;
   fetchUserProfile: () => Promise<void>; // Added to manually refresh profile
 }
 
@@ -27,6 +30,9 @@ interface AuthProviderProps {
 interface AuthProviderState {
   user: AppUser | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  profile: any | null;
+  needsOnboarding: boolean;
 }
 
 export class AuthProvider extends Component<AuthProviderProps, AuthProviderState> {
@@ -34,7 +40,10 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
     super(props);
     this.state = {
       user: null,
-      isLoading: true
+      isLoading: true,
+      isAuthenticated: false,
+      profile: null,
+      needsOnboarding: true
     };
   }
 
@@ -43,78 +52,92 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
   }
 
   fetchUserProfileData = async (userData: UserData): Promise<AppUser> => {
-    let profileData: any = null;
-    let hasCompletedOnboarding = false;
-    
     try {
-      // First try the general profile endpoint which should be more reliable
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'}/profile/me`, {
-          headers: { 
-            Authorization: `Bearer ${userData?.accessToken}` 
-          }
+      const profile = await profileService.getCurrentStudentProfile();
+      
+      const user: AppUser = {
+        ...userData,
+        profile: profile || null,
+        hasCompletedOnboarding: profile ? profile.hasCompletedOnboarding : false
+      };
+      
+      this.setState({
+        isLoading: false,
+        isAuthenticated: true,
+        user,
+        profile: profile || null,
+        needsOnboarding: !profile || !profile.hasCompletedOnboarding
+      });
+      
+      return user;
+    } catch (error: any) {
+      console.error("Error fetching user profile:", error);
+      
+      if (error.response && error.response.status === 401) {
+        // Unauthorized - clear token and redirect to login
+        this.logout();
+        throw error; // Rethrow to handle in calling code
+      } else {
+        // Other error - still authenticated but no profile
+        const user: AppUser = {
+          ...userData,
+          profile: null,
+          hasCompletedOnboarding: false
+        };
+        
+        this.setState({
+          isLoading: false,
+          isAuthenticated: true,
+          user,
+          profile: null,
+          needsOnboarding: true
         });
         
-        if (response.data) {
-          hasCompletedOnboarding = response.data.hasCompletedOnboarding || false;
-        }
-      } catch (error) {
-        console.warn("Could not fetch base profile, trying role-specific profile");
+        return user;
       }
-      
-      // Then try to get role-specific profile data
-      if (userData?.roles?.includes('ROLE_STUDENT')) {
-        try {
-        profileData = await profileService.getCurrentStudentProfile();
-          hasCompletedOnboarding = profileData?.hasCompletedOnboarding || hasCompletedOnboarding;
-        } catch (error: any) {
-          // Only log a warning for 404s as this might be expected for new users
-          if (error.response?.status === 404) {
-            console.warn("Student profile not found - user may need to complete onboarding");
-          } else {
-            console.error("Error fetching student profile:", error);
-          }
-        }
-      } else if (userData?.roles?.includes('ROLE_EMPLOYER')) {
-        try {
-        profileData = await profileService.getCurrentEmployerProfile();
-          hasCompletedOnboarding = profileData?.hasCompletedOnboarding || hasCompletedOnboarding;
-        } catch (error: any) {
-          // Only log a warning for 404s as this might be expected for new users
-          if (error.response?.status === 404) {
-            console.warn("Employer profile not found - user may need to complete onboarding");
-          } else {
-            console.error("Error fetching employer profile:", error);
-          }
-        }
-      }
-    } catch (error: any) {
-        console.error("Failed to fetch user profile:", error);
     }
-    
-    return { ...userData, profile: profileData, hasCompletedOnboarding };
   };
 
   initializeAuth = async () => {
+    try {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
-      const fullUser = await this.fetchUserProfileData(currentUser);
-      this.setState({ user: fullUser });
+        const fullUser = await this.fetchUserProfileData(currentUser);
+        this.setState({ 
+          user: fullUser,
+          isLoading: false,
+          isAuthenticated: true,
+          needsOnboarding: !fullUser.profile?.hasCompletedOnboarding
+        });
+      } else {
+        this.setState({ isLoading: false });
       }
-    this.setState({ isLoading: false });
-    };
-
-  login = async (data: any) => {
-    this.setState({ isLoading: true });
-    try {
-      const baseUserData = await authService.login(data);
-      const fullUser = await this.fetchUserProfileData(baseUserData);
-      this.setState({ 
-        user: fullUser,
-        isLoading: false
-      });
-      return fullUser;
     } catch (error) {
+      console.error("Error initializing auth:", error);
+      this.setState({ isLoading: false });
+    }
+  };
+
+  login = async (usernameOrEmail: string, password: string) => {
+    try {
+      this.setState({ isLoading: true });
+      const baseUserData = await authService.login({
+        usernameOrEmail,
+        password
+      });
+      
+      const fullUser = await this.fetchUserProfileData(baseUserData);
+      
+      this.setState({ 
+        isLoading: false,
+        isAuthenticated: true,
+        user: fullUser,
+        profile: fullUser.profile,
+        needsOnboarding: !fullUser.profile?.hasCompletedOnboarding
+      });
+      
+      return fullUser;
+    } catch (error: any) {
       this.setState({ isLoading: false });
       throw error;
     }
@@ -125,14 +148,55 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       // Register the user
       await authService.register(data);
       
+      // Store the email for login
+      console.log('Registration successful for email:', data.email);
+      
+      // Add a small delay before attempting login to ensure backend processing is complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Automatically log in after registration
-      // Use username instead of email for login
+      // Use the email for login instead of username, as that's what the backend expects
       const loginData = {
-        usernameOrEmail: data.username, // Use username instead of email
+        usernameOrEmail: data.email, // Use email for login instead of username
         password: data.password
       };
       
-      return this.login(loginData);
+      console.log('Attempting automatic login with email:', data.email);
+      
+      try {
+        return await this.login(loginData.usernameOrEmail, loginData.password);
+      } catch (error: any) {
+        console.error('Automatic login failed after registration:', error);
+        
+        // If login fails with 403, create a minimal user object to return
+        // This allows the user to proceed without having to manually log in
+        if (error.response?.status === 403) {
+          console.log('Creating minimal user object after 403 error');
+          const minimalUser: AppUser = {
+            id: 0, // Placeholder ID
+            username: data.username,
+            email: data.email,
+            roles: ['ROLE_STUDENT'], // Assuming student role for new registrations
+            accessToken: '', // Empty token
+            profile: null,
+            hasCompletedOnboarding: false
+          };
+          
+          // Update state to show as authenticated but needing onboarding
+          this.setState({
+            user: minimalUser,
+            isAuthenticated: true,
+            isLoading: false,
+            needsOnboarding: true,
+            profile: null
+          });
+          
+          return minimalUser;
+        }
+        
+        // For other errors, redirect to login page
+        throw error;
+      }
     } catch (error) {
       throw error;
     }
@@ -163,6 +227,9 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       register: this.register, 
       logout: this.logout, 
       isLoading,
+      isAuthenticated: this.state.isAuthenticated,
+      profile: this.state.profile,
+      needsOnboarding: this.state.needsOnboarding,
       fetchUserProfile: this.fetchUserProfile
     };
 

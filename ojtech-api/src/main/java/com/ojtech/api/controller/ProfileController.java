@@ -92,6 +92,7 @@ public class ProfileController {
         )
     })
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Profile> getCurrentUserProfile(
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         
@@ -468,21 +469,44 @@ public class ProfileController {
 
     @GetMapping("/student/me")
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Get current student profile", description = "Retrieves the profile of the currently authenticated student.")
-    public ResponseEntity<?> getCurrentStudentProfile() {
+    @Operation(
+        summary = "Get current student profile",
+        description = "Retrieves the student profile of the currently authenticated user"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Successfully retrieved student profile",
+            content = @Content(schema = @Schema(implementation = StudentProfile.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Student profile not found"
+        )
+    })
+    public ResponseEntity<?> getCurrentStudentProfile(Authentication authentication) {
+        log.info("Getting current student profile for user: {}", authentication.getName());
+        
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        
         try {
             UUID userId = getCurrentUserId();
-            Optional<StudentProfile> profileOpt = profileService.getStudentProfileByUserId(userId);
-            if (profileOpt.isPresent()) {
-                return ResponseEntity.ok(profileOpt.get());
+            log.info("Found user ID: {}", userId);
+            
+            Optional<StudentProfile> studentProfileOpt = profileService.getStudentProfileByUserId(userId);
+            
+            if (studentProfileOpt.isPresent()) {
+                return ResponseEntity.ok(studentProfileOpt.get());
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new MessageResponse("Student profile not found."));
+                log.warn("Student profile not found for user ID: {}", userId);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            log.error("Error fetching current student profile: {}", e.getMessage(), e);
+            log.error("Error getting student profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new MessageResponse("Error fetching student profile: " + e.getMessage()));
+                    .body(new MessageResponse("Error retrieving student profile: " + e.getMessage()));
         }
     }
 
@@ -542,6 +566,185 @@ public class ProfileController {
             log.error("Error fetching current employer profile: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new MessageResponse("Error fetching employer profile: " + e.getMessage()));
+        }
+    }
+
+    @Operation(
+        summary = "Update current user profile",
+        description = "Updates the profile of the currently authenticated user"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Profile updated successfully",
+            content = @Content(schema = @Schema(implementation = Profile.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content
+        )
+    })
+    @PostMapping("/update")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> updateCurrentUserProfile(
+            @RequestBody Profile profileDetails,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        
+        log.info("Received request to update profile: {}", profileDetails);
+        
+        if (userDetails == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName().equals("anonymousUser")) {
+                log.warn("Unauthorized attempt to update profile");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Try to find profile by email from authentication
+            String email = auth.getName();
+            Optional<Profile> profileOpt = profileService.getProfileByEmail(email);
+            if (profileOpt.isPresent()) {
+                Profile existingProfile = profileOpt.get();
+                
+                // Update only allowed fields
+                if (profileDetails.getFullName() != null) {
+                    existingProfile.setFullName(profileDetails.getFullName());
+                }
+                
+                Profile updatedProfile = profileService.updateProfile(existingProfile.getId(), existingProfile);
+                return ResponseEntity.ok(updatedProfile);
+            } else {
+                log.warn("Profile not found for email: {}", email);
+                return ResponseEntity.notFound().build();
+            }
+        }
+        
+        // Use UserDetails to get profile ID
+        UUID profileId = userDetails.getId();
+        if (profileId == null) {
+            // Try to find profile by email from userDetails
+            Optional<Profile> profileOpt = profileService.getProfileByEmail(userDetails.getUsername());
+            if (profileOpt.isPresent()) {
+                Profile existingProfile = profileOpt.get();
+                
+                // Update only allowed fields
+                if (profileDetails.getFullName() != null) {
+                    existingProfile.setFullName(profileDetails.getFullName());
+                }
+                
+                Profile updatedProfile = profileService.updateProfile(existingProfile.getId(), existingProfile);
+                return ResponseEntity.ok(updatedProfile);
+            } else {
+                log.warn("Profile not found for email: {}", userDetails.getUsername());
+                return ResponseEntity.notFound().build();
+            }
+        }
+        
+        try {
+            Optional<Profile> existingProfileOpt = profileService.getProfileById(profileId);
+            if (existingProfileOpt.isPresent()) {
+                Profile existingProfile = existingProfileOpt.get();
+                
+                // Update only allowed fields
+                if (profileDetails.getFullName() != null) {
+                    existingProfile.setFullName(profileDetails.getFullName());
+                }
+                
+                Profile updatedProfile = profileService.updateProfile(profileId, existingProfile);
+                return ResponseEntity.ok(updatedProfile);
+            } else {
+                log.warn("Profile not found for ID: {}", profileId);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("Error updating profile: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Error updating profile: " + e.getMessage()));
+        }
+    }
+
+    @Operation(
+        summary = "Create profile for current user",
+        description = "Creates a profile for the currently authenticated user if one doesn't exist"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Profile created successfully",
+            content = @Content(schema = @Schema(implementation = Profile.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content
+        )
+    })
+    @PostMapping("/create")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> createCurrentUserProfile(
+            @RequestBody Profile profileDetails,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        
+        log.info("Received request to create profile: {}", profileDetails);
+        
+        if (userDetails == null) {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getName().equals("anonymousUser")) {
+                log.warn("Unauthorized attempt to create profile");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Try to find profile by email from authentication
+            String email = auth.getName();
+            Optional<Profile> existingProfileOpt = profileService.getProfileByEmail(email);
+            
+            if (existingProfileOpt.isPresent()) {
+                // Profile already exists, return it
+                return ResponseEntity.ok(existingProfileOpt.get());
+            }
+            
+            // Create new profile
+            Profile newProfile = new Profile();
+            newProfile.setEmail(email);
+            newProfile.setFullName(profileDetails.getFullName());
+            newProfile.setRole(UserRole.STUDENT); // Default role
+            newProfile.setHasCompletedOnboarding(false);
+            
+            Profile savedProfile = profileService.saveProfile(newProfile);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedProfile);
+        }
+        
+        // Use UserDetails to check if profile exists
+        UUID userId = userDetails.getId();
+        String email = userDetails.getUsername();
+        
+        // Check if profile already exists
+        Optional<Profile> existingProfileOpt;
+        if (userId != null) {
+            existingProfileOpt = profileService.getProfileById(userId);
+        } else {
+            existingProfileOpt = profileService.getProfileByEmail(email);
+        }
+        
+        if (existingProfileOpt.isPresent()) {
+            // Profile already exists, return it
+            return ResponseEntity.ok(existingProfileOpt.get());
+        }
+        
+        // Create new profile
+        try {
+            Profile newProfile = new Profile();
+            newProfile.setEmail(email);
+            newProfile.setFullName(profileDetails.getFullName());
+            newProfile.setRole(UserRole.STUDENT); // Default role
+            newProfile.setHasCompletedOnboarding(false);
+            
+            Profile savedProfile = profileService.saveProfile(newProfile);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedProfile);
+        } catch (Exception e) {
+            log.error("Error creating profile: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Error creating profile: " + e.getMessage()));
         }
     }
 } 
