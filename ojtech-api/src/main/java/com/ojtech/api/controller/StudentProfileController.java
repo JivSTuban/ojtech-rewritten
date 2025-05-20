@@ -97,7 +97,7 @@ public class StudentProfileController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/onboarding")
+    @PostMapping("/onboarding-v2")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(
             summary = "Complete student onboarding",
@@ -148,13 +148,16 @@ public class StudentProfileController {
             }
             
             // Update student profile fields from request
-            studentProfile.setFirstName(studentProfileRequest.getFirstName());
-            studentProfile.setLastName(studentProfileRequest.getLastName());
+            // Get the full name from the profile and update it
+            String fullName = studentProfileRequest.getProfile() != null ? 
+                studentProfileRequest.getProfile().getFullName() : profile.getFullName();
+            profile.setFullName(fullName);
+            
             studentProfile.setUniversity(studentProfileRequest.getUniversity());
             studentProfile.setCourse(studentProfileRequest.getCourse());
             studentProfile.setYearLevel(studentProfileRequest.getYearLevel());
             studentProfile.setBio(studentProfileRequest.getBio());
-            studentProfile.setGithubUrl(studentProfileRequest.getGithubUrl());
+            studentProfile.setGithubProfile(studentProfileRequest.getGithubProfile());
             
             // Mark onboarding as completed
             profile.setHasCompletedOnboarding(true);

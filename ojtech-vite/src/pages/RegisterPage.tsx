@@ -8,6 +8,7 @@ import { Label } from '../components/ui/Label';
 import { Card } from '../components/ui/Card';
 import { Loader2, Github } from 'lucide-react';
 import { AuthLayout } from '../components/layouts/AuthLayout';
+import { toast } from '../components/ui/toast-utils';
 
 interface RegisterPageState {
   fullName: string;
@@ -96,6 +97,18 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
     }
     
     this.setState({ errors });
+    
+    // Show toast for validation errors
+    if (!isValid) {
+      const errorMessages = Object.values(errors).filter(Boolean);
+      if (errorMessages.length > 0) {
+        toast.destructive({
+          title: "Validation Error",
+          description: errorMessages[0]
+        });
+      }
+    }
+    
     return isValid;
   };
   
@@ -118,9 +131,16 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
     const { fullName, email, password } = this.state;
     
     if (!this.context || !this.context.register) {
+      const errorMessage = 'Registration service is not available';
+      
+      toast.destructive({
+        title: "Registration Error",
+        description: errorMessage
+      });
+      
       this.setState({ 
         errors: {
-          general: 'Registration service is not available'
+          general: errorMessage
         }
       });
       return;
@@ -148,6 +168,12 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         roles: ["ROLE_STUDENT"]
       });
       
+      // Show success toast
+      toast.success({
+        title: "Registration Successful",
+        description: "Your account has been created successfully."
+      });
+      
       // The user is now logged in, and the AuthProvider will handle redirection
       // based on the user's role and onboarding status
       
@@ -166,27 +192,55 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
             errors[key as keyof typeof errors] = fieldErrors[key];
           });
           
+          // Show toast for the first field error
+          const errorMessages = Object.values(fieldErrors).filter(Boolean) as string[];
+          if (errorMessages.length > 0) {
+            toast.destructive({
+              title: "Registration Error",
+              description: errorMessages[0]
+            });
+          }
+          
           this.setState({ errors, isLoading: false });
         } else {
           // General error
+          const errorMessage = error.response.data.message;
+          
+          toast.destructive({
+            title: "Registration Error",
+            description: errorMessage
+          });
+          
           this.setState({ 
-            errors: { general: error.response.data.message },
+            errors: { general: errorMessage },
             isLoading: false
           });
         }
       } else if (error.message && error.message.includes('403')) {
         // Handle login failure after successful registration
+        const errorMessage = `Registration successful, but automatic login failed. Please go to the login page and sign in with your email address and password.`;
+        
+        toast.warning({
+          title: "Registration Successful",
+          description: "Please sign in with your new credentials."
+        });
+        
         this.setState({ 
-          errors: { 
-            general: `Registration successful, but automatic login failed. Please go to the login page and sign in with your email address and password.` 
-          },
+          errors: { general: errorMessage },
           isLoading: false,
           redirectTo: '/login?fromRegistration=true'  // Redirect to login page with query parameter
         });
       } else {
         // Generic error
+        const errorMessage = error.message || 'Registration failed. Please try again.';
+        
+        toast.destructive({
+          title: "Registration Error",
+          description: errorMessage
+        });
+        
         this.setState({ 
-          errors: { general: error.message || 'Registration failed. Please try again.' },
+          errors: { general: errorMessage },
           isLoading: false
         });
       }

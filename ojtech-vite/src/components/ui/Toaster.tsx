@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { ToastConsumer } from '@/providers/ToastContext';
+import { ToastConsumer } from '../../providers/ToastContext';
 import {
   Toast,
   ToastClose,
@@ -7,7 +7,7 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@/components/ui/Toast';
+} from '../../components/ui/Toast';
 
 export class Toaster extends Component {
   render() {

@@ -1,7 +1,8 @@
 import React, { Component, ChangeEvent, FormEvent, createRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import profileService from '@/lib/api/profileService';
-import { AuthContext } from '@/providers/AuthProvider';
+import profileService from '../../lib/api/profileService';
+import { AuthContext } from '../../providers/AuthProvider';
+import { toast } from '../../components/ui/toast-utils';
 
 // Define an interface for the student profile data from the backend
 interface StudentProfileData {
@@ -70,50 +71,91 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       return;
     }
 
-        try {
-      this.setState({ isLoading: true });
-          const profileData = await profileService.getCurrentStudentProfile();
+    try {
+      this.setState({ isLoading: true, error: null });
       
-          if (profileData) {
+      // Show a toast that we're loading the form
+      toast.default({
+        title: "Loading Profile Data",
+        description: "Please wait while we prepare your onboarding form."
+      });
+      
+      const profileData = await profileService.getCurrentStudentProfile();
+      
+      if (profileData) {
         this.setState({
           formData: {
-              firstName: profileData.firstName || '',
-              lastName: profileData.lastName || '',
-              phoneNumber: profileData.phoneNumber || '',
-              university: profileData.university || '',
-              major: profileData.major || '',
-              graduationYear: profileData.graduationYear || undefined,
-              bio: profileData.bio || '',
-              skills: profileData.skills || [],
-              githubUrl: profileData.githubUrl || '',
-              linkedinUrl: profileData.linkedinUrl || '',
-              portfolioUrl: profileData.portfolioUrl || '',
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
+            phoneNumber: profileData.phoneNumber || '',
+            university: profileData.university || '',
+            major: profileData.major || '',
+            graduationYear: profileData.graduationYear || undefined,
+            bio: profileData.bio || '',
+            skills: profileData.skills || [],
+            githubUrl: profileData.githubUrl || '',
+            linkedinUrl: profileData.linkedinUrl || '',
+            portfolioUrl: profileData.portfolioUrl || '',
             cvUrl: profileData.cvUrl,
-            cvFilename: profileData.cvFilename
+            cvFilename: profileData.cvFilename,
+            hasCompletedOnboarding: profileData.hasCompletedOnboarding
           },
-            });
+        });
 
-            if (profileData.skills && profileData.skills.length > 0) {
+        if (profileData.skills && profileData.skills.length > 0) {
           this.setState({
             skillsInput: profileData.skills.join(', ')
           });
-            }
-        
-            if (profileData.hasCompletedOnboarding) {
-              // Optionally redirect if onboarding is already complete, or allow updates
+        }
+    
+        if (profileData.hasCompletedOnboarding) {
+          // Optionally redirect if onboarding is already complete, or allow updates
           // this.setState({ redirectTo: '/profile' });
-            }
-          }
-        } catch (err: any) {
-      if (err.response?.status !== 404) { // Ignore 404 if profile doesn't exist yet
-        this.setState({
-          error: err.response?.data?.message || 'Failed to load profile data.'
-        });
-          }
-        } finally {
-      this.setState({ isLoading: false });
+          toast.success({
+            title: "Profile Loaded",
+            description: "Your profile is already complete - you can make updates here."
+          });
+        }
       }
-    };
+    } catch (err: any) {
+      console.error("Error in fetchProfile:", err);
+      
+      let errorMsg = "Failed to load profile data. Please try again.";
+      
+      if (err.response) {
+        if (err.response.status === 404) {
+          // This is expected for new users, no need to show error
+          console.log("No profile found - this is normal for new users");
+          toast.default({
+            title: "Let's Get Started",
+            description: "Please complete your student profile to continue."
+          });
+        } else {
+          errorMsg = err.response.data?.message || errorMsg;
+          toast.destructive({
+            title: "Error Loading Profile",
+            description: errorMsg
+          });
+          this.setState({ error: errorMsg });
+        }
+      } else if (err.request) {
+        errorMsg = "No response from server. Please check your connection.";
+        toast.destructive({
+          title: "Connection Error",
+          description: errorMsg
+        });
+        this.setState({ error: errorMsg });
+      } else {
+        toast.destructive({
+          title: "Error",
+          description: errorMsg
+        });
+        this.setState({ error: errorMsg });
+      }
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  };
 
   handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -149,17 +191,50 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     this.setState({ error: null, isLoading: true });
     
     try {
+      // Show a loading toast
+      toast.default({
+        title: "Saving Your Profile",
+        description: "Please wait while we save your information."
+      });
+      
       await profileService.completeStudentOnboarding(this.state.formData);
       
       if (this.state.cvFile) {
         await profileService.uploadStudentCv(this.state.cvFile);
       }
       
+      // Show success toast
+      toast.success({
+        title: "Onboarding Complete",
+        description: "Your student profile has been saved successfully."
+      });
+      
       this.setState({ redirectTo: '/profile' });
     } catch (err: any) {
-      this.setState({
-        error: err.response?.data?.message || 'Onboarding failed. Please try again.'
-      });
+      console.error("Error in handleSubmit:", err);
+      
+      let errorMsg = "Onboarding failed. Please try again.";
+      
+      if (err.response) {
+        errorMsg = err.response.data?.message || errorMsg;
+        toast.destructive({
+          title: "Error Saving Profile",
+          description: errorMsg
+        });
+      } else if (err.request) {
+        errorMsg = "No response from server. Please check your connection.";
+        toast.destructive({
+          title: "Connection Error",
+          description: errorMsg
+        });
+      } else {
+        toast.destructive({
+          title: "Error",
+          description: errorMsg
+        });
+      }
+      
+      this.setState({ error: errorMsg });
     } finally {
       this.setState({ isLoading: false });
     }

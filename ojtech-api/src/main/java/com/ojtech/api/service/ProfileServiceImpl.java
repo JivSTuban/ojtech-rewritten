@@ -78,18 +78,18 @@ public class ProfileServiceImpl implements ProfileService {
         log.info("Saving new profile for email: {}, role: {}", profile.getEmail(), profile.getRole());
         
         try {
-            if (profileRepository.existsByEmail(profile.getEmail())) {
+        if (profileRepository.existsByEmail(profile.getEmail())) {
                 log.error("Failed to save profile: Email already exists: {}", profile.getEmail());
-                throw new RuntimeException("Error: Email is already in use!");
-            }
+            throw new RuntimeException("Error: Email is already in use!");
+        }
             
-            // If password is set on Profile and needs encoding:
-            if (profile.getPassword() != null && !profile.getPassword().isEmpty()) {
+        // If password is set on Profile and needs encoding:
+        if (profile.getPassword() != null && !profile.getPassword().isEmpty()) {
                 log.debug("Processing password for profile: {}", profile.getEmail());
                 // Don't re-encode if it's already encoded (BCrypt passwords start with $2a$)
                 if (!profile.getPassword().startsWith("$2a$")) {
                     log.debug("Encoding plain password for profile: {}", profile.getEmail());
-                    profile.setPassword(passwordEncoder.encode(profile.getPassword()));
+             profile.setPassword(passwordEncoder.encode(profile.getPassword()));
                 } else {
                     log.debug("Password already encoded, skipping encoding for profile: {}", profile.getEmail());
                 }

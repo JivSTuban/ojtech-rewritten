@@ -10,8 +10,8 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Hero section with wavy background */}
-      <div className="h-[70vh] mb-40">
+      {/* Hero section with wavy background - full-width background with containerized content */}
+      <div className="w-full h-[70vh] mb-40">
         <WaveyHeroHeader 
           title="Find Your Perfect <br /> Internship Match"
           subtitle="Our AI-powered matching connects you with relevant job opportunities that align with your skills and aspirations."

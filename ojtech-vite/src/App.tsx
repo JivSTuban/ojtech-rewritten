@@ -1,27 +1,27 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
-import { ThemeProvider } from '@/providers/ThemeProvider';
-import { ToastProvider } from '@/providers/ToastContext';
-import { Toaster } from '@/components/ui/Toaster';
-import { Navbar } from '@/components/Navbar';
-import { LoginPage } from '@/pages/LoginPage';
-import { RegisterPage } from '@/pages/RegisterPage';
-import { VerifyEmailPage } from '@/pages/VerifyEmailPage';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { HomePage } from '@/pages/HomePage';
-import { OpportunitiesPage } from '@/pages/OpportunitiesPage';
-import { JobDetailPage } from '@/pages/JobDetailPage';
-import { JobApplicationPage } from '@/pages/JobApplicationPage';
-import { ProtectedRoute, PublicOnlyRoute } from '@/components/auth/ProtectedRoute';
-import { StudentOnboardingPage } from '@/pages/onboarding/StudentOnboardingPage';
-import { EmployerOnboardingPage } from '@/pages/onboarding/EmployerOnboardingPage';
-import { EmployerJobsPage } from '@/pages/employer/EmployerJobsPage';
-import { JobFormPage } from '@/pages/employer/JobFormPage';
-import { JobApplicationsPage } from '@/pages/employer/JobApplicationsPage';
-import { useAuth } from '@/providers/AuthProvider';
+import { ThemeProvider } from './providers/ThemeProvider';
+import { ToastProvider } from './providers/ToastContext';
+import { Toaster } from './components/ui/Toaster';
+import { Navbar } from './components/Navbar';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { HomePage } from './pages/HomePage';
+import { OpportunitiesPage } from './pages/OpportunitiesPage';
+import { JobDetailPage } from './pages/JobDetailPage';
+import { JobApplicationPage } from './pages/JobApplicationPage';
+import { ProtectedRoute, PublicOnlyRoute } from './components/auth/ProtectedRoute';
+import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
+import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
+import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
+import { JobFormPage } from './pages/employer/JobFormPage';
+import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
+import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
-import { TrackApplicationsPage } from '@/pages/TrackApplicationsPage';
+import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
 import './index.css';
 
 // Main layout with navigation for all non-auth pages
@@ -53,7 +53,7 @@ const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className={`flex-grow ${location.pathname !== '/' ? 'container mx-auto px-4 py-8' : ''}`}>
         <Outlet />
       </main>
     </div>

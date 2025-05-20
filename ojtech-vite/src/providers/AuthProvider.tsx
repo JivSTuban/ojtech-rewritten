@@ -70,14 +70,14 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       });
       
       return user;
-    } catch (error: any) {
+        } catch (error: any) {
       console.error("Error fetching user profile:", error);
       
       if (error.response && error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         this.logout();
         throw error; // Rethrow to handle in calling code
-      } else {
+          } else {
         // Other error - still authenticated but no profile
         const user: AppUser = {
           ...userData,
@@ -102,7 +102,7 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
     try {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
-        const fullUser = await this.fetchUserProfileData(currentUser);
+      const fullUser = await this.fetchUserProfileData(currentUser);
         this.setState({ 
           user: fullUser,
           isLoading: false,
@@ -114,13 +114,13 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       }
     } catch (error) {
       console.error("Error initializing auth:", error);
-      this.setState({ isLoading: false });
+    this.setState({ isLoading: false });
     }
-  };
+    };
 
   login = async (usernameOrEmail: string, password: string) => {
     try {
-      this.setState({ isLoading: true });
+    this.setState({ isLoading: true });
       const baseUserData = await authService.login({
         usernameOrEmail,
         password
@@ -156,15 +156,10 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       
       // Automatically log in after registration
       // Use the email for login instead of username, as that's what the backend expects
-      const loginData = {
-        usernameOrEmail: data.email, // Use email for login instead of username
-        password: data.password
-      };
-      
       console.log('Attempting automatic login with email:', data.email);
       
       try {
-        return await this.login(loginData.usernameOrEmail, loginData.password);
+        return await this.login(data.email, data.password);
       } catch (error: any) {
         console.error('Automatic login failed after registration:', error);
         

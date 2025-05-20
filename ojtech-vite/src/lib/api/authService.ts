@@ -42,17 +42,21 @@ const register = async (data: SignupData) => {
 };
 
 const login = async (data: LoginData) => {
-  console.log('Sending login request with data:', JSON.stringify(data, null, 2));
+  // Log the raw data received
+  console.log('Login function called with raw data:', data);
+  
+  // Ensure data is properly formatted
+  const loginData = {
+    usernameOrEmail: data.usernameOrEmail,
+    password: data.password
+  };
+  
+  console.log('Sending login request with data:', JSON.stringify(loginData, null, 2));
   console.log('To URL:', `${AUTH_API_URL}/signin`);
   
   try {
-    // The backend expects usernameOrEmail field but treats it as email
-    const requestData = {
-      usernameOrEmail: data.usernameOrEmail,
-      password: data.password
-    };
-    
-    const response = await axios.post(`${AUTH_API_URL}/signin`, requestData);
+    // Send the data directly as expected by the backend
+    const response = await axios.post(`${AUTH_API_URL}/signin`, loginData);
     console.log('Login response status:', response.status);
     console.log('Login response data structure:', Object.keys(response.data));
     

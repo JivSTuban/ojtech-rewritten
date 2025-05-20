@@ -155,12 +155,16 @@ export class WaveyHeroHeader extends Component<HeroHeaderProps> {
 
     return (
       <div className="relative w-full h-screen overflow-hidden bg-black text-white">
+        {/* Full-width canvas background */}
         <canvas
           ref={this.canvasRef}
           className="absolute top-0 left-0 w-full h-full z-0"
         />
 
-        <div className="relative z-10 flex items-center justify-between max-w-7xl mx-auto px-6 h-full">
+        {/* Containerized content */}
+        <div className="relative z-10 h-full">
+          <div className="container mx-auto px-4 h-full">
+            <div className="flex items-center justify-between h-full">
           <div className="max-w-xl">
             <h1
               className="text-5xl font-bold leading-tight bg-gradient-to-r from-gray-500 via-gray-300 to-gray-400 text-transparent bg-clip-text animate-fade-in-up"
@@ -202,6 +206,8 @@ export class WaveyHeroHeader extends Component<HeroHeaderProps> {
                 alt="Hero Visual"
                 className="w-full h-auto object-contain rounded-2xl"
               />
+                </div>
+              </div>
             </div>
           </div>
         </div>

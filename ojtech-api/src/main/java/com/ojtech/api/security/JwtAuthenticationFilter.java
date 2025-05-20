@@ -40,6 +40,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String requestURI = request.getRequestURI();
         log.debug("JwtAuthenticationFilter: Processing request for URI: {}", requestURI);
         
+        // Skip token validation for auth endpoints
+        if (requestURI.startsWith("/api/auth/")) {
+            log.debug("JwtAuthenticationFilter: Skipping authentication for auth endpoint: {}", requestURI);
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         try {
             String jwt = parseJwt(request);
             

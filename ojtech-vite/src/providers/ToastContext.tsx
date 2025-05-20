@@ -1,6 +1,6 @@
 import React, { Component, createContext } from 'react';
-import type { ToastActionElement, ToasterToastProps } from '@/components/ui/Toast';
-import { setToastFunction } from '@/components/ui/toast-utils';
+import type { ToastActionElement, ToasterToastProps } from '../components/ui/Toast';
+import { setToastFunction } from '../components/ui/toast-utils';
 
 // Constants
 const TOAST_LIMIT = 1;

@@ -2,7 +2,7 @@ import React, { Component, createRef, RefObject } from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 // Provider component
 export class ToastProvider extends Component<ToastPrimitives.ToastProviderProps> {

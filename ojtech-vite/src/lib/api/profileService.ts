@@ -1,7 +1,8 @@
 import axios from 'axios';
 import authService from './authService'; // To get the token
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/profile';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_URL = `${API_BASE_URL}/profile`;
 
 const getAuthHeaders = () => {
   const user = authService.getCurrentUser();
@@ -84,10 +85,27 @@ const createInitialProfile = async (fullName: string) => {
 // Student Profile
 const completeStudentOnboarding = async (data: any) => {
   try {
-    const response = await axios.post(`${API_URL}/student/onboarding`, data, { headers: getAuthHeaders() });
+    console.log('Sending student onboarding data:', data);
+    const response = await axios.post(`${API_URL}/student/onboarding-v2`, data, { 
+      headers: getAuthHeaders(),
+      timeout: 10000
+    });
+    console.log('Student onboarding successful response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error("Error completing student onboarding:", error.message);
+    console.error("Error completing student onboarding:", error);
+    
+    // Log more details about the error
+    if (error.response) {
+      console.error("Server responded with status:", error.response.status);
+      console.error("Response data:", error.response.data);
+      console.error("Response headers:", error.response.headers);
+    } else if (error.request) {
+      console.error("No response received from server - request:", error.request);
+    } else {
+      console.error("Error setting up request:", error.message);
+    }
+    
     throw error;
   }
 };
@@ -112,7 +130,11 @@ const uploadStudentCv = async (cvFile: File) => {
 const getCurrentStudentProfile = async () => {
   try {
     // First try to get the main profile
-    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+    const response = await axios.get(`${API_URL}/me`, { 
+      headers: getAuthHeaders(),
+      // Add a timeout to prevent hanging requests
+      timeout: 10000
+    });
     console.log('Successfully retrieved profile:', response.data);
     
     // If we have a profile and it has completed onboarding, return it
@@ -126,18 +148,51 @@ const getCurrentStudentProfile = async () => {
   } catch (error: any) {
     if (error.response?.status === 404) {
       console.warn("Profile not found - this may be normal for new users");
+    } else if (error.response?.status === 500 && 
+              (error.message?.includes('JSON') || error.message?.includes('depth') || 
+               error.response?.data?.message?.includes('JSON') || error.response?.data?.message?.includes('depth'))) {
+      console.error("JSON serialization error from API - likely due to circular references in the profile data");
+      
+      // Create a simplified profile object to allow the frontend to continue
+      return {
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        university: '',
+        major: '',
+        graduationYear: undefined,
+        bio: '',
+        skills: [],
+        githubUrl: '',
+        linkedinUrl: '',
+        portfolioUrl: '',
+        hasCompletedOnboarding: false
+      };
     } else {
       console.error("Error fetching profile:", error.message);
     }
-    // Return null to indicate profile needs to be created
-    return null;
+    // Return a minimal profile to allow the UI to render the onboarding form
+    return {
+      firstName: '',
+      lastName: '',
+      phoneNumber: '',
+      university: '',
+      major: '',
+      graduationYear: undefined,
+      bio: '',
+      skills: [],
+      githubUrl: '',
+      linkedinUrl: '',
+      portfolioUrl: '',
+      hasCompletedOnboarding: false
+    };
   }
 };
 
 const submitStudentOnboarding = async (data: any) => {
   try {
     console.log('Submitting student onboarding data:', data);
-    const response = await axios.post(`${API_URL}/student/onboarding`, data, { headers: getAuthHeaders() });
+    const response = await axios.post(`${API_URL}/student/onboarding-v2`, data, { headers: getAuthHeaders() });
     console.log('Student onboarding successful:', response.data);
     return response.data;
   } catch (error: any) {

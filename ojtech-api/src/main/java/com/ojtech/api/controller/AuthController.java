@@ -76,25 +76,25 @@ public class AuthController {
                      loginRequest.getUsernameOrEmail(), 
                      loginRequest.getPassword() != null ? loginRequest.getPassword().length() : 0);
                      
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsernameOrEmail(), loginRequest.getPassword()));
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsernameOrEmail(), loginRequest.getPassword()));
 
             log.info("Authentication successful for: {}", loginRequest.getUsernameOrEmail());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtils.generateJwtToken(authentication);
-            
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();        
-            List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
-                    .collect(Collectors.toList());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtils.generateJwtToken(authentication);
+        
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();        
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(item -> item.getAuthority())
+                .collect(Collectors.toList());
 
             log.info("Login successful for user: {}, roles: {}", userDetails.getUsername(), roles);
-            
-            return ResponseEntity.ok(new JwtResponse(jwt, 
-                                                   userDetails.getId(), 
-                                                   userDetails.getUsername(), 
-                                                   userDetails.getEmail(), 
-                                                   roles));
+
+        return ResponseEntity.ok(new JwtResponse(jwt, 
+                                                 userDetails.getId(), 
+                                                 userDetails.getUsername(), 
+                                                 userDetails.getEmail(), 
+                                                 roles));
         } catch (Exception e) {
             log.error("Login failed for usernameOrEmail: {}, error: {}", loginRequest.getUsernameOrEmail(), e.getMessage());
             log.error("Detailed error:", e);
@@ -123,15 +123,15 @@ public class AuthController {
         }
 
         try {
-            // Create new user's account
+        // Create new user's account
             String encodedPassword = encoder.encode(signUpRequest.getPassword());
             log.debug("Password encoded for user {}: {}", signUpRequest.getEmail(), encodedPassword.substring(0, 10) + "...");
-            
+
             // Determine the profile role first
             UserRole profileRole = UserRole.STUDENT; // Default role
-            Set<String> strRoles = signUpRequest.getRoles();
-            Set<Role> roles = new HashSet<>();
-            
+        Set<String> strRoles = signUpRequest.getRoles();
+        Set<Role> roles = new HashSet<>();
+
             if (strRoles != null && !strRoles.isEmpty()) {
                 // Check if admin role is present
                 if (strRoles.stream().anyMatch(r -> r.equalsIgnoreCase("admin"))) {
@@ -145,30 +145,30 @@ public class AuthController {
             }
 
             // Now handle the roles for the User entity
-            if (strRoles == null || strRoles.isEmpty()) {
-                Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
-                        .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
-                roles.add(userRole);
-            } else {
-                strRoles.forEach(role -> {
-                    switch (role.toLowerCase()) {
-                        case "admin":
-                            Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                    .orElseThrow(() -> new RuntimeException("Error: Role ADMIN is not found."));
-                            roles.add(adminRole);
-                            break;
-                        case "employer":
-                            Role modRole = roleRepository.findByName(ERole.ROLE_EMPLOYER)
-                                    .orElseThrow(() -> new RuntimeException("Error: Role EMPLOYER is not found."));
-                            roles.add(modRole);
-                            break;
-                        default:
-                            Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
-                                    .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
-                            roles.add(userRole);
-                    }
-                });
-            }
+        if (strRoles == null || strRoles.isEmpty()) {
+            Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                    .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
+            roles.add(userRole);
+        } else {
+            strRoles.forEach(role -> {
+                switch (role.toLowerCase()) {
+                    case "admin":
+                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                                .orElseThrow(() -> new RuntimeException("Error: Role ADMIN is not found."));
+                        roles.add(adminRole);
+                        break;
+                    case "employer":
+                        Role modRole = roleRepository.findByName(ERole.ROLE_EMPLOYER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role EMPLOYER is not found."));
+                        roles.add(modRole);
+                        break;
+                    default:
+                        Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                                .orElseThrow(() -> new RuntimeException("Error: Role STUDENT is not found."));
+                        roles.add(userRole);
+                }
+            });
+        }
 
             // Create a corresponding Profile entity FIRST
             Profile profile = new Profile();
@@ -189,8 +189,8 @@ public class AuthController {
             User user = new User(signUpRequest.getUsername(), 
                                  signUpRequest.getEmail(),
                                  encodedPassword);
-            user.setRoles(roles);
-            user.setEnabled(true);
+        user.setRoles(roles);
+        user.setEnabled(true); 
             user.setProfile(savedProfile); // Link to the saved profile
             
             // Save the user
@@ -207,8 +207,8 @@ public class AuthController {
                     savedProfile.getEmail(), 
                     savedProfile.getPassword() != null && !savedProfile.getPassword().isEmpty(),
                     savedProfile.getRole());
-            
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
         } catch (Exception e) {
             log.error("Registration error for username: {}, email: {}, error: {}", 
                       signUpRequest.getUsername(), signUpRequest.getEmail(), e.getMessage(), e);

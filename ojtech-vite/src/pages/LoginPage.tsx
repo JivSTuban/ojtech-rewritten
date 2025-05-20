@@ -10,6 +10,7 @@ import { Loader2, Github } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { AuthLayout } from '../components/layouts/AuthLayout';
 import profileService from '../lib/api/profileService';
+import { toast } from '../components/ui/toast-utils';
 
 interface LoginPageState {
   email: string;
@@ -17,7 +18,6 @@ interface LoginPageState {
   error: string | null;
   isLoading: boolean;
   redirectTo: string | null;
-  message?: string;
 }
 
 export class LoginPage extends Component<{}, LoginPageState> {
@@ -34,8 +34,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
       password: '',
       error: null,
       isLoading: false,
-      redirectTo: null,
-      message: undefined
+      redirectTo: null
     };
   }
   
@@ -57,10 +56,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
     const fromRegistration = urlParams.get('fromRegistration');
     if (fromRegistration === 'true') {
       const email = sessionStorage.getItem('registrationEmail');
-      this.setState({
-        message: email
-          ? `Registration successful! Please log in with your email "${email}" and password.`
-          : 'Registration successful! Please log in with your credentials.'
+      const message = email 
+        ? `Registration successful! Please log in with your email "${email}" and password.`
+        : 'Registration successful! Please log in with your credentials.';
+      
+      // Show toast notification only
+      toast.success({
+        title: "Registration Successful",
+        description: message
       });
     }
   }
@@ -114,6 +117,10 @@ export class LoginPage extends Component<{}, LoginPageState> {
     
     // Make sure the context is defined
     if (!this.context || !this.context.login) {
+      toast.destructive({
+        title: "Authentication Error",
+        description: "Authentication service not available"
+      });
       this.setState({ error: "Authentication service not available" });
       return;
     }
@@ -123,10 +130,13 @@ export class LoginPage extends Component<{}, LoginPageState> {
     this.setState({ error: null, isLoading: true });
     
     try {
-      // Use the login method from AuthContext with both email and password
-      await login({ 
-        usernameOrEmail: email,
-        password 
+      // Use the login method from AuthContext with email and password as separate parameters
+      await login(email, password);
+      
+      // Show success toast
+      toast.success({
+        title: "Login Successful",
+        description: "You have been successfully logged in."
       });
       
       // After successful login, try to create initial profile if needed
@@ -156,15 +166,31 @@ export class LoginPage extends Component<{}, LoginPageState> {
       // Provide more helpful error message for 403 errors
       if (error.response?.status === 403) {
         const email = sessionStorage.getItem('registrationEmail');
+        const errorMessage = email 
+          ? `Invalid credentials. Please use your email "${email}" and password.` 
+          : "Invalid email or password. Please make sure you're using the email address you registered with.";
+        
+        // Show toast notification
+        toast.destructive({
+          title: "Login Failed",
+          description: errorMessage
+        });
+        
         this.setState({ 
-          error: email 
-            ? `Invalid credentials. Please use your email "${email}" and password.` 
-            : "Invalid email or password. Please make sure you're using the email address you registered with.",
+          error: errorMessage,
           isLoading: false
         });
       } else {
+        const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please try again.';
+        
+        // Show toast notification
+        toast.destructive({
+          title: "Login Error",
+          description: errorMessage
+        });
+        
         this.setState({ 
-          error: error.response?.data?.message || error.message || 'Login failed. Please try again.',
+          error: errorMessage,
           isLoading: false
         });
       }
@@ -172,7 +198,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
   };
   
   render() {
-    const { email, password, error, isLoading, redirectTo, message } = this.state;
+    const { email, password, error, isLoading, redirectTo } = this.state;
     
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
@@ -185,12 +211,6 @@ export class LoginPage extends Component<{}, LoginPageState> {
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-muted-foreground">Sign in to your account</p>
           </div>
-          
-          {message && (
-            <div className="bg-green-50 text-green-500 p-3 rounded-md">
-              {message}
-            </div>
-          )}
           
           <form onSubmit={this.handleSubmit} className="space-y-4">
             <div className="space-y-4">
