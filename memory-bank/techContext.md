@@ -3,7 +3,7 @@
 ## Backend Technology Stack
 
 ### Core Framework
-- **Spring Boot 3.4.5**: Main application framework
+- **Spring Boot 3.2.3**: Main application framework
 - **Java 17**: Programming language
 
 ### Data Layer
@@ -18,10 +18,10 @@
 - **JJWT 0.11.5**: JWT implementation library
 
 ### API Documentation
-- **SpringDoc OpenAPI**: API documentation (Swagger UI)
+- **SpringDoc OpenAPI 2.3.0**: API documentation (Swagger UI)
 
 ### File Storage
-- **Cloudinary**: Cloud-based file storage for resumes and images
+- **Cloudinary 1.34.0**: Cloud-based file storage for resumes and images
 
 ### Build Tools
 - **Maven**: Dependency management and build tool
@@ -34,7 +34,7 @@
 
 ### Build Tools
 - **Vite 5.1.0**: Build tool and development server
-- **ESLint**: Code quality and style enforcement
+- **ESLint 8.56.0**: Code quality and style enforcement
 
 ### Routing
 - **React Router 6.22.2**: Client-side routing
@@ -42,9 +42,9 @@
 ### UI Components
 - **Tailwind CSS 3.4.0**: Utility-first CSS framework
 - **Radix UI**: Accessible component primitives
-- **Lucide React**: Icon library
-- **Framer Motion**: Animation library
-- **React Spring**: Animation library for interactive elements
+- **Lucide React 0.446.0**: Icon library
+- **Framer Motion 12.10.3**: Animation library
+- **React Spring 9.7.4**: Animation library for interactive elements
 
 ### Form Handling
 - **React Hook Form 7.53.0**: Form state management

@@ -29,6 +29,7 @@ interface StudentOnboardingState {
   isLoading: boolean;
   skillsInput: string;
   redirectTo: string | null;
+  loadingMessage: string;
 }
 
 export class StudentOnboardingPage extends Component<{}, StudentOnboardingState> {
@@ -39,23 +40,24 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     super(props);
     this.state = {
       formData: {
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    university: '',
-    major: '',
-    graduationYear: undefined,
-    bio: '',
-    skills: [],
-    githubUrl: '',
-    linkedinUrl: '',
-    portfolioUrl: '',
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        university: '',
+        major: '',
+        graduationYear: undefined,
+        bio: '',
+        skills: [],
+        githubUrl: '',
+        linkedinUrl: '',
+        portfolioUrl: '',
       },
       cvFile: null,
       error: null,
       isLoading: false,
       skillsInput: '',
-      redirectTo: null
+      redirectTo: null,
+      loadingMessage: ''
     };
   }
 
@@ -67,26 +69,43 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     const { user } = this.context || {};
     
     if (!user) {
+      toast.destructive({
+        title: "Authentication Required",
+        description: "Please log in to continue."
+      });
       this.setState({ redirectTo: '/login' });
       return;
     }
 
     try {
-      this.setState({ isLoading: true, error: null });
-      
-      // Show a toast that we're loading the form
-      toast.default({
-        title: "Loading Profile Data",
-        description: "Please wait while we prepare your onboarding form."
+      this.setState({ 
+        isLoading: true, 
+        error: null,
+        loadingMessage: "Loading your profile data..."
       });
       
-      const profileData = await profileService.getCurrentStudentProfile();
+      // Show a loading toast
+      toast.default({
+        title: "Loading Profile",
+        description: "Please wait while we retrieve your information."
+      });
+      
+      // Set a timeout to ensure the request doesn't hang indefinitely
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out")), 10000);
+      });
+      
+      // Race between the profile fetch and the timeout
+      const profileData = await Promise.race([
+        profileService.getCurrentStudentProfile(),
+        timeoutPromise
+      ]) as StudentProfileData;
       
       if (profileData) {
         this.setState({
           formData: {
-            firstName: profileData.firstName || '',
-            lastName: profileData.lastName || '',
+            firstName: profileData.firstName || user.firstName || '',
+            lastName: profileData.lastName || user.lastName || '',
             phoneNumber: profileData.phoneNumber || '',
             university: profileData.university || '',
             major: profileData.major || '',
@@ -100,6 +119,7 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
             cvFilename: profileData.cvFilename,
             hasCompletedOnboarding: profileData.hasCompletedOnboarding
           },
+          loadingMessage: ''
         });
 
         if (profileData.skills && profileData.skills.length > 0) {
@@ -109,11 +129,14 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         }
     
         if (profileData.hasCompletedOnboarding) {
-          // Optionally redirect if onboarding is already complete, or allow updates
-          // this.setState({ redirectTo: '/profile' });
           toast.success({
             title: "Profile Loaded",
             description: "Your profile is already complete - you can make updates here."
+          });
+        } else {
+          toast.default({
+            title: "Let's Get Started",
+            description: "Please complete your student profile to continue."
           });
         }
       }
@@ -122,7 +145,13 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       
       let errorMsg = "Failed to load profile data. Please try again.";
       
-      if (err.response) {
+      if (err.message === "Request timed out") {
+        errorMsg = "Connection timed out. The server might be unavailable.";
+        toast.destructive({
+          title: "Connection Error",
+          description: errorMsg
+        });
+      } else if (err.response) {
         if (err.response.status === 404) {
           // This is expected for new users, no need to show error
           console.log("No profile found - this is normal for new users");
@@ -130,13 +159,23 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
             title: "Let's Get Started",
             description: "Please complete your student profile to continue."
           });
+          errorMsg = null; // Clear error message for this case
+        } else if (err.response.status === 403) {
+          errorMsg = "You don't have permission to access this page. Please log in again.";
+          toast.destructive({
+            title: "Permission Denied",
+            description: errorMsg
+          });
+          // Redirect to login
+          setTimeout(() => {
+            this.setState({ redirectTo: '/login' });
+          }, 2000);
         } else {
           errorMsg = err.response.data?.message || errorMsg;
           toast.destructive({
             title: "Error Loading Profile",
             description: errorMsg
           });
-          this.setState({ error: errorMsg });
         }
       } else if (err.request) {
         errorMsg = "No response from server. Please check your connection.";
@@ -144,16 +183,16 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
           title: "Connection Error",
           description: errorMsg
         });
-        this.setState({ error: errorMsg });
       } else {
         toast.destructive({
           title: "Error",
           description: errorMsg
         });
-        this.setState({ error: errorMsg });
       }
+      
+      this.setState({ error: errorMsg });
     } finally {
-      this.setState({ isLoading: false });
+      this.setState({ isLoading: false, loadingMessage: '' });
     }
   };
 
@@ -188,7 +227,7 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
 
   handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    this.setState({ error: null, isLoading: true });
+    this.setState({ error: null, isLoading: true, loadingMessage: "Saving your profile..." });
     
     try {
       // Show a loading toast
@@ -197,10 +236,27 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         description: "Please wait while we save your information."
       });
       
+      // First attempt to complete the onboarding
       await profileService.completeStudentOnboarding(this.state.formData);
       
+      // If successful, upload CV if one is selected
       if (this.state.cvFile) {
+        toast.default({
+          title: "Uploading CV",
+          description: "Please wait while we upload your CV..."
+        });
+        
         await profileService.uploadStudentCv(this.state.cvFile);
+      }
+      
+      // Update auth context to reflect completed onboarding
+      if (this.context && this.context.fetchUserProfile) {
+        try {
+          await this.context.fetchUserProfile();
+        } catch (profileError) {
+          console.error("Failed to refresh user profile after onboarding:", profileError);
+          // Continue with success flow even if the profile refresh fails
+        }
       }
       
       // Show success toast
@@ -209,39 +265,45 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         description: "Your student profile has been saved successfully."
       });
       
+      // Redirect to profile page
       this.setState({ redirectTo: '/profile' });
     } catch (err: any) {
       console.error("Error in handleSubmit:", err);
       
       let errorMsg = "Onboarding failed. Please try again.";
       
-      if (err.response) {
+      if (typeof err === 'string') {
+        errorMsg = err;
+      } else if (err instanceof Error) {
+        errorMsg = err.message || errorMsg;
+      } else if (err.response) {
         errorMsg = err.response.data?.message || errorMsg;
-        toast.destructive({
-          title: "Error Saving Profile",
-          description: errorMsg
-        });
-      } else if (err.request) {
-        errorMsg = "No response from server. Please check your connection.";
-        toast.destructive({
-          title: "Connection Error",
-          description: errorMsg
-        });
-      } else {
-        toast.destructive({
-          title: "Error",
-          description: errorMsg
-        });
+        
+        // Handle specific status codes
+        if (err.response.status === 403) {
+          errorMsg = "Your session has expired. Please log in again.";
+          
+          // After a short delay, redirect to login
+          setTimeout(() => {
+            this.setState({ redirectTo: '/login' });
+          }, 3000);
+        }
       }
+      
+      // Show toast notification
+      toast.destructive({
+        title: "Error Saving Profile",
+        description: errorMsg
+      });
       
       this.setState({ error: errorMsg });
     } finally {
-      this.setState({ isLoading: false });
+      this.setState({ isLoading: false, loadingMessage: '' });
     }
   };
 
   render() {
-    const { formData, cvFile, error, isLoading, skillsInput, redirectTo } = this.state;
+    const { formData, cvFile, error, isLoading, skillsInput, redirectTo, loadingMessage } = this.state;
     const { user } = this.context || {};
 
     if (redirectTo) {
@@ -253,7 +315,7 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
   }
 
   if (isLoading && !formData.firstName) { // Show full page loading only on initial load
-    return <div className="min-h-screen flex items-center justify-center"><p>Loading profile...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center"><p>{loadingMessage}</p></div>;
   }
 
   return (

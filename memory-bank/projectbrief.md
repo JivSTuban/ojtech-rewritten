@@ -43,17 +43,17 @@ OJTech is a job matching platform designed to connect students with employers fo
 
 1. Backend:
    - Java 17
-   - Spring Boot 3.4.5
+   - Spring Boot 3.2.3
    - Spring Security with JWT
    - JPA/Hibernate for data persistence
    - H2 Database (dev) / PostgreSQL (prod)
 
 2. Frontend:
-   - React 18
-   - TypeScript
-   - Vite build tool
-   - React Router
-   - Tailwind CSS
+   - React 18.2.0
+   - TypeScript 5.2.2
+   - Vite 5.1.0
+   - React Router 6.22.2
+   - Tailwind CSS 3.4.0
    - Axios for API requests
 
 ## Current Status
@@ -62,5 +62,6 @@ The project is in active development with ongoing migration from Next.js to Reac
 
 ## Repository Structure
 
-- `ojtech-api/`: Spring Boot backend
-- `ojtech-vite/`: React Vite frontend 
+- `JavaSpringBootOAuth2JwtCrud/`: Spring Boot backend
+- `ojtech-vite/`: React Vite frontend
+- `memory-bank/`: Project documentation 

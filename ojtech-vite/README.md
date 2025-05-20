@@ -49,6 +49,80 @@ The application integrates with a Spring Boot backend API. Key integration point
 - **Resume Parsing**: CV upload and parsing capabilities
 - **Application Tracking**: Job application status tracking
 
+## Fixing Circular Reference in Spring Boot Backend
+
+The application may face circular reference issues when serializing entities to JSON. This results in errors like "Maximum depth exceeded" or "JSON serialization failed" when retrieving profiles or other data with bidirectional relationships.
+
+### Solution Options:
+
+1. **Add @JsonIgnore annotation** to one side of bidirectional relationships:
+   ```java
+   public class Profile {
+       // ...
+       @OneToOne
+       @JoinColumn(name = "user_id")
+       private User user;
+       // ...
+   }
+
+   public class User {
+       // ...
+       @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+       @JsonIgnore // Add this to prevent circular references
+       private Profile profile;
+       // ...
+   }
+   ```
+
+2. **Configure Jackson with managed references**:
+   ```java
+   public class Profile {
+       // ...
+       @OneToOne
+       @JoinColumn(name = "user_id")
+       @JsonManagedReference
+       private User user;
+       // ...
+   }
+
+   public class User {
+       // ...
+       @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+       @JsonBackReference
+       private Profile profile;
+       // ...
+   }
+   ```
+
+3. **Use DTOs instead of returning entity objects directly**:
+   - Create Data Transfer Objects (DTOs) that contain only the needed fields
+   - Map entity objects to DTOs before returning from controllers
+   - This provides a clean separation and avoids circular references
+
+4. **Add a JacksonConfig class** to your backend:
+   ```java
+   @Configuration
+   public class JacksonConfig {
+       @Bean
+       public ObjectMapper objectMapper() {
+           ObjectMapper mapper = new ObjectMapper();
+           mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+           
+           // Handle circular references
+           mapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+           mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+           
+           // Configure for Hibernate
+           mapper.registerModule(new JavaTimeModule());
+           mapper.registerModule(new Hibernate5JakartaModule());
+           
+           return mapper;
+       }
+   }
+   ```
+
+These solutions address circular references in bidirectional relationships while ensuring proper data serialization.
+
 ## Development
 
 To run the application in development mode:

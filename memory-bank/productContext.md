@@ -47,6 +47,7 @@ OJTech addresses these challenges by providing an intelligent job matching platf
 2. **Skill Extraction**: Automatically extracts skills from resumes to create comprehensive student profiles
 3. **Two-sided Platform**: Serves both students and employers with tailored experiences
 4. **Focus on Skills**: Emphasizes skills and capabilities over traditional credentials
+5. **Streamlined Authentication**: Simplified registration and login process with automatic profile creation
 
 ## Success Metrics
 
@@ -55,12 +56,15 @@ OJTech addresses these challenges by providing an intelligent job matching platf
 3. **Application Completion**: Number of completed applications
 4. **Employer Satisfaction**: Employer ratings and feedback
 5. **Student Placement**: Number of students successfully placed in positions
+6. **Onboarding Completion**: Percentage of users who complete the onboarding process
 
 ## Current Limitations
 
 1. The platform is in active development with ongoing migration from Next.js to React Vite
-2. Some features may not be fully implemented or optimized
-3. Integration between frontend and backend may have some gaps
+2. Authentication flow has some issues during registration and login
+3. Form components are being converted from hook-based to class-based implementations
+4. Some components still have duplicate import statements causing syntax errors
+5. Integration between frontend and backend may have some gaps
 
 ## Future Enhancements
 
@@ -68,4 +72,6 @@ OJTech addresses these challenges by providing an intelligent job matching platf
 2. **Enhanced Analytics**: Provide deeper insights for both students and employers
 3. **Mobile Application**: Develop dedicated mobile apps for improved accessibility
 4. **AI-powered Interview Preparation**: Offer interview preparation tools based on job requirements
-5. **Integration with Educational Platforms**: Connect with learning platforms to suggest skill development opportunities 
+5. **Integration with Educational Platforms**: Connect with learning platforms to suggest skill development opportunities
+6. **Improved Authentication Flow**: Enhance the registration and login process with better error handling
+7. **Comprehensive Testing**: Add unit and integration tests for better reliability 

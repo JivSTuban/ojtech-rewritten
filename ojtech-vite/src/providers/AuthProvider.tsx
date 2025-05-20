@@ -1,6 +1,6 @@
 import React, { Component, createContext, useContext, ReactNode } from 'react';
-import authService, { UserData } from '@/lib/api/authService';
-import profileService from '@/lib/api/profileService'; // Import profile service
+import authService, { UserData } from '../lib/api/authService';
+import profileService from '../lib/api/profileService'; // Import profile service
 import axios from 'axios';
 
 export interface AppUser extends UserData {

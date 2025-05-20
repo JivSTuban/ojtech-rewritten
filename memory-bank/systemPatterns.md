@@ -102,6 +102,11 @@ The React Vite frontend follows a component-based architecture with class compon
    - HOC pattern for protected routes
    - Role-based access control for different user types
 
+5. **Form State Management Pattern**
+   - Class-based form state management
+   - Manual form validation in class components
+   - Controlled components with onChange handlers
+
 ## Data Flow
 
 1. **Authentication Flow**
@@ -110,13 +115,20 @@ The React Vite frontend follows a component-based architecture with class compon
    - Token stored in frontend and included in subsequent requests
    - Protected routes check token validity
 
-2. **Job Matching Flow**
+2. **Registration Flow**
+   - User submits registration form
+   - Username auto-generated from email
+   - Backend creates user account
+   - Automatic login after registration
+   - Profile created with full name after login
+
+3. **Job Matching Flow**
    - Student uploads resume
    - Backend extracts skills and creates profile
    - Matching algorithm compares skills with job requirements
    - Matched jobs presented to student
 
-3. **Application Flow**
+4. **Application Flow**
    - Student applies for job
    - Application stored in database
    - Employer notified of new application
@@ -150,4 +162,5 @@ The React Vite frontend follows a component-based architecture with class compon
 - Component files use PascalCase
 - Class components with explicit TypeScript interfaces
 - CSS using Tailwind utility classes
-- File structure organized by feature/domain 
+- File structure organized by feature/domain
+- Relative imports instead of path aliases 

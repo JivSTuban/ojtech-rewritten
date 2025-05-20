@@ -17,17 +17,23 @@ The current focus is on completing the migration from Next.js to React Vite whil
    - Implemented automatic login after registration
    - Fixed issues with username/email handling
    - Improved error handling and user feedback
+   - Updated the AuthProvider to use generated username for login
+   - Added graceful fallback to manual login if automatic login fails
+   - Implemented profile creation with full name after successful login
 
 2. **Component Migrations**:
    - Converted form components to class components
    - Fixed import statement issues
    - Replaced Next.js specific code with React Router equivalents
    - Updated path aliases to use relative paths
+   - Added missing Form components (FormControl, FormDescription, FormItem)
+   - Fixed component exports to use named exports consistently
 
 3. **UI Consistency**:
    - Improved visual consistency across the application
    - Updated AuthLayout to match main Navbar styling
    - Ensured consistent button styling
+   - Added proper spacing and alignment in auth pages
 
 ### Backend
 The Spring Boot backend is relatively stable with the following recent updates:
@@ -48,12 +54,12 @@ The Spring Boot backend is relatively stable with the following recent updates:
 
 ## Next Steps
 
-1. **Fix Import Issues**: Resolve duplicate and incorrect import statements
+1. **Fix Duplicate Import Statements**: Resolve syntax issues in files like `src/components/jobs/JobList.tsx`
 2. **Complete Form Component Migration**: Finish converting hook-based forms to class components
-3. **Implement Remaining Pages**: Complete the TrackApplicationsPage and ApplicationsPage
-4. **Enhance Error Handling**: Improve error handling throughout the application
-5. **Test Authentication Flow**: Thoroughly test the registration and login process
-6. **Remove Supabase References**: Replace remaining Supabase code with direct API calls
+3. **Verify Fixed Components**: Test components that have been rewritten like `Form.tsx` and `ApplicationCard.tsx`
+4. **Test Authentication Flow**: Thoroughly test the registration and login process
+5. **Remove Supabase References**: Replace remaining Supabase code with direct API calls
+6. **Check Browser Issues**: Identify and fix errors in the browser console
 7. **Optimize Performance**: Identify and address performance bottlenecks
 
 ## Active Decisions
@@ -63,6 +69,8 @@ The Spring Boot backend is relatively stable with the following recent updates:
 3. **Form State Management**: Manual form state management in class components instead of React Hook Form
 4. **Authentication Storage**: Store JWT tokens in localStorage for persistence
 5. **Error Handling Approach**: Centralized error handling through the Toast provider
+6. **Username Generation**: Auto-generate username from email to satisfy backend requirements
+7. **Profile Data Handling**: Store fullName in session storage during registration and create profile after login
 
 ## Current Work Areas
 
