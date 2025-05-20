@@ -4,6 +4,7 @@ import { ThemeProvider } from './providers/ThemeProvider';
 import { ToastProvider } from './providers/ToastContext';
 import { Toaster } from './components/ui/Toaster';
 import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
@@ -22,6 +23,8 @@ import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 import './index.css';
 
 // Main layout with navigation for all non-auth pages
@@ -56,6 +59,7 @@ const MainLayout: React.FC = () => {
       <main className={`flex-grow ${location.pathname !== '/' ? 'container mx-auto px-4 py-8' : ''}`}>
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 };
@@ -107,36 +111,57 @@ export const App: React.FC = () => {
           {/* All non-auth routes with the main layout and navbar */}
           <Route element={<MainLayout />}>
             {/* Public routes */}
-            <Route path="/" element={<HomePage />} />
+            {/* <Route path="/" element={<HomePage />} />
             <Route path="/opportunities" element={<OpportunitiesPage />} />
             <Route path="/opportunities/:id" element={<JobDetailPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/track" element={<TrackApplicationsPage />} /> */}
             
             {/* Protected routes for all authenticated users */}
-            <Route element={<ProtectedRoute />}>
+            {/* <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
               <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
-            </Route>
+            </Route> */}
             
             {/* Employer-specific routes */}
-            <Route element={<ProtectedRoute allowedRoles={['ROLE_EMPLOYER']} />}>
+            {/* <Route element={<ProtectedRoute allowedRoles={['ROLE_EMPLOYER']} />}>
               <Route path="/employer/jobs" element={<EmployerJobsPage />} />
               <Route path="/employer/jobs/create" element={<JobFormPage />} />
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
               <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
-            </Route>
+            </Route> */}
             
             {/* Student-specific routes */}
-            <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
+            {/* <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
               <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
               <Route path="/track" element={<TrackApplicationsPage />} />
-            </Route>
+            </Route> */}
             
             {/* Admin routes */}
-            <Route element={<ProtectedRoute allowedRoles={["ROLE_ADMIN"]} />}>
+            {/* <Route element={<ProtectedRoute allowedRoles={["ROLE_ADMIN"]} />}>
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
-            </Route>
+            </Route> */}
+
+            {/* For Pre Testing mockdata */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/opportunities" element={<OpportunitiesPage />} />
+              <Route path="/opportunities/:id" element={<JobDetailPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/track" element={<TrackApplicationsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
+              <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
+              <Route path="/employer/jobs" element={<EmployerJobsPage />} />
+              <Route path="/employer/jobs/create" element={<JobFormPage />} />
+              <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
+              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
+              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<UsersAdminPage />} />
+              <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

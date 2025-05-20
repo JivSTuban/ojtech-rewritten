@@ -8,6 +8,64 @@ import { Navigate, useParams, Link } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
 import apiClient from "../../lib/api/apiClient";
 
+// Mock data for temporary use
+const mockJob = {
+  id: "job123",
+  title: "Senior Software Engineer",
+  company: "OJTech Solutions",
+};
+
+const mockApplications = [
+  {
+    id: "app1",
+    jobId: "job123",
+    applicantId: "user1",
+    applicantName: "John Doe",
+    applicantEmail: "john.doe@example.com",
+    resumeUrl: "https://example.com/resume1.pdf",
+    coverLetter: "I am excited to apply for this position...",
+    status: 'pending' as const,
+    dateApplied: "2023-10-15T09:00:00Z",
+    matchPercentage: 85,
+  },
+  {
+    id: "app2",
+    jobId: "job123",
+    applicantId: "user2",
+    applicantName: "Jane Smith",
+    applicantEmail: "jane.smith@example.com",
+    resumeUrl: "https://example.com/resume2.pdf",
+    coverLetter: "With five years of experience in the field...",
+    status: 'reviewed' as const,
+    dateApplied: "2023-10-16T10:30:00Z",
+    matchPercentage: 72,
+  },
+  {
+    id: "app3",
+    jobId: "job123",
+    applicantId: "user3",
+    applicantName: "Robert Johnson",
+    applicantEmail: "robert.johnson@example.com",
+    resumeUrl: "https://example.com/resume3.pdf",
+    coverLetter: "I believe my skillset aligns perfectly with...",
+    status: 'accepted' as const,
+    dateApplied: "2023-10-14T14:20:00Z",
+    matchPercentage: 91,
+  },
+  {
+    id: "app4",
+    jobId: "job123",
+    applicantId: "user4",
+    applicantName: "Emily Williams",
+    applicantEmail: "emily.williams@example.com",
+    resumeUrl: "https://example.com/resume4.pdf",
+    coverLetter: "I am writing to express my interest in...",
+    status: 'rejected' as const,
+    dateApplied: "2023-10-13T11:45:00Z",
+    matchPercentage: 65,
+  },
+];
+
 interface Application {
   id: string;
   jobId: string;
@@ -55,6 +113,17 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
   }
   
   async fetchApplications() {
+    // Simulate loading time
+    setTimeout(() => {
+      this.setState({
+        job: mockJob,
+        applications: mockApplications,
+        loading: false,
+      });
+    }, 800);
+    
+    // Original API code commented out for future reference
+    /*
     const { jobId } = this.props;
     
     try {
@@ -76,11 +145,13 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
         error: typeof error === 'string' ? error : "Failed to load applications" 
       });
     }
+    */
   }
   
   handleUpdateStatus = async (applicationId: string, newStatus: 'reviewed' | 'accepted' | 'rejected') => {
     try {
-      await apiClient.put(`/api/employer/applications/${applicationId}/status`, { status: newStatus });
+      // Use mock update instead of API call
+      // await apiClient.put(`/api/employer/applications/${applicationId}/status`, { status: newStatus });
       
       // Update the local state
       this.setState(prevState => ({
@@ -109,18 +180,18 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
   }
   
   render() {
-    const { user } = this.context || {};
+    // const { user } = this.context || {};
     const { applications, job, loading, error } = this.state;
     
     // Redirect if not logged in
-    if (!user) {
-      return <Navigate to="/login" />;
-    }
+    // if (!user) {
+    //   return <Navigate to="/login" />;
+    // }
     
-    // Redirect if not an employer
-    if (!user.roles?.includes('ROLE_EMPLOYER')) {
-      return <Navigate to="/" />;
-    }
+    // // Redirect if not an employer
+    // if (!user.roles?.includes('ROLE_EMPLOYER')) {
+    //   return <Navigate to="/" />;
+    // }
     
     return (
       <div className="space-y-6">
@@ -259,7 +330,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                                 <Button
                                   variant="default"
                                   size="sm"
-                                  className="bg-gray-600 hover:bg-gray-700"
+                                  className="bg-green-600 hover:bg-gray-700"
                                   title="Accept Application"
                                   onClick={() => this.handleUpdateStatus(application.id, 'accepted')}
                                 >

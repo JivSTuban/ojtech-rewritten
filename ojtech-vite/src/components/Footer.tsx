@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import { Link } from "react-router-dom";
 
-export class Footer extends Component {
+// Class component for Footer logic
+class FooterClass extends Component {
   render() {
     const currentYear = new Date().getFullYear();
     
@@ -45,3 +46,8 @@ export class Footer extends Component {
     );
   }
 }
+
+// Functional wrapper component
+export const Footer: React.FC = () => {
+  return <FooterClass />;
+};
