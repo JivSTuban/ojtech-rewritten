@@ -19,6 +19,60 @@ interface User {
   hasCompletedOnboarding: boolean;
 }
 
+// Mock data for development
+const mockUsers: User[] = [
+  {
+    id: "1",
+    email: "john.doe@example.com",
+    firstName: "John",
+    lastName: "Doe",
+    role: "ROLE_STUDENT",
+    status: "active",
+    dateCreated: "2023-01-15T10:30:00Z",
+    hasCompletedOnboarding: true
+  },
+  {
+    id: "2",
+    email: "jane.smith@example.com",
+    firstName: "Jane",
+    lastName: "Smith",
+    role: "ROLE_EMPLOYER",
+    status: "active",
+    dateCreated: "2023-02-20T14:45:00Z",
+    hasCompletedOnboarding: true
+  },
+  {
+    id: "3",
+    email: "admin@example.com",
+    firstName: "Admin",
+    lastName: "User",
+    role: "ROLE_ADMIN",
+    status: "active",
+    dateCreated: "2022-12-05T09:15:00Z",
+    hasCompletedOnboarding: true
+  },
+  {
+    id: "4",
+    email: "robert.johnson@example.com",
+    firstName: "Robert",
+    lastName: "Johnson",
+    role: "ROLE_STUDENT",
+    status: "inactive",
+    dateCreated: "2023-03-10T16:20:00Z",
+    hasCompletedOnboarding: false
+  },
+  {
+    id: "5",
+    email: "sarah.williams@example.com",
+    firstName: "Sarah",
+    lastName: "Williams",
+    role: "ROLE_EMPLOYER",
+    status: "pending",
+    dateCreated: "2023-04-05T11:10:00Z",
+    hasCompletedOnboarding: false
+  }
+];
+
 interface UsersAdminPageState {
   users: User[];
   loading: boolean;
@@ -48,22 +102,13 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   async fetchUsers() {
     try {
-      const { user } = this.context || {};
-      
-      if (!user) {
-        throw new Error("Unauthorized");
-      }
-      
-      // Check if user is admin
-      if (!user.roles?.includes('ROLE_ADMIN')) {
-        throw new Error("Admin access required");
-      }
-      
-      const response = await apiClient.get('/api/admin/users');
-      this.setState({
-        users: response.data,
-        loading: false,
-      });
+      // Using mock data instead of API call
+      setTimeout(() => {
+        this.setState({
+          users: mockUsers,
+          loading: false,
+        });
+      }, 500); // Simulate API delay
     } catch (error) {
       console.error("Error fetching users:", error);
       this.setState({ 
@@ -83,7 +128,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   handleActivateUser = async (userId: string) => {
     try {
-      await apiClient.post(`/api/admin/users/${userId}/activate`);
+      // Mock activation instead of API call
       this.setState(prevState => ({
         users: prevState.users.map(user => 
           user.id === userId ? { ...user, status: 'active' } : user
@@ -96,7 +141,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   handleDeactivateUser = async (userId: string) => {
     try {
-      await apiClient.post(`/api/admin/users/${userId}/deactivate`);
+      // Mock deactivation instead of API call
       this.setState(prevState => ({
         users: prevState.users.map(user => 
           user.id === userId ? { ...user, status: 'inactive' } : user
@@ -142,13 +187,13 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     const { loading, error, searchQuery, filterRole } = this.state;
     
     // Redirect if not logged in or not admin
-    if (!user) {
-      return <Navigate to="/login" />;
-    }
+    // if (!user) {
+    //   return <Navigate to="/login" />;
+    // }
     
-    if (!user.roles?.includes('ROLE_ADMIN')) {
-      return <Navigate to="/" />;
-    }
+    // if (!user.roles?.includes('ROLE_ADMIN')) {
+    //   return <Navigate to="/" />;
+    // }
     
     const filteredUsers = this.getFilteredUsers();
     
@@ -226,7 +271,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        <TableCell className="text-center py-6 text-muted-foreground">
                           No users found
                         </TableCell>
                       </TableRow>
