@@ -17,8 +17,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+        // Note: Spring Security uses 'username' as the parameter name, but we're treating it as an email
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + username));
 
         return UserDetailsImpl.build(user);
     }

@@ -11,12 +11,14 @@ import { Card } from '../components/ui/Card';
 import { AuthLayout } from '../components/layouts/AuthLayout';
 import profileService from '../lib/api/profileService';
 import { toast } from '../components/ui/toast-utils';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface LoginPageState {
   email: string;
   password: string;
   error: string | null;
   isLoading: boolean;
+  isGoogleLoading: boolean;
   redirectTo: string | null;
 }
 
@@ -34,6 +36,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
       password: '',
       error: null,
       isLoading: false,
+      isGoogleLoading: false,
       redirectTo: null
     };
   }
@@ -196,124 +199,187 @@ export class LoginPage extends Component<{}, LoginPageState> {
       }
     }
   };
+
+  handleGoogleLogin = async (tokenId: string) => {
+    if (!this.context || !this.context.googleLogin) {
+      const errorMessage = 'Google authentication service is not available';
+      
+      toast.destructive({
+        title: "Authentication Error",
+        description: errorMessage
+      });
+      
+      this.setState({ 
+        error: errorMessage
+      });
+      return;
+    }
+    
+    this.setState({ isGoogleLoading: true, error: null });
+    
+    try {
+      await this.context.googleLogin(tokenId);
+      
+      // Show success toast
+      toast.success({
+        title: "Login Successful",
+        description: "You have been successfully signed in with Google."
+      });
+      
+      // Check user role and determine where to redirect
+      if (this.context && this.context.user) {
+        const { user } = this.context;
+        
+        // Redirect based on user role and onboarding status
+        if (user.roles?.includes('ROLE_ADMIN')) {
+          this.setState({ redirectTo: '/admin/dashboard' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
+          this.setState({ redirectTo: '/onboarding/employer' });
+        } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
+          this.setState({ redirectTo: '/onboarding/student' });
+        } else {
+          this.setState({ redirectTo: '/' });
+        }
+      } else {
+        // If context or user is not available after login, redirect to home
+        this.setState({ redirectTo: '/' });
+      }
+    } catch (error: any) {
+      console.error('Google authentication error:', error);
+      
+      const errorMessage = error.message || 'Google authentication failed. Please try again.';
+      
+      toast.destructive({
+        title: "Authentication Error",
+        description: errorMessage
+      });
+      
+      this.setState({ 
+        error: errorMessage,
+        isGoogleLoading: false
+      });
+    }
+  };
   
   render() {
-    const { isLoading, error, redirectTo } = this.state;
+    const { email, password, error, isLoading, isGoogleLoading, redirectTo } = this.state;
     
-    // If we need to redirect, do it
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
     }
     
-    // If user is already logged in, redirect to home
-    if (this.context && this.context.user) {
-      return <Navigate to="/" />;
-    }
-    
     return (
       <AuthLayout>
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <Card className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 shadow-lg">
-            <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
-              <p className="text-gray-500 dark:text-gray-400">
-                Sign in to your account
-              </p>
-            </div>
-            
-            <form onSubmit={this.handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email or Username</Label>
+        <Card className="w-full p-6 space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Welcome back</h1>
+            <p className="text-muted-foreground">Sign in to your account</p>
+          </div>
+          
+          <form onSubmit={this.handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   name="email"
-                  type="text"
-                  value={this.state.email}
+                  type="email"
+                  value={email}
                   onChange={this.handleInputChange}
                   required
-                  autoFocus
-                  autoComplete="email"
-                  placeholder="Enter your email or username"
-                  className="w-full"
+                  className="mt-1"
+                  placeholder="Enter your email address"
                 />
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  value={this.state.password}
+                  value={password}
                   onChange={this.handleInputChange}
                   required
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  className="w-full"
+                  className="mt-1"
                 />
               </div>
-              
-              {error && (
-                <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm dark:bg-red-900/30 dark:text-red-400">
-                  {error}
-                </div>
+            </div>
+            
+            {error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md">
+                {error}
+              </div>
+            )}
+            
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
               )}
-              
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
-            
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-                >
-                  Sign up
-                </Link>
-              </p>
+            </Button>
+          </form>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
             </div>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300 dark:border-gray-700" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="px-2 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800">
-                  Or continue with
-                </span>
-              </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-background text-muted-foreground">
+                Or continue with
+              </span>
             </div>
-            
-            <div className="grid grid-cols-1 gap-3">
-              <Button variant="outline" disabled className="w-full">
-                <Github className="mr-2 h-4 w-4" />
-                GitHub (Coming Soon)
-              </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="w-full">
+              {isGoogleLoading ? (
+                <Button variant="outline" className="w-full flex items-center justify-center" disabled>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Google...
+                </Button>
+              ) : (
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      this.handleGoogleLogin(credentialResponse.credential);
+                    }
+                  }}
+                  onError={() => {
+                    toast.destructive({
+                      title: "Google Login Error",
+                      description: "Google authentication failed. Please try again."
+                    });
+                  }}
+                  useOneTap
+                  theme="outline"
+                  size="large"
+                  logo_alignment="center"
+                  text="signin_with"
+                  shape="rectangular"
+                />
+              )}
             </div>
-          </Card>
-        </div>
+            <Button variant="outline" className="w-full flex items-center justify-center">
+              <Github className="h-5 w-5 mr-2" />
+              GitHub
+            </Button>
+          </div>
+          
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+        </Card>
       </AuthLayout>
     );
   }

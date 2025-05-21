@@ -2,11 +2,34 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../providers/AuthProvider';
-import { ArrowRight, Briefcase, Brain, UserCheck, Award, Rocket, CheckCircle, ChevronRight, Star } from 'lucide-react';
+import { ArrowRight, Briefcase, Brain, UserCheck, Award, Rocket, CheckCircle, ChevronRight, Star, ExternalLink, Building2 } from 'lucide-react';
 import { WaveyHeroHeader } from '../components/ui/WaveyHeroHeader';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
+
+  // Partner companies with names, website URLs, and logo paths
+  const partnerCompanies = [
+    { name: "ALLIANCE SOFTWARE, INC.", website: "https://www.alliancesoftware.com.ph", logo: "/logos/alliance.png" },
+    { name: "CODECHUM SOFTWARE SOLUTIONS INCORPORATED", website: "https://www.codechum.com", logo: "/logos/codechum.png" },
+    { name: "GO VIRTUAL ASSISTANTS INC.", website: "https://govirtualassistants.com", logo: "/logos/govirtual.png" },
+    { name: "HATCHIT SOLUTIONS", website: "https://hatchitsolutions.com", logo: "/logos/hatchit.png" },
+    { name: "INTERNS HUB", website: "https://internshub.com", logo: "/logos/internshub.png" },
+    { name: "KYOCERA DOCUMENT SOLUTIONS DEVELOPMENT PHIL., INC", website: "https://www.kyoceradocumentsolutions.com", logo: "/logos/kyocera.png" },
+    { name: "NG KHAI DEVELOPMENT CORPORATION", website: "https://ngkhai.com", logo: "/logos/ngkhai.png" },
+    { name: "OLLOPA CORPORATION", website: "https://ollopa.com", logo: "/logos/ollopa.png" },
+    { name: "OPTOGROW OPERATIONS MANAGEMENT SERVICES", website: "https://optogrow.com", logo: "/logos/optogrow.png" },
+    { name: "PIXEL8 WEB SOLUTIONS & CONSULTANCY INC.", website: "https://pixel8.ph", logo: "/logos/pixel8.png" },
+    { name: "SOFTWARE+ AT ITS BEST", website: "https://softwareplus.com", logo: "/logos/softwareplus.png" },
+    { name: "SUGBODOC TECHNOLOGIES INC.", website: "https://sugbodoc.com", logo: "/logos/sugbodoc.png" },
+    { name: "SYMPH, INC.", website: "https://symph.co", logo: "/logos/symph.png" },
+    { name: "TALLECO.COM INC.", website: "https://talleco.com", logo: "/logos/talleco.png" },
+    { name: "UMONICS METHOD", website: "https://umonicsmethod.com", logo: "/logos/umonics.png" },
+    { name: "VADE S-SOLUTIONS COMPANY", website: "https://vade-solutions.com", logo: "/logos/vade.png" },
+    { name: "WORLDTECH INFORMATION SOLUTION, INC.", website: "https://worldtechis.com", logo: "/logos/worldtech.png" },
+    { name: "WALTER COMPUTER SYSTEM INC.", website: "https://waltercomputersystem.com", logo: "/logos/walter.png" },
+    { name: "WELQOM INC.", website: "https://welqom.com", logo: "/logos/welqom.png" }
+  ];
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -171,6 +194,72 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Partners section */}
+      <section className="py-20 bg-black relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+        
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Partners</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto mb-6">We collaborate with top companies across various industries to provide quality internship opportunities</p>
+            <div className="w-20 h-1 bg-gradient-to-r from-gray-700 to-gray-500 mx-auto"></div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {partnerCompanies.map((company, index) => (
+              <a 
+                href={company.website} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                key={index} 
+                className="bg-[#111111] p-5 rounded-xl border border-[#222222] flex items-center transform transition-all duration-300 hover:border-gray-600 hover:bg-[#151515] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] group"
+              >
+                <div className="flex items-center w-full">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gray-900 rounded-md flex items-center justify-center mr-4 border border-gray-800">
+                    {/* Replace this with actual logo if available, otherwise show placeholder */}
+                    {company.logo ? (
+                      <img 
+                        src={company.logo} 
+                        alt={`${company.name} logo`} 
+                        className="max-w-full max-h-full p-1 object-contain"
+                        onError={(e) => {
+                          // If image fails to load, show a fallback building icon
+                          e.currentTarget.style.display = 'none';
+                          const nextElement = e.currentTarget.nextElementSibling;
+                          if (nextElement && nextElement instanceof HTMLElement) {
+                            nextElement.style.display = 'block';
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Building2 className="w-7 h-7 text-gray-500" />
+                    )}
+                    <Building2 className="w-7 h-7 text-gray-500" style={{display: 'none'}} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-gray-300 text-sm font-medium group-hover:text-gray-100 transition-colors">{company.name}</p>
+                    {/* <div className="flex items-center mt-1 text-gray-500 group-hover:text-gray-400 transition-colors">
+                      <span className="text-xs">Visit website</span>
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </div> */}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+          
+          {/* <div className="mt-16 text-center">
+            <Link to="/partners">
+              <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-900 transition-all duration-300">
+                View All Partners
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div> */}
+        </div>
+      </section>
+
       {/* Improved CTA section */}
       <section className="py-20 bg-black relative overflow-hidden">
         <div className="absolute inset-0 bg-[#0a0a0a]"></div>
@@ -221,22 +310,7 @@ export const HomePage: React.FC = () => {
       </section>
       
       {/* Footer with subtle gradient border */}
-      <footer className="py-8 bg-black relative">
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-gray-600 text-sm mb-4 md:mb-0">
-              © 2025 OJTech. All rights reserved.
-            </div>
-            <div className="flex space-x-6">
-              <Link to="/about" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">About</Link>
-              <Link to="/privacy" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">Privacy</Link>
-              <Link to="/terms" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">Terms</Link>
-              <Link to="/contact" className="text-gray-600 hover:text-gray-400 text-sm transition-colors">Contact</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+    
     </div>
   );
 } 

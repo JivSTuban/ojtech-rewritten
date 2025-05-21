@@ -2,6 +2,8 @@ package com.melardev.spring.jwtoauth.config;
 
 import com.melardev.spring.jwtoauth.security.jwt.AuthEntryPointJwt;
 import com.melardev.spring.jwtoauth.security.jwt.AuthTokenFilter;
+import com.melardev.spring.jwtoauth.security.oauth2.CustomOAuth2UserService;
+import com.melardev.spring.jwtoauth.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +35,12 @@ public class SecurityConfig {
 
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
+    
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+    
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -67,10 +75,17 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/auth/api/auth/**").permitAll()
+                                .requestMatchers("/oauth2/**").permitAll()
+                                .requestMatchers("/login/**").permitAll()
                                 .requestMatchers("/api-docs/**").permitAll()
                                 .requestMatchers("/swagger-ui/**").permitAll()
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
                 );
 
         // Fix H2 console
