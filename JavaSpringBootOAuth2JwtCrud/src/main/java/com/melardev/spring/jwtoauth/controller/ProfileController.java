@@ -1,12 +1,16 @@
 package com.melardev.spring.jwtoauth.controller;
 
+import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.*;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
 import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
 import com.melardev.spring.jwtoauth.service.CloudinaryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +29,8 @@ import java.util.UUID;
 @RequestMapping("/api/profiles")
 public class ProfileController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
+
     @Autowired
     private StudentProfileRepository studentProfileRepository;
 
@@ -39,24 +45,44 @@ public class ProfileController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUserProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
+        logger.debug("GET /api/profiles/me called");
+        
+        // Get current user ID using SecurityUtils
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            logger.error("User ID is null - user not properly authenticated");
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
+        
+        logger.debug("Extracted userId from token: {}", userId);
+
+        // Check if user exists
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            logger.error("User with ID {} not found", userId);
+            return ResponseEntity.status(404).body(new MessageResponse("User not found"));
+        }
+        
+        User user = userOpt.get();
+        logger.debug("Found user: {}", user.getUsername());
 
         // Check if user has a student profile
         Optional<StudentProfile> studentProfile = studentProfileRepository.findByUserId(userId);
         if (studentProfile.isPresent()) {
+            logger.debug("Found student profile for user");
             return ResponseEntity.ok(studentProfile.get());
         }
 
         // Check if user has an employer profile
         Optional<EmployerProfile> employerProfile = employerProfileRepository.findByUserId(userId);
         if (employerProfile.isPresent()) {
+            logger.debug("Found employer profile for user");
             return ResponseEntity.ok(employerProfile.get());
         }
 
-        // If no profile exists, return 404
-        return ResponseEntity.notFound().build();
+        // If no profile exists, return 404 with a helpful message
+        logger.warn("No profile found for user ID: {}", userId);
+        return ResponseEntity.status(404).body(new MessageResponse("No profile found. Please complete onboarding."));
     }
 
     @GetMapping("/{id}")
@@ -75,6 +101,50 @@ public class ProfileController {
 
         // If no profile found with the given ID
         return ResponseEntity.notFound().build();
+    }
+    
+    @PostMapping("/employer/onboarding")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<?> completeEmployerOnboarding(@RequestBody Map<String, Object> profileData) {
+        logger.debug("POST /api/profile/employer/onboarding called");
+        
+        // Get current user ID
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            logger.error("User ID is null - user not properly authenticated");
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
+
+        // Get the current user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        logger.debug("Found user: {}", user.getUsername());
+
+        // Check if profile already exists
+        Optional<EmployerProfile> existingProfileOpt = employerProfileRepository.findByUserId(userId);
+        if (existingProfileOpt.isPresent()) {
+            // Update existing profile
+            EmployerProfile profile = existingProfileOpt.get();
+            updateProfileFields(profile, profileData);
+            profile.setHasCompletedOnboarding(true);
+            profile = employerProfileRepository.save(profile);
+            logger.debug("Updated existing employer profile");
+            return ResponseEntity.ok(profile);
+        }
+
+        // Create new profile
+        EmployerProfile profile = new EmployerProfile();
+        profile.setUser(user);
+        profile.setRole(UserRole.EMPLOYER);
+        
+        updateProfileFields(profile, profileData);
+        profile.setHasCompletedOnboarding(true);
+        
+        profile = employerProfileRepository.save(profile);
+        logger.debug("Created new employer profile");
+        
+        return ResponseEntity.ok(profile);
     }
 
     @PostMapping("/avatar")

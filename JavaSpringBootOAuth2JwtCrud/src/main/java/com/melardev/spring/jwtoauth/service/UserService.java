@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Service(value = "userService")
@@ -56,6 +57,10 @@ public class UserService implements UserDetailsService {
 
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+    
+    public Optional<User> findById(UUID id) {
+        return userRepository.findById(id);
     }
 
     public long count() {

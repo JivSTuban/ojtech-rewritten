@@ -2,7 +2,7 @@ import axios from 'axios';
 import authService from './authService'; // To get the token
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-const API_URL = `${API_BASE_URL}/profile`;
+const API_URL = `${API_BASE_URL}/profiles`;
 
 const getAuthHeaders = () => {
   const user = authService.getCurrentUser();
@@ -231,7 +231,7 @@ const uploadEmployerLogo = async (logoFile: File) => {
 
 const getCurrentEmployerProfile = async () => {
   try {
-    const response = await axios.get(`${API_URL}/employer/me`, { headers: getAuthHeaders() });
+    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
     return response.data;
   } catch (error: any) {
     if (error.response?.status === 404) {

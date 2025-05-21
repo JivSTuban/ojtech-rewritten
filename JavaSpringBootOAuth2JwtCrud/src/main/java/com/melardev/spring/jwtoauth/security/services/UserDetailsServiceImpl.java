@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
@@ -16,10 +18,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Note: Spring Security uses 'username' as the parameter name, but we're treating it as an email
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with email: " + username));
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        // Try to find user by email first
+        Optional<User> userOptional = userRepository.findByEmail(usernameOrEmail);
+        
+        // If not found by email, try by username
+        if (!userOptional.isPresent()) {
+            userOptional = userRepository.findByUsername(usernameOrEmail);
+        }
+        
+        // If still not found, throw exception
+        User user = userOptional.orElseThrow(
+                () -> new UsernameNotFoundException("User Not Found with username/email: " + usernameOrEmail));
 
         return UserDetailsImpl.build(user);
     }

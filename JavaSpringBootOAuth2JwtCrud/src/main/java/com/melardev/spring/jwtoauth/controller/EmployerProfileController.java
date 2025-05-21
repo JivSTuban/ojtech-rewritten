@@ -8,11 +8,15 @@ import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
 import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
 import com.melardev.spring.jwtoauth.service.CloudinaryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,10 +25,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/employer-profiles")
 public class EmployerProfileController {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmployerProfileController.class);
 
     @Autowired
     private EmployerProfileRepository employerProfileRepository;
@@ -35,27 +42,67 @@ public class EmployerProfileController {
     @Autowired
     private CloudinaryService cloudinaryService;
 
+    /**
+     * Returns the current employer profile of the authenticated user.
+     * 
+     * @return The current employer profile of the authenticated user.
+     * @throws ResourceNotFoundException If the employer profile is not found.
+     */
     @GetMapping("/me")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<?> getCurrentEmployerProfile() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
-
-        Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
-        if (profileOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+        logger.debug("GET /api/employer-profiles/me called");
+        
+        // Get authentication details for debugging
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String authorities = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(", "));
+        logger.debug("User {} has authorities: {}", auth.getName(), authorities);
+        
+        UUID userId = SecurityUtils.getCurrentUserId();
+        logger.debug("Extracted userId from token: {}", userId);
+        
+        if (userId == null) {
+            logger.error("User ID is null - user not properly authenticated");
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
         }
 
+        Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
+        logger.debug("Profile found for userId {}: {}", userId, profileOpt.isPresent());
+        
+        if (profileOpt.isEmpty()) {
+            logger.error("Employer profile not found for userId: {}", userId);
+            
+            // Check if user exists
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                logger.debug("User exists with username: {}, but no employer profile found", user.getUsername());
+                
+                // Check if user has EMPLOYER role
+                String userRoles = user.getRoles().stream()
+                        .map(role -> role.getName().name())
+                        .collect(Collectors.joining(", "));
+                logger.debug("User roles: {}", userRoles);
+            } else {
+                logger.error("User with ID {} does not exist", userId);
+            }
+            
+            return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
+        }
+
+        logger.debug("Successfully found and returning employer profile");
         return ResponseEntity.ok(profileOpt.get());
     }
 
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<?> createEmployerProfile(@RequestBody Map<String, Object> profileData) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -82,13 +129,14 @@ public class EmployerProfileController {
     @PutMapping("/me")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<?> updateEmployerProfile(@RequestBody Map<String, Object> profileData) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
 
         Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
         }
 
         EmployerProfile profile = profileOpt.get();
@@ -102,13 +150,14 @@ public class EmployerProfileController {
     @PostMapping("/logo")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<?> uploadLogo(@RequestParam("file") MultipartFile file) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
 
         Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
         }
 
         EmployerProfile profile = profileOpt.get();

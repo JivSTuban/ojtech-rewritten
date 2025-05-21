@@ -72,13 +72,19 @@ public class AuthController {
     @PostMapping({"/signin", "/login"})
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody Object loginRequest) {
         try {
-            String username;
+            String username = null;
             String password;
             
             if (loginRequest instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, String> loginMap = (Map<String, String>) loginRequest;
+                // Try email first
                 username = loginMap.get("email");
+                // If email is not provided, try username
+                if (username == null) {
+                    username = loginMap.get("username");
+                }
+                // If neither email nor username is provided, try usernameOrEmail
                 if (username == null) {
                     username = loginMap.get("usernameOrEmail");
                 }
@@ -88,6 +94,9 @@ public class AuthController {
                 try {
                     Map<?, ?> jsonMap = objectMapper.readValue((String) loginRequest, Map.class);
                     username = (String) jsonMap.get("email");
+                    if (username == null) {
+                        username = (String) jsonMap.get("username");
+                    }
                     if (username == null) {
                         username = (String) jsonMap.get("usernameOrEmail");
                     }
