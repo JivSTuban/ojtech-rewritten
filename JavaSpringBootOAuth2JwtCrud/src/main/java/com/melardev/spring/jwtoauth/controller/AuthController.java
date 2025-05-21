@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.dtos.requests.LoginDto;
@@ -35,6 +37,9 @@ import com.melardev.spring.jwtoauth.repositories.RoleRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.security.jwt.JwtUtils;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+
+import java.util.Collections;
+import java.util.UUID;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -57,6 +62,12 @@ public class AuthController {
     
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    private RestTemplate restTemplate;
+    
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String googleClientId;
 
     @PostMapping({"/signin", "/login"})
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody Object loginRequest) {
@@ -67,7 +78,7 @@ public class AuthController {
             if (loginRequest instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, String> loginMap = (Map<String, String>) loginRequest;
-                username = loginMap.get("username");
+                username = loginMap.get("email");
                 if (username == null) {
                     username = loginMap.get("usernameOrEmail");
                 }
@@ -76,7 +87,7 @@ public class AuthController {
                 // Handle JSON string
                 try {
                     Map<?, ?> jsonMap = objectMapper.readValue((String) loginRequest, Map.class);
-                    username = (String) jsonMap.get("username");
+                    username = (String) jsonMap.get("email");
                     if (username == null) {
                         username = (String) jsonMap.get("usernameOrEmail");
                     }
@@ -88,7 +99,7 @@ public class AuthController {
                 // Try to convert to LoginDto or LoginRequest
                 try {
                     LoginDto loginDto = objectMapper.convertValue(loginRequest, LoginDto.class);
-                    username = loginDto.getUsername();
+                    username = loginDto.getEmail();
                     password = loginDto.getPassword();
                 } catch (Exception e) {
                     try {
@@ -242,6 +253,110 @@ public class AuthController {
 
             return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/google")
+    public ResponseEntity<?> authenticateWithGoogle(@RequestBody Map<String, String> request) {
+        try {
+            String tokenId = request.get("tokenId");
+            if (tokenId == null) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Token ID is required"));
+            }
+            
+            // Log the token format (first few characters)
+            System.out.println("Received token (first 10 chars): " + (tokenId.length() > 10 ? tokenId.substring(0, 10) + "..." : tokenId));
+            System.out.println("Client ID from env: " + googleClientId);
+            
+            // Verify the token with Google
+            String googleVerificationUrl = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + tokenId;
+            
+            try {
+                Map<String, Object> googleResponse = restTemplate.getForObject(googleVerificationUrl, Map.class);
+                
+                if (googleResponse == null) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: Unable to verify Google token"));
+                }
+                
+                // Log the Google response
+                System.out.println("Google verification response: " + googleResponse);
+                
+                // Validate the audience (client ID)
+                String audience = (String) googleResponse.get("aud");
+                if (!googleClientId.equals(audience)) {
+                    System.out.println("Token audience mismatch. Expected: " + googleClientId + ", Got: " + audience);
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: Token was not issued for this application"));
+                }
+                
+                // Extract user information from Google response
+                String email = (String) googleResponse.get("email");
+                String name = (String) googleResponse.get("name");
+                
+                // Check if user exists
+                User user = userRepository.findByEmail(email).orElse(null);
+                
+                if (user == null) {
+                    // Create a new user
+                    String username = email.split("@")[0] + UUID.randomUUID().toString().substring(0, 8);
+                    
+                    // Generate a random password for Google users
+                    String randomPassword = UUID.randomUUID().toString();
+                    String encodedPassword = encoder.encode(randomPassword);
+                    
+                    user = new User(username, email, encodedPassword);
+                    
+                    // Assign ROLE_STUDENT by default
+                    Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    user.setRoles(Collections.singleton(userRole));
+                    
+                    userRepository.save(user);
+                }
+                
+                // Authenticate the user
+                UserDetailsImpl userDetails = new UserDetailsImpl(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getPassword(),
+                        user.getRoles().stream()
+                                .map(role -> role.getName().name())
+                                .map(roleName -> new org.springframework.security.core.authority.SimpleGrantedAuthority(roleName))
+                                .collect(Collectors.toList())
+                );
+                
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String jwt = jwtUtils.generateJwtToken(authentication);
+                
+                List<String> roles = userDetails.getAuthorities().stream()
+                        .map(item -> item.getAuthority())
+                        .collect(Collectors.toList());
+                
+                // Check if user has completed onboarding
+                boolean hasCompletedOnboarding = false;
+                if (user.getProfile() != null) {
+                    hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                }
+                
+                return ResponseEntity.ok(new JwtResponse(jwt,
+                        userDetails.getId(),
+                        userDetails.getUsername(),
+                        userDetails.getEmail(),
+                        roles,
+                        hasCompletedOnboarding));
+                    
+            } catch (Exception e) {
+                System.out.println("Error verifying token with Google: " + e.getMessage());
+                e.printStackTrace();
+                return ResponseEntity.badRequest().body(new MessageResponse("Error verifying token: " + e.getMessage()));
+            }
+        } catch (Exception e) {
+            System.out.println("Google auth error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
     }

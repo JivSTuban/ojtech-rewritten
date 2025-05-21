@@ -1,6 +1,6 @@
 import React, { Component, createContext, useContext, ReactNode } from 'react';
-import authService, { UserData } from '../lib/api/authService';
-import profileService from '../lib/api/profileService'; // Import profile service
+import authService, { UserData } from '@/lib/api/authService';
+import profileService from '@/lib/api/profileService'; // Import profile service
 import axios from 'axios';
 
 export interface AppUser extends UserData {
@@ -13,6 +13,7 @@ interface AuthContextType {
   user: AppUser | null;
   login: (usernameOrEmail: string, password: string) => Promise<AppUser>;
   register: (data: any) => Promise<any>; 
+  googleLogin: (tokenId: string) => Promise<AppUser>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -143,6 +144,42 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
     }
   };
 
+  googleLogin = async (tokenId: string) => {
+    try {
+      this.setState({ isLoading: true });
+      const userData = await authService.googleLogin(tokenId);
+      
+      // Since we're now using the Google token directly and not calling the backend,
+      // we'll set profile data directly based on the Google information
+      const user: AppUser = {
+        ...userData,
+        profile: {
+          // Add basic profile data
+          id: userData.id,
+          userId: userData.id,
+          name: userData.name || userData.username,
+          email: userData.email,
+          picture: userData.picture || null,
+          hasCompletedOnboarding: false // New Google users need to complete onboarding
+        },
+        hasCompletedOnboarding: false
+      };
+      
+      this.setState({ 
+        isLoading: false,
+        isAuthenticated: true,
+        user,
+        profile: user.profile,
+        needsOnboarding: true // Google users should always go through onboarding
+      });
+      
+      return user;
+    } catch (error: any) {
+      this.setState({ isLoading: false });
+      throw error;
+    }
+  };
+
   register = async (data: any) => {
     try {
       // Register the user
@@ -219,7 +256,8 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
     const value: AuthContextType = {
       user, 
       login: this.login, 
-      register: this.register, 
+      register: this.register,
+      googleLogin: this.googleLogin,
       logout: this.logout, 
       isLoading,
       isAuthenticated: this.state.isAuthenticated,

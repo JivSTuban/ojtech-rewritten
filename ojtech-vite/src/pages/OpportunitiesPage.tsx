@@ -27,9 +27,127 @@ interface Job {
 
 // Extended job type with match score and company logo
 interface JobWithMatchScore extends Job {
-  match_score?: number | null;
-  company_logo_url?: string | null;
+  match_score: number | null;
+  company_logo_url: string | null;
 }
+
+// Mock data for jobs
+const MOCK_JOBS: JobWithMatchScore[] = [
+  {
+    id: "1",
+    employer_id: "emp1",
+    title: "Frontend Developer",
+    description: "We are looking for a skilled frontend developer proficient in React, TypeScript, and modern CSS frameworks. You will be responsible for building responsive web applications and maintaining existing projects.",
+    company_name: "TechCorp Solutions",
+    company_logo_url: "https://placekitten.com/150/150",
+    location: "New York, NY (Remote)",
+    job_type: "Full-time",
+    salary_range: "$90,000 - $120,000",
+    required_skills: ["React", "TypeScript", "CSS", "HTML5", "Git"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 92
+  },
+  {
+    id: "6",
+    employer_id: "symph",
+    title: "Software Engineering Intern",
+    description: "In Web and Mobile App Development, you will first study the company's tech stack for 2-3 weeks, then collaborate with developers, designers, and project managers to build real-world applications. If you join the QA Technical track, your role focuses on ensuring excellent quality by writing and implementing automated testing for web and mobile apps. Those in Internal Technical Operations will contribute to improving Symph's internal systems by fixing, enhancing, or developing tools that support the company's efficiency.",
+    company_name: "Symph",
+    company_logo_url: null,
+    location: "Cebu IT Park",
+    job_type: "Internship",
+    salary_range: null,
+    required_skills: ["Web Development", "Mobile Development", "QA Testing", "Technical Operations"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 88
+  },
+  {
+    id: "2",
+    employer_id: "emp2",
+    title: "Backend Engineer",
+    description: "Join our talented engineering team to build scalable microservices and RESTful APIs using Java Spring Boot. Experience with cloud platforms and containerization is a plus.",
+    company_name: "DataDrive Inc.",
+    company_logo_url: "https://placekitten.com/151/151",
+    location: "San Francisco, CA",
+    job_type: "Full-time",
+    salary_range: "$110,000 - $150,000",
+    required_skills: ["Java", "Spring Boot", "SQL", "RESTful APIs", "Microservices"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 75
+  },
+  {
+    id: "3",
+    employer_id: "emp3",
+    title: "DevOps Engineer",
+    description: "Help us build and maintain our cloud infrastructure using AWS, Terraform, and Kubernetes. You will be responsible for automating deployment pipelines and ensuring system reliability.",
+    company_name: "CloudScale Technologies",
+    company_logo_url: null,
+    location: "Chicago, IL (Hybrid)",
+    job_type: "Full-time",
+    salary_range: "$100,000 - $135,000",
+    required_skills: ["AWS", "Terraform", "Kubernetes", "CI/CD", "Linux"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 50
+  },
+  {
+    id: "4",
+    employer_id: "emp4",
+    title: "Full Stack Developer",
+    description: "Looking for a versatile developer who can work across our entire stack. You'll build features using React on the frontend and Node.js on the backend.",
+    company_name: "OmniTech Solutions",
+    company_logo_url: "https://placekitten.com/152/152",
+    location: "Remote",
+    job_type: "Contract",
+    salary_range: "$60-75/hour",
+    required_skills: ["React", "Node.js", "MongoDB", "Express", "JavaScript"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 85
+  },
+  {
+    id: "5",
+    employer_id: "emp5",
+    title: "Data Scientist",
+    description: "Join our analytics team to develop machine learning models and extract insights from large datasets. You will work closely with product teams to implement data-driven solutions.",
+    company_name: "Analytix",
+    company_logo_url: null,
+    location: "Boston, MA",
+    job_type: "Full-time",
+    salary_range: "$120,000 - $160,000",
+    required_skills: ["Python", "Machine Learning", "SQL", "Data Visualization", "Statistics"],
+    preferred_skills: null,
+    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: null,
+    status: "active",
+    is_active: true,
+    match_score: 35
+  }
+];
 
 // Define the toast interface (simplified for now)
 interface Toast {
@@ -44,7 +162,7 @@ interface OpportunitiesPageState {
   error: string | null;
   currentIndex: number;
   lastRemovedJob: {
-    job: Job;
+    job: JobWithMatchScore;
     direction: "left" | "right";
   } | null;
   expandedJobId: string | null;
@@ -93,6 +211,11 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         return;
       }
       
+      // Using mock data, so we'll just set isProcessing to false
+      this.setState({ isProcessingCV: false });
+      
+      // Uncomment the following code when you want to use the real API again
+      /*
       const response = await axios.get(`${this.API_BASE_URL}/cvs/me/status`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -106,17 +229,38 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       } else {
         this.setState({ isProcessingCV: false });
       }
+      */
     } catch (error) {
       console.error("Error checking CV processing status:", error);
       this.setState({ isProcessingCV: false });
     }
   };
   
-  // Fetch jobs for the current user
+  // Fetch jobs for the current user (now using mock data)
   fetchJobs = async () => {
     this.setState({ loading: true, error: null });
     
     try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Use mock data instead of API call
+      const matchedJobs = MOCK_JOBS;
+      
+      // Set jobs and update current index
+      this.setState({
+        jobs: matchedJobs,
+        currentIndex: matchedJobs.length - 1,
+        loading: false
+      });
+      
+      // Initialize refs
+      this.childRefs = Array(matchedJobs.length)
+        .fill(0)
+        .map(() => createRef<any>());
+      
+      // Uncomment the following code when you want to use the real API again
+      /*
       const token = localStorage.getItem('token');
       if (!token) {
         this.setState({ 
@@ -171,6 +315,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           loading: false
         });
       }
+      */
     } catch (err) {
       console.error("Fetch jobs error:", err);
       this.setState({
@@ -183,6 +328,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Apply for a job using the Spring Boot API
   applyForJob = async (jobId: string) => {
     try {
+      // Using mock data, just return success
+      console.log(`Mock API: Applied for job ${jobId}`);
+      return { success: true, data: { letterGenerated: true } };
+      
+      // Uncomment the following code when you want to use the real API again
+      /*
       const token = localStorage.getItem('token');
       if (!token) {
         return { success: false, error: "Authentication required" };
@@ -199,6 +350,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       );
       
       return { success: true, data: response.data };
+      */
     } catch (error) {
       console.error("Error applying for job:", error);
       return { success: false, error: "Failed to apply for job" };
@@ -208,6 +360,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Decline a job using the Spring Boot API
   declineJob = async (jobId: string) => {
     try {
+      // Using mock data, just return success
+      console.log(`Mock API: Declined job ${jobId}`);
+      return { success: true, data: {} };
+      
+      // Uncomment the following code when you want to use the real API again
+      /*
       const token = localStorage.getItem('token');
       if (!token) {
         return { success: false, error: "Authentication required" };
@@ -224,6 +382,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       );
       
       return { success: true, data: response.data };
+      */
     } catch (error) {
       console.error("Error declining job:", error);
       return { success: false, error: "Failed to decline job" };
@@ -245,7 +404,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       console.log(`Swiped ${direction} on ${job.title}`);
       this.setState(prevState => ({ 
         currentIndex: index - 1,
-        lastRemovedJob: { job, direction: direction as 'left' | 'right' }
+        lastRemovedJob: { job: job as JobWithMatchScore, direction: direction as 'left' | 'right' }
       }));
       
       if (direction === 'right') {
@@ -430,74 +589,95 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                   preventSwipe={["up", "down"]}
                 >
                   <div 
-                    className={`bg-white p-6 w-[360px] h-[450px] rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${
+                    className={`bg-gray-900 p-6 w-[360px] h-[500px] rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${
                       expandedJobId === job.id ? 'max-h-none overflow-y-auto' : ''
                     }`}
                   >
-                    {/* Company Logo & Match Score */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                    {/* Avatar, Company & Location */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
                         {job.company_logo_url ? (
                           <img
                             src={job.company_logo_url}
                             alt={`${job.company_name} logo`}
-                            className="w-10 h-10 object-contain"
+                            className="w-10 h-10 object-contain rounded-full"
                           />
                         ) : (
-                          <Briefcase className="w-6 h-6 text-gray-400" />
+                          <span className="text-lg font-medium text-purple-800">
+                            {job.company_name ? job.company_name.charAt(0) : 'A'}
+                          </span>
                         )}
                       </div>
-                      
-                      <div className={`${this.getScoreColor(job.match_score)} px-3 py-1 rounded-full text-xs font-medium bg-opacity-10 bg-current`}>
-                        {job.match_score != null && <span>{job.match_score}% </span>}
-                        <span>{this.getScoreLabel(job.match_score)}</span>
+                      <div>
+                        <h3 className="font-medium text-base">{job.company_name}</h3>
+                        <p className="text-sm text-gray-600">{job.location}</p>
+                      </div>
+                      <div className="ml-auto">
+                        <div className={`${this.getScoreColor(job.match_score)} px-2 py-0.5 rounded-full text-xs font-medium bg-opacity-10 bg-current`}>
+                          {job.match_score != null && <span className="text-white">{job.match_score}% </span>}
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Job Title & Company */}
-                    <h3 className="font-bold text-xl mb-1">{job.title}</h3>
-                    <p className="text-gray-600 mb-3">{job.company_name}</p>
-                    
-                    {/* Location, Job Type, Salary Info */}
-                    <div className="grid grid-cols-1 gap-2 mb-4">
+
+                    {/* Job Title & Subtitle */}
+                    <div className="text-center mb-3">
+                      <h2 className="text-xl font-medium mb-1">{job.title}</h2>
+                      <p className="text-sm text-white-600">
+                        {job.job_type || "Subtitle"}
+                      </p>
+                    </div>
+
+                    {/* Job Description - Limited to 50 chars */}
+                    <div className="mb-3">
+                      <p className="text-sm text-white-700 leading-relaxed">
+                        {job.description 
+                          ? (job.description.length > 190 
+                             ? job.description.substring(0, 190) + '...' 
+                             : job.description)
+                          : "No description provided."}
+                      </p>
+                    </div>
+
+                    {/* Job Details */}
+                    <div className="grid grid-cols-1 gap-1.5 mb-3">
                       {job.location && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
+                        <div className="flex items-center gap-2 text-xs text-white-700">
+                          <MapPin className="w-3 h-3" />
                           <span>{job.location}</span>
                         </div>
                       )}
                       
                       {job.job_type && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Briefcase className="w-4 h-4" />
+                        <div className="flex items-center gap-2 text-xs text-white-700">
+                          <Briefcase className="w-3 h-3" />
                           <span>{job.job_type}</span>
                         </div>
                       )}
                       
                       {job.salary_range && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <DollarSign className="w-4 h-4" />
+                        <div className="flex items-center gap-2 text-xs text-white-700">
+                          <DollarSign className="w-3 h-3" />
                           <span>{job.salary_range}</span>
                         </div>
                       )}
                       
                       {job.application_deadline && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
+                        <div className="flex items-center gap-2 text-xs text-white-700">
+                          <Calendar className="w-3 h-3" />
                           <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Required Skills */}
                     {job.required_skills && job.required_skills.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium mb-2">Required Skills:</p>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="mb-3">
+                        <p className="text-xs font-medium mb-1.5">Required Skills:</p>
+                        <div className="flex flex-wrap gap-1.5">
                           {job.required_skills.map((skill, i) => (
                             <span
                               key={i}
-                              className="px-2.5 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
+                              className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
                             >
                               {skill}
                             </span>
@@ -505,21 +685,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         </div>
                       </div>
                     )}
-                    
-                    {/* Job Description */}
-                    <div className="mb-auto">
-                      <p className="text-sm font-medium mb-1">Description:</p>
-                      <p className="text-sm text-gray-600 line-clamp-3">
-                        {job.description || "No description provided."}
-                      </p>
-                    </div>
-                    
+
+                  
+
                     {/* View Details Button */}
-                    <div className="mt-4">
+                    <div className="mt-auto pt-2">
                       <Link to={`/opportunities/${job.id}`} className="block w-full">
-                        <Button variant="outline" className="w-full flex items-center justify-center">
+                        <Button variant="outline" className="w-full flex items-center justify-center text-sm">
                           View Full Details
-                          <ChevronRight className="ml-2 h-4 w-4" />
+                          <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       </Link>
                     </div>
@@ -531,7 +705,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         )}
         
         {/* Swipe controls */}
-        {jobs.length > 0 && (
+        {/* {jobs.length > 0 && (
           <div className="flex justify-center gap-4 mt-8">
             <Button
               onClick={() => this.swipe("left")}
@@ -558,7 +732,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               <Check className="h-6 w-6" />
             </Button>
           </div>
-        )}
+        )} */}
       </main>
     );
   }

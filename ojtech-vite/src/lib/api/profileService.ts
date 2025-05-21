@@ -88,27 +88,9 @@ const completeStudentOnboarding = async (data: any) => {
     console.log('Sending student onboarding data:', data);
     const response = await axios.post(`${API_URL}/student/onboarding-v2`, data, { 
       headers: getAuthHeaders(),
-      timeout: 15000 // Add a timeout to prevent hanging requests
+      timeout: 10000
     });
     console.log('Student onboarding successful response:', response.data);
-    
-    // Update local user data
-    try {
-      const userData = authService.getCurrentUser();
-      if (userData) {
-        // Update the stored user with completed onboarding flag
-        const updatedUser = {
-          ...userData,
-          hasCompletedOnboarding: true
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log('Updated local user data with completed onboarding flag');
-      }
-    } catch (updateError) {
-      console.error('Failed to update local user data:', updateError);
-      // This is not critical, so we don't throw the error
-    }
-    
     return response.data;
   } catch (error: any) {
     console.error("Error completing student onboarding:", error);
@@ -118,30 +100,12 @@ const completeStudentOnboarding = async (data: any) => {
       console.error("Server responded with status:", error.response.status);
       console.error("Response data:", error.response.data);
       console.error("Response headers:", error.response.headers);
-      
-      // Check for specific error types
-      if (error.response.status === 403) {
-        throw new Error("Authentication failed. Please log in again.");
-      } else if (error.response.status === 400) {
-        throw new Error(error.response.data?.message || "Invalid data provided. Please check your form entries.");
-      } else if (error.response.status === 500) {
-        if (error.response.data?.message?.includes('JSON') || 
-            error.response.data?.message?.includes('depth') ||
-            error.response.data?.message?.includes('circular')) {
-          throw new Error("The server encountered a data processing error. This is likely due to circular references in the data model.");
-        } else {
-          throw new Error("Server error. Please try again later.");
-        }
-      }
     } else if (error.request) {
       console.error("No response received from server - request:", error.request);
-      throw new Error("No response from server. Please check your internet connection.");
     } else {
       console.error("Error setting up request:", error.message);
-      throw new Error(`Request failed: ${error.message}`);
     }
     
-    // Generic error if none of the specific cases were caught
     throw error;
   }
 };
@@ -165,56 +129,49 @@ const uploadStudentCv = async (cvFile: File) => {
 
 const getCurrentStudentProfile = async () => {
   try {
-    console.log('Attempting to fetch student profile...');
     // First try to get the main profile
-    const response = await axios.get(`${API_URL}/student/me`, { 
+    const response = await axios.get(`${API_URL}/me`, { 
       headers: getAuthHeaders(),
       // Add a timeout to prevent hanging requests
-      timeout: 15000
+      timeout: 10000
     });
-    console.log('Successfully retrieved student profile:', response.data);
+    console.log('Successfully retrieved profile:', response.data);
     
-    return response.data;
-  } catch (error: any) {
-    console.error("Error fetching student profile:", error);
-    
-    // Check for specific error types
-    if (error.response) {
-      // Server responded with an error status code
-      console.error("Server error response:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      });
-      
-      if (error.response.status === 403) {
-        console.error("Authentication failed - token may be invalid");
-        throw error; // Re-throw auth errors to handle at component level
-      }
-      
-      if (error.response.status === 404) {
-        console.warn("Profile not found - this may be normal for new users");
-      } else if (error.response.status === 500) {
-        console.error("Server error:");
-        if (error.response.data?.message?.includes('JSON') || 
-            error.response.data?.message?.includes('depth') ||
-            error.response.data?.message?.includes('circular') ||
-            error.message?.includes('JSON') || 
-            error.message?.includes('depth') ||
-            error.message?.includes('circular')) {
-          console.error("JSON serialization error detected - likely circular references in the entity model");
-          console.info("Returning a minimal profile object to allow the UI to proceed");
-        }
-      }
-    } else if (error.request) {
-      // Request was made but no response received
-      console.error("No response received from server. Network issue or server is down.");
-    } else {
-      // Error setting up the request
-      console.error("Error setting up the request:", error.message);
+    // If we have a profile and it has completed onboarding, return it
+    if (response.data && response.data.hasCompletedOnboarding) {
+      return response.data;
     }
     
-    // Return a minimal profile object to allow the UI to render the onboarding form
+    // If profile exists but onboarding not completed, return it anyway
+    // The frontend will handle redirecting to onboarding
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      console.warn("Profile not found - this may be normal for new users");
+    } else if (error.response?.status === 500 && 
+              (error.message?.includes('JSON') || error.message?.includes('depth') || 
+               error.response?.data?.message?.includes('JSON') || error.response?.data?.message?.includes('depth'))) {
+      console.error("JSON serialization error from API - likely due to circular references in the profile data");
+      
+      // Create a simplified profile object to allow the frontend to continue
+      return {
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        university: '',
+        major: '',
+        graduationYear: undefined,
+        bio: '',
+        skills: [],
+        githubUrl: '',
+        linkedinUrl: '',
+        portfolioUrl: '',
+        hasCompletedOnboarding: false
+      };
+    } else {
+      console.error("Error fetching profile:", error.message);
+    }
+    // Return a minimal profile to allow the UI to render the onboarding form
     return {
       firstName: '',
       lastName: '',

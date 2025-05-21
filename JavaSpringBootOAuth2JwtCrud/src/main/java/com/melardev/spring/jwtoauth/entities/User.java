@@ -43,6 +43,18 @@ public class User extends BaseEntity {
     @Column(name = "enabled")
     private boolean enabled = true;
     
+    @Column(name = "provider")
+    private String provider;
+    
+    @Column(name = "provider_id")
+    private String providerId;
+    
+    @Column(name = "image_url")
+    private String imageUrl;
+    
+    @Column(name = "email_verified")
+    private boolean emailVerified = false;
+    
     public User() {
     }
     
@@ -98,5 +110,37 @@ public class User extends BaseEntity {
     
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+    
+    public String getProvider() {
+        return provider;
+    }
+    
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+    
+    public String getProviderId() {
+        return providerId;
+    }
+    
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+    
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+    
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+    
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 } 

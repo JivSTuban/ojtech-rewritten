@@ -2,22 +2,24 @@ package com.melardev.spring.jwtoauth.dtos.requests;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Email;
 
 public class LoginDto {
     @NotBlank
-    @Size(min = 3, max = 20)
-    private String username;
+    @Size(max = 50)
+    @Email
+    private String email;
 
     @NotBlank
     @Size(min = 6, max = 40)
     private String password;
 
-    public String getUsername() {
-        return username;
+    public String getEmail() {
+        return email;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {

@@ -66,16 +66,16 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
   
   async fetchStats() {
     try {
-      const { user } = this.context || {};
+      // const { user } = this.context || {};
       
-      if (!user) {
-        throw new Error("Unauthorized");
-      }
+      // if (!user) {
+      //   throw new Error("Unauthorized");
+      // }
       
       // Check if user is admin
-      if (!user.roles?.includes('ROLE_ADMIN')) {
-        throw new Error("Admin access required");
-      }
+      // if (!user.roles?.includes('ROLE_ADMIN')) {
+      //   throw new Error("Admin access required");
+      // }
       
       // Get dashboard statistics from backend
       const response = await apiClient.get('/api/admin/dashboard/stats');
@@ -97,14 +97,14 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
   render() {
     const { user } = this.context || {};
     
-    // Redirect if not logged in or not admin
-    if (!user) {
-      return <Navigate to="/login" />;
-    }
+    // // Redirect if not logged in or not admin
+    // if (!user) {
+    //   return <Navigate to="/login" />;
+    // }
     
-    if (!user.roles?.includes('ROLE_ADMIN')) {
-      return <Navigate to="/" />;
-    }
+    // if (!user.roles?.includes('ROLE_ADMIN')) {
+    //   return <Navigate to="/" />;
+    // }
     
     const { totalUsers, totalEmployers, totalStudents, totalJobs, loading } = this.state;
     
