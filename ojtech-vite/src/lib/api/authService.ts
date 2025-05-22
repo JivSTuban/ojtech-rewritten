@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../../apiConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 const AUTH_API_URL = `${API_BASE_URL}/auth`;
 
 interface SignupData {
@@ -46,10 +47,8 @@ const register = async (data: SignupData) => {
 };
 
 const login = async (data: LoginData) => {
-  // Log the raw data received
   console.log('Login function called with raw data:', data);
   
-  // Ensure data is properly formatted
   const loginData = {
     usernameOrEmail: data.usernameOrEmail,
     password: data.password
@@ -59,7 +58,6 @@ const login = async (data: LoginData) => {
   console.log('To URL:', `${AUTH_API_URL}/signin`);
   
   try {
-    // Send the data directly as expected by the backend
     const response = await axios.post(`${AUTH_API_URL}/signin`, loginData);
     console.log('Login response status:', response.status);
     console.log('Login response data structure:', Object.keys(response.data));
@@ -76,65 +74,28 @@ const login = async (data: LoginData) => {
     if (error.response) {
       console.error('Error response status:', error.response.status);
       console.error('Error response data:', error.response.data);
-      console.error('Error response headers:', error.response.headers);
     }
     throw error;
   }
 };
 
-// Google OAuth Authentication - Convert Google token to JWT
 const googleLogin = async (tokenId: string) => {
   console.log('Google login function called with token (first 10 chars):', tokenId.substring(0, 10) + '...');
   
   try {
-    // Extract user information from the Google token (which is already in JWT format)
-    const tokenParts = tokenId.split('.');
-    if (tokenParts.length !== 3) {
-      throw new Error('Invalid Google token format');
+    const response = await axios.post(`${AUTH_API_URL}/oauth2/google`, { tokenId });
+    
+    console.log('Google auth backend response:', response.data);
+    
+    if (response.data && response.data.accessToken) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    } else {
+      throw new Error('Invalid response from backend OAuth endpoint');
     }
-    
-    // Decode the payload (second part of the JWT)
-    const payload = JSON.parse(atob(tokenParts[1]));
-    console.log('Decoded Google token payload:', payload);
-    
-    // Extract user information from the payload
-    const email = payload.email;
-    const name = payload.name || '';
-    const picture = payload.picture || '';
-    const sub = payload.sub; // Google's unique ID for the user
-    
-    if (!email) {
-      throw new Error('Email not found in Google token');
-    }
-    
-    // Generate a username from the email
-    const username = email.split('@')[0];
-    
-    // Create a user object with the extracted information
-    const user = {
-      id: parseInt(sub.substring(0, 8), 16) || 9999, // Convert part of sub to a number for ID
-      username,
-      email,
-      name,
-      picture,
-      roles: ['ROLE_STUDENT'], // Default role
-      accessToken: tokenId, // Use the Google token as the access token
-    };
-    
-    // Store the user in localStorage
-    localStorage.setItem('user', JSON.stringify(user));
-    console.log('Google authentication successful, user stored:', username);
-    
-    return user;
   } catch (error: any) {
-    console.error('Google token processing error:', error);
-    
-    // Format error message for UI
-    let errorMessage = 'Failed to process Google authentication token';
-    if (error.message) {
-      errorMessage = error.message;
-    }
-    
+    console.error('Google authentication error:', error);
+    let errorMessage = error.response?.data?.message || 'Failed to authenticate with Google';
     throw new Error(errorMessage);
   }
 };
@@ -142,7 +103,6 @@ const googleLogin = async (tokenId: string) => {
 const logout = () => {
   localStorage.removeItem('user');
   console.log('User logged out, localStorage user data cleared');
-  // Potentially call a backend endpoint to invalidate the token if implemented
 };
 
 const getCurrentUser = (): UserData | null => {
@@ -154,7 +114,7 @@ const getCurrentUser = (): UserData | null => {
       return userData;
     } catch (error) {
       console.error('Error parsing user data from localStorage:', error);
-      localStorage.removeItem('user'); // Clear invalid data
+      localStorage.removeItem('user');
       return null;
     }
   }

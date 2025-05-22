@@ -2,29 +2,29 @@ package com.melardev.spring.jwtoauth.entities;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "cvs")
 public class CV extends BaseEntity {
-
-    @Column(name = "file_name", nullable = false)
-    private String fileName;
-
-    @Column(name = "file_url", nullable = false)
-    private String fileUrl;
-
-    @Column(name = "file_type")
-    private String fileType;
-
-    @Column(name = "upload_date")
-    private LocalDateTime uploadDate;
+    
+    @Column(name = "parsed_resume", columnDefinition = "jsonb")
+    private String parsedResume;
+    
+    @Column(name = "last_updated")
+    private LocalDateTime lastUpdated;
 
     @Column(name = "active")
     private boolean active = false;
+    
+    @Column(name = "generated")
+    private boolean generated = false;
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
@@ -34,37 +34,37 @@ public class CV extends BaseEntity {
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<JobApplication> applications = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Certification> certifications = new HashSet<>();
+    
+    @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<WorkExperience> experiences = new HashSet<>();
 
-    public String getFileName() {
-        return fileName;
+    @PrePersist
+    protected void onCreate() {
+        lastUpdated = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        lastUpdated = LocalDateTime.now();
+    }
+    
+    public String getParsedResume() {
+        return parsedResume;
+    }
+    
+    public void setParsedResume(String parsedResume) {
+        this.parsedResume = parsedResume;
+    }
+    
+    public LocalDateTime getLastUpdated() {
+        return lastUpdated;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getFileUrl() {
-        return fileUrl;
-    }
-
-    public void setFileUrl(String fileUrl) {
-        this.fileUrl = fileUrl;
-    }
-
-    public String getFileType() {
-        return fileType;
-    }
-
-    public void setFileType(String fileType) {
-        this.fileType = fileType;
-    }
-
-    public LocalDateTime getUploadDate() {
-        return uploadDate;
-    }
-
-    public void setUploadDate(LocalDateTime uploadDate) {
-        this.uploadDate = uploadDate;
+    public void setLastUpdated(LocalDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
     public boolean isActive() {
@@ -73,6 +73,14 @@ public class CV extends BaseEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+    
+    public boolean isGenerated() {
+        return generated;
+    }
+
+    public void setGenerated(boolean generated) {
+        this.generated = generated;
     }
 
     public StudentProfile getStudent() {
@@ -89,6 +97,42 @@ public class CV extends BaseEntity {
 
     public void setApplications(List<JobApplication> applications) {
         this.applications = applications;
+    }
+    
+    public Set<Certification> getCertifications() {
+        return certifications;
+    }
+
+    public void setCertifications(Set<Certification> certifications) {
+        this.certifications = certifications;
+    }
+    
+    public void addCertification(Certification certification) {
+        certifications.add(certification);
+        certification.setCv(this);
+    }
+    
+    public void removeCertification(Certification certification) {
+        certifications.remove(certification);
+        certification.setCv(null);
+    }
+    
+    public Set<WorkExperience> getExperiences() {
+        return experiences;
+    }
+
+    public void setExperiences(Set<WorkExperience> experiences) {
+        this.experiences = experiences;
+    }
+    
+    public void addExperience(WorkExperience experience) {
+        experiences.add(experience);
+        experience.setCv(this);
+    }
+    
+    public void removeExperience(WorkExperience experience) {
+        experiences.remove(experience);
+        experience.setCv(null);
     }
 
     public void addApplication(JobApplication application) {

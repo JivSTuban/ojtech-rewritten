@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -49,8 +51,15 @@ public class StudentProfile extends Profile {
     @JsonIgnore
     private List<JobApplication> applications = new ArrayList<>();
     
-    private String phoneNumber;
-    private String bio;
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Certification> certifications = new HashSet<>();
+    
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<WorkExperience> experiences = new HashSet<>();
+    
+    // Store GitHub projects as JSON string
+    @Column(name = "github_projects", columnDefinition = "TEXT")
+    private String githubProjects;
     
     public StudentProfile() {
         super();
@@ -155,20 +164,40 @@ public class StudentProfile extends Profile {
         cv.setStudent(null);
     }
     
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public Set<Certification> getCertifications() {
+        return certifications;
     }
     
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    public void setCertifications(Set<Certification> certifications) {
+        this.certifications = certifications;
     }
     
-    public String getBio() {
-        return bio;
+    public void addCertification(Certification certification) {
+        certifications.add(certification);
+        certification.setStudent(this);
     }
     
-    public void setBio(String bio) {
-        this.bio = bio;
+    public void removeCertification(Certification certification) {
+        certifications.remove(certification);
+        certification.setStudent(null);
+    }
+    
+    public Set<WorkExperience> getExperiences() {
+        return experiences;
+    }
+    
+    public void setExperiences(Set<WorkExperience> experiences) {
+        this.experiences = experiences;
+    }
+    
+    public void addExperience(WorkExperience experience) {
+        experiences.add(experience);
+        experience.setStudent(this);
+    }
+    
+    public void removeExperience(WorkExperience experience) {
+        experiences.remove(experience);
+        experience.setStudent(null);
     }
     
     public List<JobApplication> getApplications() {
@@ -187,5 +216,13 @@ public class StudentProfile extends Profile {
     public void removeApplication(JobApplication application) {
         applications.remove(application);
         application.setStudent(null);
+    }
+    
+    public String getGithubProjects() {
+        return githubProjects;
+    }
+    
+    public void setGithubProjects(String githubProjects) {
+        this.githubProjects = githubProjects;
     }
 } 
