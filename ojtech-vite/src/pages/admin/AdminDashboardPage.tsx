@@ -2,9 +2,9 @@ import React, { Component } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Users, Briefcase, FilePlus2, LineChart } from "lucide-react";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
-import apiClient from "../../lib/api/apiClient";
+import adminService from "../../lib/api/adminService";
 
 interface StatsCardProps {
   title: string;
@@ -39,9 +39,13 @@ class StatsCard extends Component<StatsCardProps> {
 
 interface DashboardStats {
   totalUsers: number;
-  totalEmployers: number;
-  totalStudents: number;
+  userDistribution: {
+    admin: number;
+    employer: number;
+    student: number;
+  };
   totalJobs: number;
+  totalApplications: number;
   loading: boolean;
 }
 
@@ -53,9 +57,13 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
     super(props);
     this.state = {
       totalUsers: 0,
-      totalEmployers: 0,
-      totalStudents: 0,
+      userDistribution: {
+        admin: 0,
+        employer: 0,
+        student: 0
+      },
       totalJobs: 0,
+      totalApplications: 0,
       loading: true,
     };
   }
@@ -66,26 +74,13 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
   
   async fetchStats() {
     try {
-      // const { user } = this.context || {};
-      
-      // if (!user) {
-      //   throw new Error("Unauthorized");
-      // }
-      
-      // Check if user is admin
-      // if (!user.roles?.includes('ROLE_ADMIN')) {
-      //   throw new Error("Admin access required");
-      // }
-      
-      // Get dashboard statistics from backend
-      const response = await apiClient.get('/api/admin/dashboard/stats');
-      const stats = response.data;
+      const detailedStats = await adminService.getDetailedStats();
       
       this.setState({
-        totalUsers: stats.totalUsers || 0,
-        totalEmployers: stats.totalEmployers || 0,
-        totalStudents: stats.totalStudents || 0,
-        totalJobs: stats.totalJobs || 0,
+        totalUsers: detailedStats.totalUsers,
+        userDistribution: detailedStats.userDistribution,
+        totalJobs: detailedStats.totalJobs,
+        totalApplications: detailedStats.totalApplications,
         loading: false,
       });
     } catch (error) {
@@ -97,16 +92,16 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
   render() {
     const { user } = this.context || {};
     
-    // // Redirect if not logged in or not admin
-    // if (!user) {
-    //   return <Navigate to="/login" />;
-    // }
+    // Redirect if not logged in or not admin
+    if (!user) {
+      return <Navigate to="/login" />;
+    }
     
-    // if (!user.roles?.includes('ROLE_ADMIN')) {
-    //   return <Navigate to="/" />;
-    // }
+    if (!user.roles?.includes('ROLE_ADMIN')) {
+      return <Navigate to="/" />;
+    }
     
-    const { totalUsers, totalEmployers, totalStudents, totalJobs, loading } = this.state;
+    const { totalUsers, userDistribution, totalJobs, totalApplications, loading } = this.state;
     
     return (
       <div className="container mx-auto py-6 space-y-6 min-h-screen">
@@ -128,14 +123,20 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
           />
           <StatsCard 
             title="Students" 
-            value={totalStudents} 
+            value={userDistribution.student} 
             icon={<Users className="h-6 w-6" />} 
             loading={loading} 
           />
           <StatsCard 
             title="Employers" 
-            value={totalEmployers} 
+            value={userDistribution.employer} 
             icon={<Briefcase className="h-6 w-6" />} 
+            loading={loading} 
+          />
+          <StatsCard 
+            title="Applications" 
+            value={totalApplications} 
+            icon={<FilePlus2 className="h-6 w-6" />} 
             loading={loading} 
           />
           <StatsCard 
@@ -181,12 +182,12 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
-                <a 
-                  href="/admin/users" 
+                <Link 
+                  to="/admin/users" 
                   className="block w-full py-3 px-4 bg-gray-800 text-white rounded-md text-center hover:bg-gray-700 transition-colors"
                 >
                   Manage Users & Employers
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -194,4 +195,4 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
       </div>
     );
   }
-} 
+}

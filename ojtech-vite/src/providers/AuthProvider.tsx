@@ -54,6 +54,26 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
 
   fetchUserProfileData = async (userData: UserData): Promise<AppUser> => {
     try {
+      // Skip profile fetch for admin users
+      if (userData.roles.includes('ROLE_ADMIN')) {
+        const user: AppUser = {
+          ...userData,
+          profile: null,
+          hasCompletedOnboarding: true // Admins don't need onboarding
+        };
+        
+        this.setState({
+          isLoading: false,
+          isAuthenticated: true,
+          user,
+          profile: null,
+          needsOnboarding: false
+        });
+        
+        return user;
+      }
+
+      // For non-admin users, fetch their profile
       const profile = await profileService.getCurrentStudentProfile();
       
       const user: AppUser = {
@@ -280,4 +300,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};

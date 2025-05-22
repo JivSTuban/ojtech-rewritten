@@ -6,79 +6,34 @@ import { Skeleton } from "../../components/ui/Skeleton";
 import { UserCheck, UserX, Search, Briefcase, UserCircle } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
-import apiClient from "../../lib/api/apiClient";
+import adminService from "../../lib/api/adminService";
 
 interface User {
   id: string;
+  username: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  role: string;
-  status: 'active' | 'inactive' | 'pending';
-  dateCreated: string;
-  hasCompletedOnboarding: boolean;
+  roles: string[];
+  enabled: boolean;
+  createdAt?: string;
 }
 
-// Mock data for development
-const mockUsers: User[] = [
-  {
-    id: "1",
-    email: "john.doe@example.com",
-    firstName: "John",
-    lastName: "Doe",
-    role: "ROLE_STUDENT",
-    status: "active",
-    dateCreated: "2023-01-15T10:30:00Z",
-    hasCompletedOnboarding: true
-  },
-  {
-    id: "2",
-    email: "jane.smith@example.com",
-    firstName: "Jane",
-    lastName: "Smith",
-    role: "ROLE_EMPLOYER",
-    status: "active",
-    dateCreated: "2023-02-20T14:45:00Z",
-    hasCompletedOnboarding: true
-  },
-  {
-    id: "3",
-    email: "admin@example.com",
-    firstName: "Admin",
-    lastName: "User",
-    role: "ROLE_ADMIN",
-    status: "active",
-    dateCreated: "2022-12-05T09:15:00Z",
-    hasCompletedOnboarding: true
-  },
-  {
-    id: "4",
-    email: "robert.johnson@example.com",
-    firstName: "Robert",
-    lastName: "Johnson",
-    role: "ROLE_STUDENT",
-    status: "inactive",
-    dateCreated: "2023-03-10T16:20:00Z",
-    hasCompletedOnboarding: false
-  },
-  {
-    id: "5",
-    email: "sarah.williams@example.com",
-    firstName: "Sarah",
-    lastName: "Williams",
-    role: "ROLE_EMPLOYER",
-    status: "pending",
-    dateCreated: "2023-04-05T11:10:00Z",
-    hasCompletedOnboarding: false
-  }
-];
+interface PaginatedResponse<T> {
+  content: T[];
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
+}
 
 interface UsersAdminPageState {
   users: User[];
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
   loading: boolean;
   error: string | null;
   searchQuery: string;
   filterRole: string;
+  pageSize: number;
 }
 
 export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
@@ -89,10 +44,14 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     super(props);
     this.state = {
       users: [],
+      currentPage: 0,
+      totalItems: 0,
+      totalPages: 0,
       loading: true,
       error: null,
       searchQuery: "",
       filterRole: "all",
+      pageSize: 10
     };
   }
   
@@ -102,13 +61,22 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   async fetchUsers() {
     try {
-      // Using mock data instead of API call
-      setTimeout(() => {
-        this.setState({
-          users: mockUsers,
-          loading: false,
-        });
-      }, 500); // Simulate API delay
+      const { currentPage, pageSize, searchQuery } = this.state;
+      let response: PaginatedResponse<User>;
+      
+      if (searchQuery) {
+        response = await adminService.searchUsers(searchQuery, currentPage, pageSize);
+      } else {
+        response = await adminService.getPaginatedUsers(currentPage, pageSize);
+      }
+      
+      this.setState({
+        users: response.content,
+        currentPage: response.currentPage,
+        totalItems: response.totalItems,
+        totalPages: response.totalPages,
+        loading: false,
+      });
     } catch (error) {
       console.error("Error fetching users:", error);
       this.setState({ 
@@ -128,12 +96,8 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   handleActivateUser = async (userId: string) => {
     try {
-      // Mock activation instead of API call
-      this.setState(prevState => ({
-        users: prevState.users.map(user => 
-          user.id === userId ? { ...user, status: 'active' } : user
-        )
-      }));
+      await adminService.toggleUserStatus(userId);
+      await this.fetchUsers(); // Refresh the list
     } catch (error) {
       console.error("Error activating user:", error);
     }
@@ -141,12 +105,8 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   
   handleDeactivateUser = async (userId: string) => {
     try {
-      // Mock deactivation instead of API call
-      this.setState(prevState => ({
-        users: prevState.users.map(user => 
-          user.id === userId ? { ...user, status: 'inactive' } : user
-        )
-      }));
+      await adminService.toggleUserStatus(userId);
+      await this.fetchUsers(); // Refresh the list
     } catch (error) {
       console.error("Error deactivating user:", error);
     }
@@ -165,21 +125,30 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     }
   }
   
-  getFilteredUsers = () => {
-    const { users, searchQuery, filterRole } = this.state;
-    
-    return users.filter(user => {
-      const matchesSearch = 
-        searchQuery === '' ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesRole = 
-        filterRole === 'all' ||
-        user.role === filterRole;
-      
-      return matchesSearch && matchesRole;
+  handlePageChange = (newPage: number) => {
+    this.setState({ currentPage: newPage }, () => {
+      this.fetchUsers();
     });
+  }
+  handleUserDelete = async (userId: string) => {
+    try {
+      await adminService.deleteUser(userId);
+      await this.fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    }
+  }
+
+  getFilteredUsers = () => {
+    const { users, filterRole } = this.state;
+    
+    if (filterRole === 'all') {
+      return users;
+    }
+    
+    return users.filter(user => 
+      user.roles.includes(filterRole)
+    );
   }
   
   render() {
@@ -187,13 +156,13 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     const { loading, error, searchQuery, filterRole } = this.state;
     
     // Redirect if not logged in or not admin
-    // if (!user) {
-    //   return <Navigate to="/login" />;
-    // }
+    if (!user) {
+      return <Navigate to="/login" />;
+    }
     
-    // if (!user.roles?.includes('ROLE_ADMIN')) {
-    //   return <Navigate to="/" />;
-    // }
+    if (!user.roles?.includes('ROLE_ADMIN')) {
+      return <Navigate to="/" />;
+    }
     
     const filteredUsers = this.getFilteredUsers();
     
@@ -280,41 +249,32 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                         <TableRow key={user.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{user.firstName} {user.lastName}</div>
+                              <div className="font-medium">{user.username}</div>
                               <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              {this.getRoleIcon(user.role)}
+                              {this.getRoleIcon(user.roles[0])}
                               <span className="ml-2">
-                                {user.role === 'ROLE_ADMIN' ? 'Admin' : 
-                                 user.role === 'ROLE_EMPLOYER' ? 'Employer' : 
-                                 user.role === 'ROLE_STUDENT' ? 'Student' : user.role}
+                                {user.roles.map((role: string) => 
+                                  role.replace('ROLE_', '')
+                                ).join(', ')}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.status === 'active' ? 'bg-gray-200 text-gray-800' :
-                              user.status === 'inactive' ? 'bg-gray-100 text-gray-600' :
-                              'bg-gray-300 text-gray-700'
+                              user.enabled ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'
                             }`}>
-                              {user.status}
+                              {user.enabled ? 'Active' : 'Inactive'}
                             </span>
                           </TableCell>
                           <TableCell>
-                            {user.hasCompletedOnboarding ? (
-                              <span className="text-gray-600">Complete</span>
-                            ) : (
-                              <span className="text-gray-400">Pending</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(user.dateCreated).toLocaleDateString()}
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                           </TableCell>
                           <TableCell className="text-right">
-                            {user.status === 'active' ? (
+                            {user.enabled ? (
                               <Button
                                 variant="destructive"
                                 size="sm"
@@ -335,6 +295,15 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                                 Activate
                               </Button>
                             )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => this.handleUserDelete(user.id)}
+                              className="ml-2"
+                              title="Delete User"
+                            >
+                              Delete
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -348,4 +317,4 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       </div>
     );
   }
-} 
+}
