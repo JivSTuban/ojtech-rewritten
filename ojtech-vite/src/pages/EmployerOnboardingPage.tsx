@@ -10,24 +10,23 @@ import { LogoUpload } from '../components/employer/onboarding/LogoUpload';
 import { ReviewForm } from '../components/employer/onboarding/ReviewForm';
 import { OnboardingCheckLayout } from '../components/layouts/OnboardingCheckLayout';
 import { toast } from '../components/ui/toast-utils';
-import { profileService } from '../lib/api/apiClient';
+import axios from 'axios';
+
+// Define the API base URL
+const API_BASE_URL = 'http://localhost:8080/api';
 
 interface FormData {
   companyName: string;
   industry: string;
   companySize: string;
-  description: string;
-  website: string;
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  logo: File | null;
+  companyDescription: string;
+  websiteUrl: string;
+  fullName: string;
+  phoneNumber: string;
+  location: string;
+  bio: string;
   logoUrl: string;
+  hasCompletedOnboarding: boolean;
 }
 
 interface EmployerOnboardingPageState {
@@ -56,18 +55,14 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
         companyName: '',
         industry: '',
         companySize: '',
-        description: '',
-        website: '',
-        contactName: '',
-        contactEmail: '',
-        contactPhone: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-        country: '',
-        logo: null,
-        logoUrl: ''
+        companyDescription: '',
+        websiteUrl: '',
+        fullName: '',
+        phoneNumber: '',
+        location: '',
+        bio: '',
+        logoUrl: '',
+        hasCompletedOnboarding: false
       },
       isLoading: false,
       isCompleted: false,
@@ -80,6 +75,16 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
       }
     };
   }
+
+  // Helper method to get the auth token with Bearer prefix
+  getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No auth token found in localStorage');
+      return { Authorization: '' };
+    }
+    return { Authorization: `Bearer ${token}` };
+  };
 
   async componentDidMount() {
     // Check if user is authenticated
@@ -135,11 +140,15 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
       
       // Fetch current profile data if available
       try {
-        const profileData = await profileService.getProfile();
+        const response = await axios.get(`${API_BASE_URL}/profile/employer-profiles/me`, {
+          headers: this.getAuthHeader()
+        });
         
-        if (profileData) {
+        if (response.data) {
+          const profileData = response.data;
+          
           // If onboarding is already completed, redirect to employer dashboard
-          if (profileData.onboardingCompleted) {
+          if (profileData.hasCompletedOnboarding) {
             this.setState({ isCompleted: true });
             
             // Update context if needed
@@ -160,23 +169,20 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
             companyName: profileData.companyName || '',
             industry: profileData.industry || '',
             companySize: profileData.companySize || '',
-            description: profileData.description || '',
-            website: profileData.website || '',
-            contactName: profileData.contactName || this.context.user?.fullName || '',
-            contactEmail: profileData.contactEmail || this.context.user?.email || '',
-            contactPhone: profileData.contactPhone || '',
-            address: profileData.address || '',
-            city: profileData.city || '',
-            state: profileData.state || '',
-            zipCode: profileData.zipCode || '',
-            country: profileData.country || '',
-            logoUrl: profileData.logoUrl || ''
+            companyDescription: profileData.companyDescription || '',
+            websiteUrl: profileData.websiteUrl || '',
+            fullName: profileData.fullName || this.context.user?.fullName || '',
+            phoneNumber: profileData.phoneNumber || '',
+            location: profileData.location || '',
+            bio: profileData.bio || '',
+            logoUrl: profileData.logoUrl || '',
+            hasCompletedOnboarding: profileData.hasCompletedOnboarding || false
           };
           
           // Determine which steps are completed
           const onboardingStatus = {
             companyInfo: !!profileData.companyName && !!profileData.industry,
-            contactDetails: !!profileData.contactName && !!profileData.contactEmail,
+            contactDetails: !!profileData.fullName && !!profileData.phoneNumber,
             logo: !!profileData.logoUrl,
             review: false
           };
@@ -189,7 +195,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
         }
       } catch (error) {
         console.error('Error fetching profile data:', error);
-        // Continue with new onboarding if there was an error fetching existing data
+        // If 404, that means no profile exists yet, so we'll create one during form submission
       }
     } catch (error) {
       console.error('Error in component initialization:', error);
@@ -223,8 +229,25 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     }));
     
     try {
-      // Save to API using the profile service
-      await profileService.updateProfile(data);
+      const profileExists = await this.checkProfileExists();
+      
+      if (profileExists) {
+        // Update existing profile
+        await axios.put(`${API_BASE_URL}/profile/employer-profiles/me`, data, {
+          headers: {
+            ...this.getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
+        });
+      } else {
+        // Create new profile
+        await axios.post(`${API_BASE_URL}/profile/employer-profiles`, data, {
+          headers: {
+            ...this.getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
+        });
+      }
       
       // Mark step as completed
       this.setState(prevState => ({
@@ -260,8 +283,25 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     }));
     
     try {
-      // Save to API using the profile service
-      await profileService.updateProfile(data);
+      const profileExists = await this.checkProfileExists();
+      
+      if (profileExists) {
+        // Update existing profile
+        await axios.put(`${API_BASE_URL}/profile/employer-profiles/me`, data, {
+          headers: {
+            ...this.getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
+        });
+      } else {
+        // Create new profile
+        await axios.post(`${API_BASE_URL}/profile/employer-profiles`, data, {
+          headers: {
+            ...this.getAuthHeader(),
+            'Content-Type': 'application/json'
+          }
+        });
+      }
       
       // Mark step as completed
       this.setState(prevState => ({
@@ -322,31 +362,31 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
       
       // Create form data for file upload
       const formData = new FormData();
-      formData.append('logo', file);
+      formData.append('file', file);
       
-      // Upload logo to API
-      const response = await fetch('/api/employer/profile/logo-upload', {
-        method: 'POST',
-        body: formData
+      // Upload logo to API using the correct endpoint
+      const response = await axios.post(`${API_BASE_URL}/profile/employer-profiles/logo`, formData, {
+        headers: {
+          ...this.getAuthHeader(),
+          'Content-Type': 'multipart/form-data'
+        }
       });
       
-      if (!response.ok) {
+      if (response.data) {
+        this.setState(prevState => ({
+          formData: { ...prevState.formData, logoUrl: response.data.logoUrl },
+          isLoading: false,
+          onboardingStatus: {
+            ...prevState.onboardingStatus,
+            logo: true
+          }
+        }));
+        
+        // Proceed to next step
+        this.handleNextStep();
+      } else {
         throw new Error('Failed to upload company logo');
       }
-      
-      const data = await response.json();
-      
-      this.setState(prevState => ({
-        formData: { ...prevState.formData, logoUrl: data.logoUrl },
-        isLoading: false,
-        onboardingStatus: {
-          ...prevState.onboardingStatus,
-          logo: true
-        }
-      }));
-      
-      // Proceed to next step
-      this.handleNextStep();
     } catch (error) {
       console.error('Error uploading logo:', error);
       this.setState({
@@ -367,9 +407,14 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     
     try {
       // Submit final data and mark onboarding as complete
-      await profileService.updateProfile({
+      await axios.put(`${API_BASE_URL}/profile/employer-profiles/me`, {
         ...this.state.formData,
-        onboardingCompleted: true
+        hasCompletedOnboarding: true
+      }, {
+        headers: {
+          ...this.getAuthHeader(),
+          'Content-Type': 'application/json'
+        }
       });
       
       // Update the auth context to reflect completed onboarding
@@ -404,6 +449,17 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
         description: error instanceof Error ? error.message : 'Failed to complete onboarding',
         variant: "destructive"
       });
+    }
+  };
+
+  checkProfileExists = async (): Promise<boolean> => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/profile/employer-profiles/me`, {
+        headers: this.getAuthHeader()
+      });
+      return response.status === 200;
+    } catch (error) {
+      return false;
     }
   };
 

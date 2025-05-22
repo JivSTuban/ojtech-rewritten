@@ -1,14 +1,26 @@
 import axios from 'axios';
-import authService from './authService'; // To get the token
+import authService from './authService';
+import { API_BASE_URL } from '../../apiConfig';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-const API_URL = `${API_BASE_URL}/profile`;
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_URL = `${API_BASE_URL}/profiles`;
 
 const getAuthHeaders = () => {
+  // First, try to get the token from the user object
   const user = authService.getCurrentUser();
   if (user && user.accessToken) {
+    console.log('Found token in user object');
     return { Authorization: 'Bearer ' + user.accessToken };
   }
+  
+  // If not found, check if there's a standalone token
+  const token = localStorage.getItem('token');
+  if (token) {
+    console.log('Found standalone token in localStorage');
+    return { Authorization: 'Bearer ' + token };
+  }
+  
+  console.warn('No authentication token found');
   return {};
 };
 
@@ -70,7 +82,7 @@ const createInitialProfile = async (fullName: string) => {
         console.log('Profile creation response:', response.data);
         return response.data;
       } else {
-        throw error; // Re-throw if it's not a 404
+        throw error;
       }
     }
   } catch (error: any) {
@@ -86,26 +98,62 @@ const createInitialProfile = async (fullName: string) => {
 const completeStudentOnboarding = async (data: any) => {
   try {
     console.log('Sending student onboarding data:', data);
-    const response = await axios.post(`${API_URL}/student/onboarding-v2`, data, { 
-      headers: getAuthHeaders(),
-      timeout: 10000
-    });
+    
+    // First, check if the user already has a profile
+    let profileExists = false;
+    try {
+      const checkResponse = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+      if (checkResponse && checkResponse.data) {
+        profileExists = true;
+        console.log('Existing profile found:', checkResponse.data);
+      }
+    } catch (error: any) {
+      // If 404, profile doesn't exist, which is fine
+      if (error.response?.status !== 404) {
+        console.error("Error checking existing profile:", error);
+      } else {
+        console.log('No existing profile found (404 response)');
+      }
+    }
+    
+    // If no profile exists yet, create a simple profile first
+    if (!profileExists) {
+      try {
+        console.log('Creating initial student profile...');
+        const initialProfileData = {
+          fullName: `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim(),
+          firstName: data.personalInfo?.firstName || '',
+          lastName: data.personalInfo?.lastName || '',
+          // Include minimal required fields
+          skills: data.skills || []
+        };
+        
+        console.log('Initial profile data:', initialProfileData);
+        await axios.post(`${API_URL}/create`, initialProfileData, { headers: getAuthHeaders() });
+        console.log('Created initial profile successfully');
+      } catch (error: any) {
+        console.error("Error creating initial profile:", error);
+        if (error.response?.data) {
+          console.error("Server error details:", error.response.data);
+        }
+      }
+    }
+    
+    // Ensure token is still valid before continuing
+    const authHeaders = getAuthHeaders();
+    console.log('Using auth headers for onboarding submission:', authHeaders);
+    
+    // Now proceed with the onboarding data submission
+    console.log('Submitting complete onboarding data');
+    const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, data, { headers: authHeaders });
     console.log('Student onboarding successful response:', response.data);
     return response.data;
   } catch (error: any) {
     console.error("Error completing student onboarding:", error);
-    
-    // Log more details about the error
     if (error.response) {
-      console.error("Server responded with status:", error.response.status);
-      console.error("Response data:", error.response.data);
-      console.error("Response headers:", error.response.headers);
-    } else if (error.request) {
-      console.error("No response received from server - request:", error.request);
-    } else {
-      console.error("Error setting up request:", error.message);
+      console.error("Server response status:", error.response.status);
+      console.error("Server response data:", error.response.data);
     }
-    
     throw error;
   }
 };
@@ -129,74 +177,74 @@ const uploadStudentCv = async (cvFile: File) => {
 
 const getCurrentStudentProfile = async () => {
   try {
-    // First try to get the main profile
-    const response = await axios.get(`${API_URL}/me`, { 
-      headers: getAuthHeaders(),
-      // Add a timeout to prevent hanging requests
-      timeout: 10000
-    });
+    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
     console.log('Successfully retrieved profile:', response.data);
-    
-    // If we have a profile and it has completed onboarding, return it
-    if (response.data && response.data.hasCompletedOnboarding) {
-      return response.data;
-    }
-    
-    // If profile exists but onboarding not completed, return it anyway
-    // The frontend will handle redirecting to onboarding
     return response.data;
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.warn("Profile not found - this may be normal for new users");
-    } else if (error.response?.status === 500 && 
-              (error.message?.includes('JSON') || error.message?.includes('depth') || 
-               error.response?.data?.message?.includes('JSON') || error.response?.data?.message?.includes('depth'))) {
-      console.error("JSON serialization error from API - likely due to circular references in the profile data");
-      
-      // Create a simplified profile object to allow the frontend to continue
-      return {
-        firstName: '',
-        lastName: '',
-        phoneNumber: '',
-        university: '',
-        major: '',
-        graduationYear: undefined,
-        bio: '',
-        skills: [],
-        githubUrl: '',
-        linkedinUrl: '',
-        portfolioUrl: '',
-        hasCompletedOnboarding: false
-      };
-    } else {
-      console.error("Error fetching profile:", error.message);
-    }
-    // Return a minimal profile to allow the UI to render the onboarding form
-    return {
-      firstName: '',
-      lastName: '',
-      phoneNumber: '',
-      university: '',
-      major: '',
-      graduationYear: undefined,
-      bio: '',
-      skills: [],
-      githubUrl: '',
-      linkedinUrl: '',
-      portfolioUrl: '',
-      hasCompletedOnboarding: false
-    };
+    console.error("Error fetching student profile:", error.message);
+    throw error;
   }
 };
 
 const submitStudentOnboarding = async (data: any) => {
   try {
     console.log('Submitting student onboarding data:', data);
-    const response = await axios.post(`${API_URL}/student/onboarding-v2`, data, { headers: getAuthHeaders() });
-    console.log('Student onboarding successful:', response.data);
+    
+    // First, check if the user already has a profile
+    let profileExists = false;
+    try {
+      const checkResponse = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+      if (checkResponse && checkResponse.data) {
+        profileExists = true;
+        console.log('Existing profile found:', checkResponse.data);
+      }
+    } catch (error: any) {
+      // If 404, profile doesn't exist, which is fine
+      if (error.response?.status !== 404) {
+        console.error("Error checking existing profile:", error);
+      } else {
+        console.log('No existing profile found (404 response)');
+      }
+    }
+    
+    // If no profile exists yet, create a simple profile first
+    if (!profileExists) {
+      try {
+        console.log('Creating initial student profile...');
+        const initialProfileData = {
+          fullName: `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim(),
+          firstName: data.personalInfo?.firstName || '',
+          lastName: data.personalInfo?.lastName || '',
+          // Include minimal required fields
+          skills: data.skills || []
+        };
+        
+        console.log('Initial profile data:', initialProfileData);
+        await axios.post(`${API_URL}/create`, initialProfileData, { headers: getAuthHeaders() });
+        console.log('Created initial profile successfully');
+      } catch (error: any) {
+        console.error("Error creating initial profile:", error);
+        if (error.response?.data) {
+          console.error("Server error details:", error.response.data);
+        }
+      }
+    }
+    
+    // Ensure token is still valid before continuing
+    const authHeaders = getAuthHeaders();
+    console.log('Using auth headers for onboarding submission:', authHeaders);
+    
+    // Now proceed with the onboarding data submission
+    console.log('Submitting complete onboarding data');
+    const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, data, { headers: authHeaders });
+    console.log('Student onboarding successful response:', response.data);
     return response.data;
   } catch (error: any) {
     console.error('Error submitting student onboarding:', error.message);
+    if (error.response) {
+      console.error("Server response status:", error.response.status);
+      console.error("Server response data:", error.response.data);
+    }
     throw error;
   }
 };
@@ -231,14 +279,10 @@ const uploadEmployerLogo = async (logoFile: File) => {
 
 const getCurrentEmployerProfile = async () => {
   try {
-    const response = await axios.get(`${API_URL}/employer/me`, { headers: getAuthHeaders() });
+    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
     return response.data;
   } catch (error: any) {
-    if (error.response?.status === 404) {
-      console.warn("Employer profile not found - this may be normal for new users");
-    } else {
-      console.error("Error fetching employer profile:", error.message);
-    }
+    console.error("Error fetching employer profile:", error.message);
     throw error;
   }
 };

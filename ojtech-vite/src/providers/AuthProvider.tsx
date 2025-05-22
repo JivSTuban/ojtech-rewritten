@@ -22,7 +22,8 @@ interface AuthContextType {
   fetchUserProfile: () => Promise<void>; // Added to manually refresh profile
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create context outside of any component
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -36,7 +37,11 @@ interface AuthProviderState {
   needsOnboarding: boolean;
 }
 
-export class AuthProvider extends Component<AuthProviderProps, AuthProviderState> {
+// Export the class component separately
+class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderState> {
+  // Add private property for throttling
+  private _lastFetchTimestamp: number = 0;
+  
   constructor(props: AuthProviderProps) {
     super(props);
     this.state = {
@@ -54,12 +59,40 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
 
   fetchUserProfileData = async (userData: UserData): Promise<AppUser> => {
     try {
-      const profile = await profileService.getCurrentStudentProfile();
+      // Use a throttle mechanism to prevent excessive calls
+      // Add a last fetched timestamp to the component state
+      const now = Date.now();
+      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) { // 5 second throttle
+        console.log('Profile fetch throttled, using existing data');
+        
+        // Return the current user state if we have one
+        if (this.state.user) {
+          return this.state.user;
+        }
+      }
+      
+      // Update the fetch timestamp
+      this._lastFetchTimestamp = now;
+      
+      console.log('Fetching current student profile...');
+      let profile = null;
+      try {
+        profile = await profileService.getCurrentStudentProfile();
+        console.log('Profile data received:', profile);
+      } catch (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Don't throw, continue with null profile
+      }
+      
+      // Check if hasCompletedOnboarding explicitly exists in profile
+      // Strictly check for boolean true to avoid type coercion issues
+      const hasCompletedOnboarding = profile && profile.hasCompletedOnboarding === true;
+      console.log('Has completed onboarding?', hasCompletedOnboarding, 'Type:', typeof profile?.hasCompletedOnboarding);
       
       const user: AppUser = {
         ...userData,
         profile: profile || null,
-        hasCompletedOnboarding: profile ? profile.hasCompletedOnboarding : false
+        hasCompletedOnboarding: hasCompletedOnboarding // use the strict boolean
       };
       
       this.setState({
@@ -67,18 +100,18 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
         isAuthenticated: true,
         user,
         profile: profile || null,
-        needsOnboarding: !profile || !profile.hasCompletedOnboarding
+        needsOnboarding: !hasCompletedOnboarding
       });
       
       return user;
-        } catch (error: any) {
+    } catch (error: any) {
       console.error("Error fetching user profile:", error);
       
       if (error.response && error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         this.logout();
         throw error; // Rethrow to handle in calling code
-          } else {
+      } else {
         // Other error - still authenticated but no profile
         const user: AppUser = {
           ...userData,
@@ -103,38 +136,49 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
     try {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
-      const fullUser = await this.fetchUserProfileData(currentUser);
+        console.log('User found in localStorage, fetching full profile');
+        const fullUser = await this.fetchUserProfileData(currentUser);
+        
+        // Explicitly check if onboarding is completed (ensure it's boolean true)
+        const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
+        console.log('Initial auth complete. Onboarding status:', hasCompletedOnboarding);
+        
         this.setState({ 
           user: fullUser,
           isLoading: false,
           isAuthenticated: true,
-          needsOnboarding: !fullUser.profile?.hasCompletedOnboarding
+          needsOnboarding: !hasCompletedOnboarding
         });
       } else {
         this.setState({ isLoading: false });
       }
     } catch (error) {
       console.error("Error initializing auth:", error);
-    this.setState({ isLoading: false });
+      this.setState({ isLoading: false });
     }
-    };
+  };
 
   login = async (usernameOrEmail: string, password: string) => {
     try {
-    this.setState({ isLoading: true });
+      this.setState({ isLoading: true });
       const baseUserData = await authService.login({
         usernameOrEmail,
         password
       });
       
+      console.log('Login successful, fetching user profile');
       const fullUser = await this.fetchUserProfileData(baseUserData);
+      
+      // Explicitly check onboarding status
+      const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
+      console.log('Login complete. Onboarding status:', hasCompletedOnboarding);
       
       this.setState({ 
         isLoading: false,
         isAuthenticated: true,
         user: fullUser,
         profile: fullUser.profile,
-        needsOnboarding: !fullUser.profile?.hasCompletedOnboarding
+        needsOnboarding: !hasCompletedOnboarding
       });
       
       return fullUser;
@@ -242,12 +286,33 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
   fetchUserProfile = async () => {
     const { user } = this.state;
     if (user) {
+      // Check if we recently fetched the profile to prevent excessive calls
+      const now = Date.now();
+      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) { // 5 second throttle
+        console.log('fetchUserProfile throttled, using existing data');
+        return; // Skip the fetch
+      }
+      
+      // Only set loading state if we're actually going to make an API call
       this.setState({ isLoading: true });
-      const fullUser = await this.fetchUserProfileData(user);
-      this.setState({
-        user: fullUser,
-        isLoading: false
-      });
+      
+      try {
+        console.log('Refreshing user profile data...');
+        const fullUser = await this.fetchUserProfileData(user);
+        
+        // Additional check to ensure onboarding status is correctly set
+        console.log('Profile refresh completed. Onboarding status:', fullUser.hasCompletedOnboarding);
+        
+        this.setState({
+          user: fullUser,
+          isLoading: false,
+          profile: fullUser.profile || null,
+          needsOnboarding: fullUser.hasCompletedOnboarding !== true
+        });
+      } catch (error) {
+        console.error('Error refreshing user profile:', error);
+        this.setState({ isLoading: false });
+      }
     }
   }
 
@@ -266,18 +331,26 @@ export class AuthProvider extends Component<AuthProviderProps, AuthProviderState
       fetchUserProfile: this.fetchUserProfile
     };
 
-  return (
+    return (
       <AuthContext.Provider value={value}>
         {this.props.children}
-    </AuthContext.Provider>
-  );
+      </AuthContext.Provider>
+    );
   }
 }
 
+// Export a function component wrapper for the class component
+export const AuthProvider: React.FC<AuthProviderProps> = (props) => {
+  return <AuthProviderComponent {...props} />;
+};
+
+// Export the hook and context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};
+
+export { AuthContext }; 

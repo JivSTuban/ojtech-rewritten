@@ -156,7 +156,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
           this.setState({ redirectTo: '/onboarding/employer' });
         } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/student' });
+        } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
+          // Redirect students with completed onboarding to track page
+          this.setState({ redirectTo: '/track' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
+          // Redirect employers with completed onboarding to jobs page
+          this.setState({ redirectTo: '/employer/jobs' });
         } else {
+          // Default fallback
           this.setState({ redirectTo: '/' });
         }
       } else {
@@ -237,7 +244,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
           this.setState({ redirectTo: '/onboarding/employer' });
         } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/student' });
+        } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
+          // Redirect students with completed onboarding to track page
+          this.setState({ redirectTo: '/track' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
+          // Redirect employers with completed onboarding to jobs page
+          this.setState({ redirectTo: '/employer/jobs' });
         } else {
+          // Default fallback
           this.setState({ redirectTo: '/' });
         }
       } else {

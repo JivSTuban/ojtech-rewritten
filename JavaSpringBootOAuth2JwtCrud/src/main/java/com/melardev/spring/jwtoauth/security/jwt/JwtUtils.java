@@ -31,12 +31,24 @@ public class JwtUtils {
 
     public String generateJwtToken(Authentication authentication) {
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+        return generateTokenFromUsername(userPrincipal.getUsername(), userPrincipal.getId());
+    }
 
-        return Jwts.builder()
-                .setSubject((userPrincipal.getUsername()))
+    public String generateTokenFromUsername(String username) {
+        return generateTokenFromUsername(username, null);
+    }
+
+    public String generateTokenFromUsername(String username, UUID userId) {
+        var builder = Jwts.builder()
+                .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs));
+        
+        if (userId != null) {
+            builder.claim("userId", userId.toString());
+        }
+        
+        return builder.signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -50,14 +62,19 @@ public class JwtUtils {
     }
 
     public UUID getUserIdFromJwtToken(String token) {
-        String id = Jwts.parserBuilder()
-                .setSigningKey(key())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("id", String.class);
-        
-        return UUID.fromString(id);
+        try {
+            String userId = Jwts.parserBuilder()
+                    .setSigningKey(key())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("userId", String.class);
+            
+            return userId != null ? UUID.fromString(userId) : null;
+        } catch (Exception e) {
+            logger.warn("Could not extract userId from token: {}", e.getMessage());
+            return null;
+        }
     }
 
     public boolean validateJwtToken(String authToken) {
