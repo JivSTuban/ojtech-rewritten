@@ -52,6 +52,10 @@ public class StudentProfile extends Profile {
     private List<JobApplication> applications = new ArrayList<>();
     
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<JobMatch> jobMatches = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Certification> certifications = new HashSet<>();
     
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -224,5 +228,23 @@ public class StudentProfile extends Profile {
     
     public void setGithubProjects(String githubProjects) {
         this.githubProjects = githubProjects;
+    }
+    
+    public List<JobMatch> getJobMatches() {
+        return jobMatches;
+    }
+    
+    public void setJobMatches(List<JobMatch> jobMatches) {
+        this.jobMatches = jobMatches;
+    }
+    
+    public void addJobMatch(JobMatch jobMatch) {
+        jobMatches.add(jobMatch);
+        jobMatch.setStudent(this);
+    }
+    
+    public void removeJobMatch(JobMatch jobMatch) {
+        jobMatches.remove(jobMatch);
+        jobMatch.setStudent(null);
     }
 } 

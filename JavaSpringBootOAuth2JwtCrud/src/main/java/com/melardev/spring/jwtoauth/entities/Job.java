@@ -54,6 +54,11 @@ public class Job extends BaseEntity {
     @JsonIgnoreProperties("job")
     private List<JobApplication> applications = new ArrayList<>();
     
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    @JsonIgnoreProperties("job")
+    private List<JobMatch> jobMatches = new ArrayList<>();
+    
     public Job() {
     }
     
@@ -151,5 +156,23 @@ public class Job extends BaseEntity {
     
     public void setApplications(List<JobApplication> applications) {
         this.applications = applications;
+    }
+    
+    public List<JobMatch> getJobMatches() {
+        return jobMatches;
+    }
+    
+    public void setJobMatches(List<JobMatch> jobMatches) {
+        this.jobMatches = jobMatches;
+    }
+    
+    public void addJobMatch(JobMatch jobMatch) {
+        jobMatches.add(jobMatch);
+        jobMatch.setJob(this);
+    }
+    
+    public void removeJobMatch(JobMatch jobMatch) {
+        jobMatches.remove(jobMatch);
+        jobMatch.setJob(null);
     }
 } 
