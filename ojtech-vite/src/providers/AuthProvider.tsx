@@ -12,7 +12,7 @@ export interface AppUser extends UserData {
 interface AuthContextType {
   user: AppUser | null;
   login: (usernameOrEmail: string, password: string) => Promise<AppUser>;
-  register: (data: any) => Promise<any>; 
+  register: (data: any) => Promise<any>;
   googleLogin: (tokenId: string) => Promise<AppUser>;
   logout: () => void;
   isLoading: boolean;
@@ -41,7 +41,7 @@ interface AuthProviderState {
 class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderState> {
   // Add private property for throttling
   private _lastFetchTimestamp: number = 0;
-  
+
   constructor(props: AuthProviderProps) {
     super(props);
     this.state = {
@@ -49,7 +49,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       isLoading: true,
       isAuthenticated: false,
       profile: null,
-      needsOnboarding: true
+      needsOnboarding: true,
     };
   }
 
@@ -59,21 +59,38 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
   fetchUserProfileData = async (userData: UserData): Promise<AppUser> => {
     try {
+      // Skip profile fetch for admin users
+      if (userData.roles.includes('ROLE_ADMIN')) {
+        const user: AppUser = {
+          ...userData,
+          profile: null,
+          hasCompletedOnboarding: true, // Admins don't need onboarding
+        };
+
+        this.setState({
+          isLoading: false,
+          isAuthenticated: true,
+          user,
+          profile: null,
+          needsOnboarding: false,
+        });
+
+        return user;
+      }
+
       // Use a throttle mechanism to prevent excessive calls
-      // Add a last fetched timestamp to the component state
       const now = Date.now();
-      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) { // 5 second throttle
+      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) {
+        // 5 second throttle
         console.log('Profile fetch throttled, using existing data');
-        
-        // Return the current user state if we have one
         if (this.state.user) {
           return this.state.user;
         }
       }
-      
+
       // Update the fetch timestamp
       this._lastFetchTimestamp = now;
-      
+
       console.log('Fetching current student profile...');
       let profile = null;
       try {
@@ -83,30 +100,30 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
         console.error('Error fetching profile:', profileError);
         // Don't throw, continue with null profile
       }
-      
+
       // Check if hasCompletedOnboarding explicitly exists in profile
       // Strictly check for boolean true to avoid type coercion issues
       const hasCompletedOnboarding = profile && profile.hasCompletedOnboarding === true;
       console.log('Has completed onboarding?', hasCompletedOnboarding, 'Type:', typeof profile?.hasCompletedOnboarding);
-      
+
       const user: AppUser = {
         ...userData,
         profile: profile || null,
-        hasCompletedOnboarding: hasCompletedOnboarding // use the strict boolean
+        hasCompletedOnboarding,
       };
-      
+
       this.setState({
         isLoading: false,
         isAuthenticated: true,
         user,
         profile: profile || null,
-        needsOnboarding: !hasCompletedOnboarding
+        needsOnboarding: !hasCompletedOnboarding,
       });
-      
+
       return user;
     } catch (error: any) {
-      console.error("Error fetching user profile:", error);
-      
+      console.error('Error fetching user profile:', error);
+
       if (error.response && error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         this.logout();
@@ -116,17 +133,17 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
         const user: AppUser = {
           ...userData,
           profile: null,
-          hasCompletedOnboarding: false
+          hasCompletedOnboarding: false,
         };
-        
+
         this.setState({
           isLoading: false,
           isAuthenticated: true,
           user,
           profile: null,
-          needsOnboarding: true
+          needsOnboarding: true,
         });
-        
+
         return user;
       }
     }
@@ -138,22 +155,22 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       if (currentUser) {
         console.log('User found in localStorage, fetching full profile');
         const fullUser = await this.fetchUserProfileData(currentUser);
-        
+
         // Explicitly check if onboarding is completed (ensure it's boolean true)
         const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
         console.log('Initial auth complete. Onboarding status:', hasCompletedOnboarding);
-        
-        this.setState({ 
+
+        this.setState({
           user: fullUser,
           isLoading: false,
           isAuthenticated: true,
-          needsOnboarding: !hasCompletedOnboarding
+          needsOnboarding: !hasCompletedOnboarding,
         });
       } else {
         this.setState({ isLoading: false });
       }
     } catch (error) {
-      console.error("Error initializing auth:", error);
+      console.error('Error initializing auth:', error);
       this.setState({ isLoading: false });
     }
   };
@@ -163,24 +180,24 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       this.setState({ isLoading: true });
       const baseUserData = await authService.login({
         usernameOrEmail,
-        password
+        password,
       });
-      
+
       console.log('Login successful, fetching user profile');
       const fullUser = await this.fetchUserProfileData(baseUserData);
-      
+
       // Explicitly check onboarding status
       const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
       console.log('Login complete. Onboarding status:', hasCompletedOnboarding);
-      
-      this.setState({ 
+
+      this.setState({
         isLoading: false,
         isAuthenticated: true,
         user: fullUser,
         profile: fullUser.profile,
-        needsOnboarding: !hasCompletedOnboarding
+        needsOnboarding: !hasCompletedOnboarding,
       });
-      
+
       return fullUser;
     } catch (error: any) {
       this.setState({ isLoading: false });
@@ -192,7 +209,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
     try {
       this.setState({ isLoading: true });
       const userData = await authService.googleLogin(tokenId);
-      
+
       // Since we're now using the Google token directly and not calling the backend,
       // we'll set profile data directly based on the Google information
       const user: AppUser = {
@@ -204,19 +221,19 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
           name: userData.name || userData.username,
           email: userData.email,
           picture: userData.picture || null,
-          hasCompletedOnboarding: false // New Google users need to complete onboarding
+          hasCompletedOnboarding: false, // New Google users need to complete onboarding
         },
-        hasCompletedOnboarding: false
+        hasCompletedOnboarding: false,
       };
-      
-      this.setState({ 
+
+      this.setState({
         isLoading: false,
         isAuthenticated: true,
         user,
         profile: user.profile,
-        needsOnboarding: true // Google users should always go through onboarding
+        needsOnboarding: true, // Google users should always go through onboarding
       });
-      
+
       return user;
     } catch (error: any) {
       this.setState({ isLoading: false });
@@ -228,22 +245,22 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
     try {
       // Register the user
       await authService.register(data);
-      
+
       // Store the email for login
       console.log('Registration successful for email:', data.email);
-      
+
       // Add a small delay before attempting login to ensure backend processing is complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Automatically log in after registration
       // Use the email for login instead of username, as that's what the backend expects
       console.log('Attempting automatic login with email:', data.email);
-      
+
       try {
         return await this.login(data.email, data.password);
       } catch (error: any) {
         console.error('Automatic login failed after registration:', error);
-        
+
         // If login fails with 403, create a minimal user object to return
         // This allows the user to proceed without having to manually log in
         if (error.response?.status === 403) {
@@ -255,21 +272,21 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
             roles: ['ROLE_STUDENT'], // Assuming student role for new registrations
             accessToken: '', // Empty token
             profile: null,
-            hasCompletedOnboarding: false
+            hasCompletedOnboarding: false,
           };
-          
+
           // Update state to show as authenticated but needing onboarding
           this.setState({
             user: minimalUser,
             isAuthenticated: true,
             isLoading: false,
             needsOnboarding: true,
-            profile: null
+            profile: null,
           });
-          
+
           return minimalUser;
         }
-        
+
         // For other errors, redirect to login page
         throw error;
       }
@@ -288,54 +305,51 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
     if (user) {
       // Check if we recently fetched the profile to prevent excessive calls
       const now = Date.now();
-      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) { // 5 second throttle
+      if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) {
+        // 5 second throttle
         console.log('fetchUserProfile throttled, using existing data');
         return; // Skip the fetch
       }
-      
+
       // Only set loading state if we're actually going to make an API call
       this.setState({ isLoading: true });
-      
+
       try {
         console.log('Refreshing user profile data...');
         const fullUser = await this.fetchUserProfileData(user);
-        
+
         // Additional check to ensure onboarding status is correctly set
         console.log('Profile refresh completed. Onboarding status:', fullUser.hasCompletedOnboarding);
-        
+
         this.setState({
           user: fullUser,
           isLoading: false,
           profile: fullUser.profile || null,
-          needsOnboarding: fullUser.hasCompletedOnboarding !== true
+          needsOnboarding: fullUser.hasCompletedOnboarding !== true,
         });
       } catch (error) {
         console.error('Error refreshing user profile:', error);
         this.setState({ isLoading: false });
       }
     }
-  }
+  };
 
   render() {
     const { user, isLoading } = this.state;
     const value: AuthContextType = {
-      user, 
-      login: this.login, 
+      user,
+      login: this.login,
       register: this.register,
       googleLogin: this.googleLogin,
-      logout: this.logout, 
+      logout: this.logout,
       isLoading,
       isAuthenticated: this.state.isAuthenticated,
       profile: this.state.profile,
       needsOnboarding: this.state.needsOnboarding,
-      fetchUserProfile: this.fetchUserProfile
+      fetchUserProfile: this.fetchUserProfile,
     };
 
-    return (
-      <AuthContext.Provider value={value}>
-        {this.props.children}
-      </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{this.props.children}</AuthContext.Provider>;
   }
 }
 
@@ -353,4 +367,4 @@ export const useAuth = () => {
   return context;
 };
 
-export { AuthContext }; 
+export { AuthContext };

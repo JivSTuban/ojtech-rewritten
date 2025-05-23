@@ -33,10 +33,14 @@ import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.ERole;
 import com.melardev.spring.jwtoauth.entities.Role;
 import com.melardev.spring.jwtoauth.entities.User;
+import com.melardev.spring.jwtoauth.entities.Profile;
+import com.melardev.spring.jwtoauth.entities.UserRole;
 import com.melardev.spring.jwtoauth.repositories.RoleRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
+import com.melardev.spring.jwtoauth.repositories.AdminProfileRepository;
 import com.melardev.spring.jwtoauth.security.jwt.JwtUtils;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.entities.*;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -53,6 +57,9 @@ public class AuthController {
 
     @Autowired
     RoleRepository roleRepository;
+
+    @Autowired
+    AdminProfileRepository adminProfileRepository;
 
     @Autowired
     PasswordEncoder encoder;
@@ -259,6 +266,18 @@ public class AuthController {
 
             user.setRoles(userRoles);
             userRepository.save(user);
+            
+            // Check if user has admin role and create profile with hasCompletedOnboarding=true
+            boolean isAdmin = userRoles.stream()
+                    .anyMatch(role -> role.getName() == ERole.ROLE_ADMIN);
+                    
+            if (isAdmin) {
+                // Create admin profile with hasCompletedOnboarding set to true
+                AdminProfile adminProfile = new AdminProfile();
+                adminProfile.setUser(user);
+                adminProfile.setHasCompletedOnboarding(true);
+                adminProfileRepository.save(adminProfile);
+            }
 
             return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
         } catch (Exception e) {
@@ -321,6 +340,18 @@ public class AuthController {
                     user.setRoles(Collections.singleton(userRole));
                     
                     userRepository.save(user);
+                }
+                
+                // Check if user has admin role
+                boolean isAdmin = user.getRoles().stream()
+                        .anyMatch(role -> role.getName() == ERole.ROLE_ADMIN);
+                
+                if (isAdmin && user.getProfile() == null) {
+                    // Create admin profile with hasCompletedOnboarding set to true
+                    AdminProfile adminProfile = new AdminProfile();
+                    adminProfile.setUser(user);
+                    adminProfile.setHasCompletedOnboarding(true);
+                    adminProfileRepository.save(adminProfile);
                 }
                 
                 // Authenticate the user

@@ -4,6 +4,7 @@ import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.*;
 import com.melardev.spring.jwtoauth.entities.ERole;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
+import com.melardev.spring.jwtoauth.repositories.AdminProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
@@ -41,6 +42,9 @@ public class ProfileController {
 
     @Autowired
     private EmployerProfileRepository employerProfileRepository;
+    
+    @Autowired
+    private AdminProfileRepository adminProfileRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -132,6 +136,13 @@ public class ProfileController {
             logger.debug("Found employer profile for user");
             return ResponseEntity.ok(employerProfile.get());
         }
+        
+        // Check if user has an admin profile
+        Optional<AdminProfile> adminProfile = adminProfileRepository.findByUserId(userId);
+        if (adminProfile.isPresent()) {
+            logger.debug("Found admin profile for user");
+            return ResponseEntity.ok(adminProfile.get());
+        }
 
         // If no profile exists, return 404 with a helpful message
         logger.warn("No profile found for user ID: {}", userId);
@@ -150,6 +161,12 @@ public class ProfileController {
         Optional<EmployerProfile> employerProfile = employerProfileRepository.findById(id);
         if (employerProfile.isPresent()) {
             return ResponseEntity.ok(employerProfile.get());
+        }
+        
+        // Check if it's an admin profile
+        Optional<AdminProfile> adminProfile = adminProfileRepository.findById(id);
+        if (adminProfile.isPresent()) {
+            return ResponseEntity.ok(adminProfile.get());
         }
 
         // If no profile found with the given ID
@@ -201,7 +218,7 @@ public class ProfileController {
     }
 
     @PostMapping("/avatar")
-    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER') or hasRole('ADMIN')")
     public ResponseEntity<?> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -227,12 +244,20 @@ public class ProfileController {
             employerProfileRepository.save(profile);
             return ResponseEntity.ok(profile);
         }
+        
+        Optional<AdminProfile> adminProfile = adminProfileRepository.findByUserId(userId);
+        if (adminProfile.isPresent()) {
+            AdminProfile profile = adminProfile.get();
+            profile.setAvatarUrl(avatarUrl);
+            adminProfileRepository.save(profile);
+            return ResponseEntity.ok(profile);
+        }
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Profile not found");
     }
 
     @PutMapping("/me")
-    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER') or hasRole('ADMIN')")
     public ResponseEntity<?> updateProfile(@RequestBody Map<String, Object> updates) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -253,6 +278,15 @@ public class ProfileController {
             EmployerProfile profile = employerProfileOpt.get();
             updateProfileFields(profile, updates);
             employerProfileRepository.save(profile);
+            return ResponseEntity.ok(profile);
+        }
+        
+        // Check if user has an admin profile
+        Optional<AdminProfile> adminProfileOpt = adminProfileRepository.findByUserId(userId);
+        if (adminProfileOpt.isPresent()) {
+            AdminProfile profile = adminProfileOpt.get();
+            updateProfileFields(profile, updates);
+            adminProfileRepository.save(profile);
             return ResponseEntity.ok(profile);
         }
 
