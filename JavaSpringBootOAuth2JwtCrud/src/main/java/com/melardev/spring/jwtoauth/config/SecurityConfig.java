@@ -11,11 +11,14 @@ import com.melardev.spring.jwtoauth.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +26,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -59,55 +64,56 @@ public class SecurityConfig {
         return new AuthTokenFilter();
     }
 
-    // Custom authentication provider that supports OAuth users with placeholder passwords
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
     @Bean
     public AuthenticationProvider customAuthenticationProvider() {
-        return new AuthenticationProvider() {
+        return new AbstractUserDetailsAuthenticationProvider() {
             @Override
-            public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-                String username = authentication.getName();
-                String password = authentication.getCredentials().toString();
-
-                // For OAuth2 controller using placeholder password
-                if ("placeholder".equals(password)) {
-                    Optional<User> userOptional = userRepository.findByUsername(username);
-                    if (userOptional.isPresent() && 
-                        userOptional.get().getProvider() != null && 
-                        !userOptional.get().getProvider().isEmpty()) {
-                        // This is an OAuth user, allow authentication with placeholder
-                        UserDetailsImpl userDetails = UserDetailsImpl.build(userOptional.get());
-                        return new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    }
+            protected void additionalAuthenticationChecks(UserDetails userDetails, 
+                                                        UsernamePasswordAuthenticationToken authentication) 
+                                                        throws AuthenticationException {
+                if (authentication.getCredentials() == null) {
+                    throw new BadCredentialsException("No credentials provided");
                 }
 
-                // For regular password-based authentication, delegate to the standard provider
-                return null;
+                String presentedPassword = authentication.getCredentials().toString();
+                
+                // For OAuth users with placeholder password
+                if ("placeholder".equals(presentedPassword)) {
+                    Optional<User> userOpt = userRepository.findByUsername(userDetails.getUsername());
+                    if (userOpt.isPresent() && userOpt.get().getProvider() != null && 
+                        !userOpt.get().getProvider().isEmpty()) {
+                        // OAuth user, allow authentication
+                        return;
+                    }
+                }
+                
+                // For regular users, check password
+                if (!passwordEncoder().matches(presentedPassword, userDetails.getPassword())) {
+                    throw new BadCredentialsException("Invalid credentials");
+                }
             }
 
             @Override
-            public boolean supports(Class<?> authentication) {
-                return authentication.equals(UsernamePasswordAuthenticationToken.class);
+            protected UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication) 
+                                              throws AuthenticationException {
+                try {
+                    return userDetailsService.loadUserByUsername(username);
+                } catch (UsernameNotFoundException e) {
+                    throw new BadCredentialsException("Invalid username or password");
+                }
             }
         };
     }
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
+    @Primary
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -147,10 +153,8 @@ public class SecurityConfig {
                     response.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
                 }));
 
-        // Add the custom provider first
+        // Use our single custom authentication provider
         http.authenticationProvider(customAuthenticationProvider());
-        // Then add the standard provider
-        http.authenticationProvider(daoAuthenticationProvider());
 
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 

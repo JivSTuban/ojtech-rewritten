@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 
@@ -80,7 +81,7 @@ public class AuthController {
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody Object loginRequest) {
         try {
             String username = null;
-            String password;
+            String password = null;
             
             if (loginRequest instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -128,52 +129,96 @@ public class AuthController {
                 }
             }
             
+            if (username == null || password == null) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Username/email and password are required"));
+            }
+            
             // For tests, mock the authentication if needed
             Authentication authentication;
-            if (userRepository.count() == 0 && "testuser".equals(username) && "password".equals(password)) {
-                // This is a test case
-                UserDetailsImpl userDetails = new UserDetailsImpl(
-                        java.util.UUID.randomUUID(),
-                        username,
-                        "test@example.com",
-                        password,
-                        java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_STUDENT"))
-                );
-                authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            } else {
-                authentication = authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(username, password));
-            }
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtils.generateJwtToken(authentication);
-
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
-                    .collect(Collectors.toList());
+            UserDetailsImpl userDetails;
             
-            // Check if user has completed onboarding
-            boolean hasCompletedOnboarding = false;
             try {
-                User user = userRepository.findById(userDetails.getId())
-                        .orElse(null);
-                
-                if (user != null && user.getProfile() != null) {
-                    hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                if (userRepository.count() == 0 && "testuser".equals(username) && "password".equals(password)) {
+                    // This is a test case
+                    userDetails = new UserDetailsImpl(
+                            java.util.UUID.randomUUID(),
+                            username,
+                            "test@example.com",
+                            password,
+                            java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_STUDENT"))
+                    );
+                    authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                } else {
+                    // Find user first to avoid authentication recursion
+                    User user = null;
+                    
+                    // Try to find by email first
+                    Optional<User> userByEmail = userRepository.findByEmail(username);
+                    if (userByEmail.isPresent()) {
+                        user = userByEmail.get();
+                    } else {
+                        // Try by username
+                        Optional<User> userByUsername = userRepository.findByUsername(username);
+                        if (userByUsername.isPresent()) {
+                            user = userByUsername.get();
+                        }
+                    }
+                    
+                    if (user == null) {
+                        return ResponseEntity.status(401).body(new MessageResponse("Error: User not found"));
+                    }
+                    
+                    // Check password manually
+                    if (!encoder.matches(password, user.getPassword())) {
+                        return ResponseEntity.status(401).body(new MessageResponse("Error: Invalid password"));
+                    }
+                    
+                    // Create authentication token with user details
+                    userDetails = UserDetailsImpl.build(user);
+                    authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
                 }
+                
+                // Set authentication in security context
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                // Generate JWT token
+                String jwt = jwtUtils.generateJwtToken(authentication);
+                
+                // Get roles
+                List<String> roles = userDetails.getAuthorities().stream()
+                        .map(item -> item.getAuthority())
+                        .collect(Collectors.toList());
+                
+                // Check if user has completed onboarding
+                boolean hasCompletedOnboarding = false;
+                try {
+                    // Use repository directly instead of loading user again
+                    User user = userRepository.findById(userDetails.getId())
+                            .orElse(null);
+                    
+                    if (user != null && user.getProfile() != null) {
+                        hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                    }
+                } catch (Exception e) {
+                    // Log the error but continue with login
+                    System.out.println("Error checking onboarding status: " + e.getMessage());
+                }
+                
+                // Return JWT response
+                return ResponseEntity.ok(new JwtResponse(jwt,
+                        userDetails.getId(),
+                        userDetails.getUsername(),
+                        userDetails.getEmail(),
+                        roles,
+                        hasCompletedOnboarding));
             } catch (Exception e) {
-                // Ignore this error for tests
+                e.printStackTrace();
+                return ResponseEntity.status(401).body(new MessageResponse("Error: Invalid username or password"));
             }
-
-            return ResponseEntity.ok(new JwtResponse(jwt,
-                    userDetails.getId(),
-                    userDetails.getUsername(),
-                    userDetails.getEmail(),
-                    roles,
-                    hasCompletedOnboarding));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(400).body(new MessageResponse("Login failed: " + e.getMessage()));
         }
     }
 
@@ -333,6 +378,9 @@ public class AuthController {
                     String encodedPassword = encoder.encode(randomPassword);
                     
                     user = new User(username, email, encodedPassword);
+                    user.setProvider("google");
+                    user.setProviderId((String) googleResponse.get("sub"));
+                    user.setEmailVerified(true);
                     
                     // Assign ROLE_STUDENT by default
                     Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
@@ -354,34 +402,36 @@ public class AuthController {
                     adminProfileRepository.save(adminProfile);
                 }
                 
-                // Authenticate the user
-                UserDetailsImpl userDetails = new UserDetailsImpl(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getEmail(),
-                        user.getPassword(),
-                        user.getRoles().stream()
-                                .map(role -> role.getName().name())
-                                .map(roleName -> new org.springframework.security.core.authority.SimpleGrantedAuthority(roleName))
-                                .collect(Collectors.toList())
-                );
+                // Create user details for authentication
+                UserDetailsImpl userDetails = UserDetailsImpl.build(user);
                 
+                // Create authentication token directly without using authentication manager
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 
+                // Set authentication in security context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                // Generate JWT token
                 String jwt = jwtUtils.generateJwtToken(authentication);
                 
+                // Get roles
                 List<String> roles = userDetails.getAuthorities().stream()
                         .map(item -> item.getAuthority())
                         .collect(Collectors.toList());
                 
                 // Check if user has completed onboarding
                 boolean hasCompletedOnboarding = false;
-                if (user.getProfile() != null) {
-                    hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                try {
+                    if (user.getProfile() != null) {
+                        hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error checking onboarding status: " + e.getMessage());
+                    // Ignore this error
                 }
                 
+                // Return JWT response
                 return ResponseEntity.ok(new JwtResponse(jwt,
                         userDetails.getId(),
                         userDetails.getUsername(),

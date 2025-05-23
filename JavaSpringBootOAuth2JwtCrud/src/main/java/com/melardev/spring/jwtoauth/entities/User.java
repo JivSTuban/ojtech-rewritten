@@ -1,6 +1,7 @@
 package com.melardev.spring.jwtoauth.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -37,7 +38,7 @@ public class User extends BaseEntity {
     private Set<Role> roles = new HashSet<>();
     
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
+    @JsonManagedReference
     private Profile profile;
     
     @Column(name = "enabled")

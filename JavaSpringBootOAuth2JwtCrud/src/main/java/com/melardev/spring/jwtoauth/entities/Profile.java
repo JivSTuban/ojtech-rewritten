@@ -2,6 +2,7 @@ package com.melardev.spring.jwtoauth.entities;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "profiles")
@@ -32,7 +33,7 @@ public abstract class Profile extends BaseEntity {
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonIgnore
+    @JsonBackReference
     private User user;
 
     public String getFullName() {
