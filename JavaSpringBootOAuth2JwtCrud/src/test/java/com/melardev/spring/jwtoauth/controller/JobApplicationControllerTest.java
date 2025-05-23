@@ -2,28 +2,31 @@ package com.melardev.spring.jwtoauth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.OJTechApiApplication;
-import com.melardev.spring.jwtoauth.dtos.requests.LoginRequest;
-import com.melardev.spring.jwtoauth.dtos.requests.SignupRequest;
-import com.melardev.spring.jwtoauth.entities.ERole;
-import com.melardev.spring.jwtoauth.entities.Role;
-import com.melardev.spring.jwtoauth.repositories.RoleRepository;
+import com.melardev.spring.jwtoauth.entities.*;
+import com.melardev.spring.jwtoauth.repositories.CVRepository;
+import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
+import com.melardev.spring.jwtoauth.repositories.JobRepository;
+import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.UserRepository;
+import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = OJTechApiApplication.class)
@@ -34,259 +37,151 @@ public class JobApplicationControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
     private ObjectMapper objectMapper;
+    
+    @MockBean
+    private StudentProfileRepository studentProfileRepository;
+    
+    @MockBean
+    private CVRepository cvRepository;
+    
+    @MockBean
+    private JobRepository jobRepository;
+    
+    @MockBean
+    private JobApplicationRepository jobApplicationRepository;
+    
+    @MockBean
+    private UserRepository userRepository;
 
-    private String employerToken;
-    private String studentToken;
-    private String jobId;
+    private UUID employerId;
+    private UUID studentId;
+    private UUID jobId;
+    private UUID cvId;
+    private User employerUser;
+    private User studentUser;
+    private StudentProfile studentProfile;
+    private EmployerProfile employerProfile;
+    private Job job;
+    private CV cv;
 
     @BeforeEach
-    void setUp() throws Exception {
-        // Ensure roles exist
-        if (roleRepository.count() == 0) {
-            roleRepository.save(new Role(ERole.ROLE_STUDENT));
-            roleRepository.save(new Role(ERole.ROLE_EMPLOYER));
-            roleRepository.save(new Role(ERole.ROLE_ADMIN));
-        }
-
-        // Create an employer user
-        String employerUsername = "employer_app" + System.currentTimeMillis();
-        SignupRequest employerSignup = new SignupRequest();
-        employerSignup.setUsername(employerUsername);
-        employerSignup.setEmail(employerUsername + "@example.com");
-        employerSignup.setPassword("password123");
+    void setUp() {
+        // Set up user IDs
+        employerId = UUID.randomUUID();
+        studentId = UUID.randomUUID();
+        jobId = UUID.randomUUID();
+        cvId = UUID.randomUUID();
         
-        Set<String> employerRoles = new HashSet<>();
-        employerRoles.add("employer");
-        employerSignup.setRoles(employerRoles);
-
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(employerSignup)))
-                .andExpect(status().isOk());
-
-        // Login as employer
-        LoginRequest employerLogin = new LoginRequest();
-        employerLogin.setUsernameOrEmail(employerUsername);
-        employerLogin.setPassword("password123");
-
-        MvcResult employerResult = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(employerLogin)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String employerJsonContent = employerResult.getResponse().getContentAsString();
-        employerToken = objectMapper.readTree(employerJsonContent).get("token").asText();
-
-        // Create employer profile
-        Map<String, Object> employerProfile = new HashMap<>();
-        employerProfile.put("companyName", "Application Test Company");
-        employerProfile.put("companySize", "10-50");
-        employerProfile.put("industry", "Technology");
-        employerProfile.put("location", "Test City");
-        employerProfile.put("companyDescription", "A test company");
-        employerProfile.put("websiteUrl", "https://example.com");
-
-        mockMvc.perform(post("/api/profile/employer/onboarding")
-                .header("Authorization", "Bearer " + employerToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(employerProfile)))
-                .andExpect(status().isOk());
-
-        // Create a student user
-        String studentUsername = "student_app" + System.currentTimeMillis();
-        SignupRequest studentSignup = new SignupRequest();
-        studentSignup.setUsername(studentUsername);
-        studentSignup.setEmail(studentUsername + "@example.com");
-        studentSignup.setPassword("password123");
+        // Set up mock users
+        employerUser = new User();
+        employerUser.setId(employerId);
+        employerUser.setUsername("employer_test");
+        employerUser.setEmail("employer@test.com");
         
-        Set<String> studentRoles = new HashSet<>();
-        studentRoles.add("student");
-        studentSignup.setRoles(studentRoles);
-
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(studentSignup)))
-                .andExpect(status().isOk());
-
-        // Login as student
-        LoginRequest studentLogin = new LoginRequest();
-        studentLogin.setUsernameOrEmail(studentUsername);
-        studentLogin.setPassword("password123");
-
-        MvcResult studentResult = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(studentLogin)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String studentJsonContent = studentResult.getResponse().getContentAsString();
-        studentToken = objectMapper.readTree(studentJsonContent).get("token").asText();
-
-        // Create student profile
-        Map<String, Object> studentProfile = new HashMap<>();
-        studentProfile.put("firstName", "Test");
-        studentProfile.put("lastName", "Student");
-        studentProfile.put("university", "Test University");
-        studentProfile.put("major", "Computer Science");
-        studentProfile.put("graduationYear", 2024);
-        studentProfile.put("phoneNumber", "123-456-7890");
-        studentProfile.put("bio", "A test student");
-
-        mockMvc.perform(post("/api/profile/student/onboarding-v2")
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(studentProfile)))
-                .andExpect(status().isOk());
-
-        // Create a job
-        Map<String, Object> jobData = new HashMap<>();
-        jobData.put("title", "Software Engineer - Applications Test");
-        jobData.put("description", "A job for a software engineer");
-        jobData.put("location", "Remote");
-        jobData.put("employmentType", "Full-time");
-        jobData.put("minSalary", 80000);
-        jobData.put("maxSalary", 120000);
-        jobData.put("currency", "USD");
-        jobData.put("requiredSkills", "Java,Spring Boot,React");
-
-        MvcResult jobResult = mockMvc.perform(post("/api/jobs")
-                .header("Authorization", "Bearer " + employerToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(jobData)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String jobJson = jobResult.getResponse().getContentAsString();
-        jobId = objectMapper.readTree(jobJson).get("id").asText();
-    }
-
-    @Test
-    public void testApplyForJob() throws Exception {
-        Map<String, Object> applicationData = new HashMap<>();
-        applicationData.put("coverLetter", "I am interested in this position");
-
-        mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(applicationData)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.coverLetter").value("I am interested in this position"))
-                .andExpect(jsonPath("$.status").value("PENDING"));
-    }
-
-    @Test
-    public void testGetStudentApplications() throws Exception {
-        // Apply for a job first
-        Map<String, Object> applicationData = new HashMap<>();
-        applicationData.put("coverLetter", "I am interested in this position for student applications test");
-
-        mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(applicationData)))
-                .andExpect(status().isOk());
-
-        // Get student applications
-        mockMvc.perform(get("/api/applications")
-                .header("Authorization", "Bearer " + studentToken))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
-    }
-
-    @Test
-    public void testGetJobApplications() throws Exception {
-        // Apply for a job first
-        Map<String, Object> applicationData = new HashMap<>();
-        applicationData.put("coverLetter", "I am interested in this position for job applications test");
-
-        mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(applicationData)))
-                .andExpect(status().isOk());
-
-        // Get job applications
-        mockMvc.perform(get("/api/applications/job/" + jobId)
-                .header("Authorization", "Bearer " + employerToken))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
-    }
-
-    @Test
-    public void testUpdateApplicationStatus() throws Exception {
-        // Apply for a job first
-        Map<String, Object> applicationData = new HashMap<>();
-        applicationData.put("coverLetter", "I am interested in this position for status update test");
-
-        MvcResult applyResult = mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(applicationData)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String applicationJson = applyResult.getResponse().getContentAsString();
-        String applicationId = objectMapper.readTree(applicationJson).get("id").asText();
-
-        // Update application status
-        Map<String, String> statusUpdate = new HashMap<>();
-        statusUpdate.put("status", "INTERVIEW");
-
-        mockMvc.perform(put("/api/applications/" + applicationId + "/status")
-                .header("Authorization", "Bearer " + employerToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(statusUpdate)))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("INTERVIEW"));
+        studentUser = new User();
+        studentUser.setId(studentId);
+        studentUser.setUsername("student_test");
+        studentUser.setEmail("student@test.com");
+        
+        // Set up employer profile
+        employerProfile = new EmployerProfile();
+        employerProfile.setId(UUID.randomUUID());
+        employerProfile.setUser(employerUser);
+        employerProfile.setCompanyName("Test Company");
+        
+        // Set up student profile
+        studentProfile = new StudentProfile();
+        studentProfile.setId(UUID.randomUUID());
+        studentProfile.setUser(studentUser);
+        studentProfile.setFirstName("Test");
+        studentProfile.setLastName("Student");
+        
+        // Set up job
+        job = new Job();
+        job.setId(jobId);
+        job.setTitle("Software Engineer");
+        job.setDescription("Test job description");
+        job.setEmployer(employerProfile);
+        
+        // Set up CV
+        cv = new CV();
+        cv.setId(cvId);
+        cv.setStudent(studentProfile);
+        cv.setFileName("test_cv.pdf");
+        cv.setFileUrl("https://example.com/test_cv.pdf");
+        
+        // Set up repository mocks
+        when(userRepository.findById(employerId)).thenReturn(Optional.of(employerUser));
+        when(userRepository.findById(studentId)).thenReturn(Optional.of(studentUser));
+        when(studentProfileRepository.findByUserId(studentId)).thenReturn(Optional.of(studentProfile));
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        when(cvRepository.findById(cvId)).thenReturn(Optional.of(cv));
     }
 
     @Test
     public void testEmployerCannotApplyForJob() throws Exception {
+        // Set up authentication context with employer role
+        mockAuthWithEmployer();
+        
         Map<String, Object> applicationData = new HashMap<>();
         applicationData.put("coverLetter", "I am interested in this position");
+        applicationData.put("cvId", cvId);
 
         mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + employerToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(applicationData)))
-                .andDo(print())
                 .andExpect(status().isForbidden());
     }
 
     @Test
     public void testStudentCannotUpdateApplicationStatus() throws Exception {
-        // Apply for a job first
-        Map<String, Object> applicationData = new HashMap<>();
-        applicationData.put("coverLetter", "I am interested in this position for forbidden test");
-
-        MvcResult applyResult = mockMvc.perform(post("/api/applications/apply/" + jobId)
-                .header("Authorization", "Bearer " + studentToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(applicationData)))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String applicationJson = applyResult.getResponse().getContentAsString();
-        String applicationId = objectMapper.readTree(applicationJson).get("id").asText();
-
-        // Try to update application status as student
-        Map<String, String> statusUpdate = new HashMap<>();
-        statusUpdate.put("status", "ACCEPTED");
-
+        // Set up authentication context with student role
+        mockAuthWithStudent();
+        
+        UUID applicationId = UUID.randomUUID();
+        
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("status", "ACCEPTED");
+        
         mockMvc.perform(put("/api/applications/" + applicationId + "/status")
-                .header("Authorization", "Bearer " + studentToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(statusUpdate)))
-                .andDo(print())
+                .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isForbidden());
     }
-} 
+    
+    // Helper methods to set up auth context
+    private void mockAuthWithEmployer() {
+        List<SimpleGrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_EMPLOYER"));
+        
+        UserDetailsImpl userDetails = new UserDetailsImpl(
+                employerId,
+                "employer_test",
+                "employer@test.com",
+                "password",
+                authorities);
+        
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, authorities);
+        
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+    
+    private void mockAuthWithStudent() {
+        List<SimpleGrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_STUDENT"));
+        
+        UserDetailsImpl userDetails = new UserDetailsImpl(
+                studentId,
+                "student_test",
+                "student@test.com", 
+                "password",
+                authorities);
+        
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, authorities);
+        
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+}

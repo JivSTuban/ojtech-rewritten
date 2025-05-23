@@ -226,3 +226,33 @@ The most critical files that need fixing are:
 5. `src/components/ui/ApplicationCard.tsx` - Completely rewritten, needs verification
 
 Run the app and check each component's functionality after fixing these files.
+
+## CV Generation Feature Implementation
+
+### Overview
+Implemented an AI-powered CV generation feature that creates professional resumes for students based on their profile information. This replaces the previous file upload functionality with a more streamlined approach that ensures all students have a well-formatted, ATS-friendly resume.
+
+### Changes Made
+
+#### Frontend
+1. Created a new CV generator service (`cvGeneratorService.ts`) that uses the Gemini API to generate HTML resumes
+2. Updated the ProfilePage component to include CV generation and preview functionality
+3. Added PDF generation using html2pdf.js
+4. Improved the UI to include a preview of the generated resume
+5. Added download functionality for the generated PDF
+
+#### Backend
+1. Modified the CVController to replace file upload with a CV generation endpoint
+2. Added a 'generated' field to the CV entity to track AI-generated resumes
+3. Created a database migration to add the new field to the database
+
+### Benefits
+- Students no longer need to create their own resumes
+- All generated resumes follow best practices for ATS compatibility
+- Consistent formatting across all student resumes
+- Easy to update and regenerate as student profiles are updated
+- Reduces storage requirements by eliminating the need to store PDF files
+
+### Requirements
+- Gemini API key from Google AI Studio
+- Environment variables for API configuration

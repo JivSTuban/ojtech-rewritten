@@ -279,11 +279,26 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         description: "You have been successfully signed in with Google."
       });
       
-      // Redirect to the appropriate page based on onboarding status
+      // Redirect to the appropriate page based on onboarding status and role
       if (user.hasCompletedOnboarding) {
-        this.setState({ redirectTo: '/dashboard' });
+        if (user.roles?.includes('ROLE_STUDENT')) {
+          this.setState({ redirectTo: '/track' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+          this.setState({ redirectTo: '/employer/jobs' });
+        } else if (user.roles?.includes('ROLE_ADMIN')) {
+          this.setState({ redirectTo: '/admin/dashboard' });
+        } else {
+          this.setState({ redirectTo: '/' });
+        }
       } else {
-        this.setState({ redirectTo: '/onboarding' });
+        // If they need to complete onboarding, send them to the appropriate page
+        if (user.roles?.includes('ROLE_STUDENT')) {
+          this.setState({ redirectTo: '/onboarding/student' });
+        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+          this.setState({ redirectTo: '/onboarding/employer' });
+        } else {
+          this.setState({ redirectTo: '/' });
+        }
       }
     } catch (error: any) {
       console.error('Google authentication error:', error);

@@ -29,26 +29,94 @@ import './index.css';
 
 // Main layout with navigation for all non-auth pages
 const MainLayout: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, fetchUserProfile } = useAuth();
   const location = useLocation();
+  const initialLoadRef = React.useRef(false);
+  const lastPathRef = React.useRef(location.pathname);
+  
+  // Create a stable callback reference to avoid dependency issues
+  const stableFetchUserProfile = React.useCallback(() => {
+    if (!isLoading && user) {
+      fetchUserProfile();
+    }
+  }, [fetchUserProfile, isLoading, user]);
+
+  // Refresh auth context only when the component mounts
+  React.useEffect(() => {
+    if (!initialLoadRef.current && !isLoading && user) {
+      initialLoadRef.current = true;
+      console.log('Initial auth context refresh on mount');
+      stableFetchUserProfile();
+    }
+  }, [isLoading, user, stableFetchUserProfile]);
+  
+  // Track path changes separately
+  React.useEffect(() => {
+    // Only refresh on actual path changes, not just re-renders
+    if (lastPathRef.current !== location.pathname && !isLoading && user) {
+      lastPathRef.current = location.pathname;
+      console.log('Auth context refreshed due to path change:', location.pathname);
+      
+      // Skip profile refresh on certain paths
+      const skipRefreshPaths = ['/onboarding/student', '/onboarding/employer'];
+      if (!skipRefreshPaths.includes(location.pathname)) {
+        stableFetchUserProfile();
+      }
+    }
+  }, [location.pathname, stableFetchUserProfile, isLoading, user]);
 
   // Check onboarding status on route change
   React.useEffect(() => {
-    if (!isLoading && user && !user.hasCompletedOnboarding) {
-      const isOnboardingRoute = location.pathname.startsWith('/onboarding');
-      const isProfileRoute = location.pathname === '/profile';
-      const isAuthRoute = location.pathname.startsWith('/login') || 
-                         location.pathname.startsWith('/register') || 
-                         location.pathname.startsWith('/auth');
+    if (!isLoading && user) {
+      // Debug log onboarding status
+      console.log('User onboarding status check:', {
+        username: user.username,
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        currentPath: location.pathname
+      });
 
-      if (user?.roles?.includes('ROLE_STUDENT') && 
-          location.pathname !== '/onboarding/student' && 
-          !isOnboardingRoute && !isProfileRoute && !isAuthRoute) {
-        window.location.href = '/onboarding/student';
-      } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
-                location.pathname !== '/onboarding/employer' && 
-                !isOnboardingRoute && !isProfileRoute && !isAuthRoute) {
-        window.location.href = '/onboarding/employer';
+      // Safe paths that should be accessible regardless of onboarding status
+      const safePaths = [
+        '/profile', 
+        '/onboarding', 
+        '/login', 
+        '/register', 
+        '/auth',
+        '/privacy',
+        '/terms',
+        '/'
+      ];
+      
+      // Check if current path is in safe paths
+      const isOnSafePath = safePaths.some(path => location.pathname.startsWith(path));
+      
+      // Only redirect if onboarding isn't complete AND we're not on a safe path
+      if (user.hasCompletedOnboarding === false && !isOnSafePath) {
+        // User has NOT completed onboarding, redirect to appropriate onboarding page
+        if (user?.roles?.includes('ROLE_STUDENT') && 
+            location.pathname !== '/onboarding/student') {
+          console.log('Redirecting to student onboarding from:', location.pathname);
+          window.location.href = '/onboarding/student';
+        } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
+                  location.pathname !== '/onboarding/employer') {
+          console.log('Redirecting to employer onboarding from:', location.pathname);
+          window.location.href = '/onboarding/employer';
+        }
+      } 
+      // Only redirect away from onboarding if it's complete AND we're on an onboarding page
+      else if (user.hasCompletedOnboarding === true) {
+        const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+        
+        if (isOnboardingRoute) {
+          // Redirect to appropriate page based on role
+          if (user?.roles?.includes('ROLE_STUDENT')) {
+            console.log('Redirecting to track page from onboarding - already completed');
+            window.location.href = '/track';
+          } else if (user?.roles?.includes('ROLE_EMPLOYER')) {
+            console.log('Redirecting to employer jobs from onboarding - already completed');
+            window.location.href = '/employer/jobs';
+          }
+        }
       }
     }
   }, [user, isLoading, location.pathname]);

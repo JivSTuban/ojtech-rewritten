@@ -68,13 +68,13 @@ public class AuthControllerTest {
     public void testAuthenticateUser() throws Exception {
         // Setup
         LoginDto loginDto = new LoginDto();
-        loginDto.setUsername("testuser");
+        loginDto.setEmail("testuser@example.com");
         loginDto.setPassword("password");
 
         UserDetailsImpl userDetails = new UserDetailsImpl(
                 UUID.randomUUID(),
                 "testuser",
-                "test@example.com",
+                "testuser@example.com",
                 "password",
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_STUDENT"))
         );
@@ -89,9 +89,9 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("test-jwt-token"))
+                .andExpect(jsonPath("$.type").value("Bearer"))
                 .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.email").value("testuser@example.com"))
                 .andExpect(jsonPath("$.roles[0]").value("ROLE_STUDENT"));
     }
 

@@ -2,6 +2,7 @@ package com.melardev.spring.jwtoauth.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -50,6 +51,7 @@ public class Job extends BaseEntity {
     
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
     @JsonManagedReference
+    @JsonIgnoreProperties("job")
     private List<JobApplication> applications = new ArrayList<>();
     
     public Job() {
