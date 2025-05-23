@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api")
@@ -368,54 +370,16 @@ public class JobMatchController {
                 analytics.put("matchScore", match.getMatchScore() + "%");
                 analytics.put("fullAnalysis", match.getMatchDetails());
                 
-                // Extract key insights from match details
-                String matchDetailsText = match.getMatchDetails();
-                if (matchDetailsText != null && !matchDetailsText.isEmpty()) {
-                    // Create a summary (first 150 chars)
-                    String summary = matchDetailsText;
-                    if (summary.length() > 150) {
-                        summary = summary.substring(0, 147) + "...";
+                // Include detailed analysis if available
+                if (match.getDetailedAnalysis() != null && !match.getDetailedAnalysis().isEmpty()) {
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        Map<String, Object> detailedAnalysis = objectMapper.readValue(
+                            match.getDetailedAnalysis(), new TypeReference<Map<String, Object>>() {});
+                        analytics.put("detailedAnalysis", detailedAnalysis);
+                    } catch (Exception e) {
+                        System.err.println("Error parsing detailed analysis: " + e.getMessage());
                     }
-                    analytics.put("summary", summary);
-                    
-                    // Try to extract skill match information
-                    Map<String, Object> skillAnalysis = new HashMap<>();
-                    
-                    // Parse student skills and job skills
-                    List<String> studentSkills = parseSkillsFromString(studentProfile.getSkills());
-                    List<String> jobSkills = parseSkillsFromString(job.getRequiredSkills());
-                    
-                    // Calculate matching skills
-                    List<String> matchingSkills = new ArrayList<>();
-                    List<String> missingSkills = new ArrayList<>();
-                    
-                    for (String jobSkill : jobSkills) {
-                        boolean found = false;
-                        for (String studentSkill : studentSkills) {
-                            if (studentSkill.equalsIgnoreCase(jobSkill) || 
-                                jobSkill.toLowerCase().contains(studentSkill.toLowerCase()) || 
-                                studentSkill.toLowerCase().contains(jobSkill.toLowerCase())) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        
-                        if (found) {
-                            matchingSkills.add(jobSkill);
-                        } else {
-                            missingSkills.add(jobSkill);
-                        }
-                    }
-                    
-                    // Calculate skill match percentage
-                    double skillMatchPercentage = jobSkills.isEmpty() ? 0 : 
-                        (double) matchingSkills.size() / jobSkills.size() * 100;
-                    
-                    skillAnalysis.put("matchingSkills", matchingSkills);
-                    skillAnalysis.put("missingSkills", missingSkills);
-                    skillAnalysis.put("skillMatchPercentage", Math.round(skillMatchPercentage) + "%");
-                    
-                    analytics.put("skillAnalysis", skillAnalysis);
                 }
                 
                 matchInfo.put("analytics", analytics);
@@ -652,6 +616,61 @@ public class JobMatchController {
                 response.put("match", matchInfo);
             } else {
                 response.put("warning", "Job created but match not found. Try running the matching algorithm again.");
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/job-matches/{id}/detailed-analysis")
+    public ResponseEntity<?> getJobMatchDetailedAnalysis(@PathVariable("id") UUID jobMatchId) {
+        try {
+            JobMatch jobMatch = jobMatchService.getJobMatch(jobMatchId);
+            
+            if (jobMatch == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Job match not found"));
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("matchId", jobMatch.getId());
+            response.put("matchScore", jobMatch.getMatchScore());
+            response.put("matchedAt", jobMatch.getMatchedAt());
+            
+            // Basic job info
+            Job job = jobMatch.getJob();
+            Map<String, Object> jobInfo = new HashMap<>();
+            jobInfo.put("id", job.getId());
+            jobInfo.put("title", job.getTitle());
+            jobInfo.put("description", job.getDescription());
+            jobInfo.put("requiredSkills", job.getRequiredSkills());
+            response.put("job", jobInfo);
+            
+            // Basic student info
+            StudentProfile student = jobMatch.getStudent();
+            Map<String, Object> studentInfo = new HashMap<>();
+            studentInfo.put("id", student.getId());
+            studentInfo.put("name", student.getFirstName() + " " + student.getLastName());
+            studentInfo.put("skills", student.getSkills());
+            response.put("student", studentInfo);
+            
+            // Match details
+            response.put("matchDetails", jobMatch.getMatchDetails());
+            
+            // Parse detailed analysis if available
+            if (jobMatch.getDetailedAnalysis() != null && !jobMatch.getDetailedAnalysis().isEmpty()) {
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    Map<String, Object> detailedAnalysis = objectMapper.readValue(
+                        jobMatch.getDetailedAnalysis(), new TypeReference<Map<String, Object>>() {});
+                    response.put("detailedAnalysis", detailedAnalysis);
+                } catch (Exception e) {
+                    response.put("error", "Failed to parse detailed analysis: " + e.getMessage());
+                }
             }
             
             return ResponseEntity.ok(response);

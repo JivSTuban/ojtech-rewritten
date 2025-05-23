@@ -28,6 +28,9 @@ public class JobMatch extends BaseEntity {
     @Column(name = "match_details", length = 2000)
     private String matchDetails;
     
+    @Column(name = "detailed_analysis", columnDefinition = "TEXT")
+    private String detailedAnalysis;
+    
     @Column(name = "is_viewed")
     private boolean viewed = false;
     
@@ -80,6 +83,14 @@ public class JobMatch extends BaseEntity {
     
     public void setMatchDetails(String matchDetails) {
         this.matchDetails = matchDetails;
+    }
+    
+    public String getDetailedAnalysis() {
+        return detailedAnalysis;
+    }
+    
+    public void setDetailedAnalysis(String detailedAnalysis) {
+        this.detailedAnalysis = detailedAnalysis;
     }
     
     public boolean isViewed() {
