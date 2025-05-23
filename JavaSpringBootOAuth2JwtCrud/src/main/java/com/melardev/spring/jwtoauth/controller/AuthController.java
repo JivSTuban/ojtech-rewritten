@@ -22,7 +22,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.view.RedirectView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.dtos.requests.LoginDto;
@@ -42,6 +45,7 @@ import com.melardev.spring.jwtoauth.repositories.AdminProfileRepository;
 import com.melardev.spring.jwtoauth.security.jwt.JwtUtils;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.entities.*;
+import com.melardev.spring.jwtoauth.service.UserService;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -61,6 +65,9 @@ public class AuthController {
 
     @Autowired
     AdminProfileRepository adminProfileRepository;
+    
+    @Autowired
+    UserService userService;
 
     @Autowired
     PasswordEncoder encoder;
@@ -166,6 +173,11 @@ public class AuthController {
                     
                     if (user == null) {
                         return ResponseEntity.status(401).body(new MessageResponse("Error: User not found"));
+                    }
+                    
+                    // Check if email is verified
+                    if (!user.isEmailVerified()) {
+                        return ResponseEntity.status(401).body(new MessageResponse("Error: Email not verified. Please verify your email first. User ID: " + user.getId()));
                     }
                     
                     // Check password manually
@@ -281,6 +293,8 @@ public class AuthController {
 
             // Create new user's account
             User user = new User(username, email, encoder.encode(password));
+            // Set email as not verified by default
+            user.setEmailVerified(false);
 
             Set<Role> userRoles = new HashSet<>();
 
@@ -324,7 +338,8 @@ public class AuthController {
                 adminProfileRepository.save(adminProfile);
             }
 
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+            // Return user ID in the response to allow for email verification
+            return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email. User ID: " + user.getId()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
@@ -447,6 +462,68 @@ public class AuthController {
         } catch (Exception e) {
             System.out.println("Google auth error: " + e.getMessage());
             e.printStackTrace();
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/verifyEmail/{userId}")
+    public Object verifyEmail(@PathVariable String userId) {
+        try {
+            UUID userUUID;
+            try {
+                userUUID = UUID.fromString(userId);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid user ID format"));
+            }
+            
+            boolean verified = userService.verifyEmail(userUUID);
+            
+            if (verified) {
+                // Email was verified successfully, redirect to login
+                return new RedirectView("http://localhost:5173/login");
+            } else {
+                // Check if the user exists
+                Optional<User> userOptional = userRepository.findById(userUUID);
+                if (!userOptional.isPresent()) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: User not found"));
+                }
+                
+                // Check if email is already verified
+                if (userOptional.get().isEmailVerified()) {
+                    // Email was already verified, redirect to login
+                    return new RedirectView("http://localhost:5173/login");
+                }
+                
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to verify email"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/emailStatus/{userId}")
+    public ResponseEntity<?> checkEmailVerificationStatus(@PathVariable String userId) {
+        try {
+            UUID userUUID;
+            try {
+                userUUID = UUID.fromString(userId);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid user ID format"));
+            }
+            
+            Optional<User> userOptional = userRepository.findById(userUUID);
+            if (!userOptional.isPresent()) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: User not found"));
+            }
+            
+            boolean isVerified = userOptional.get().isEmailVerified();
+            
+            return ResponseEntity.ok(Map.of(
+                "userId", userId,
+                "emailVerified", isVerified
+            ));
+            
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
     }
