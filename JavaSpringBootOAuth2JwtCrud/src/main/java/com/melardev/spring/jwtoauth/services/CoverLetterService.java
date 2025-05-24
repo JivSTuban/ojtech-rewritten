@@ -183,8 +183,8 @@ public class CoverLetterService {
         // Current date
         coverLetter.append(new Date().toString()).append("\n\n");
         
-        // Greeting - use employer name if available
-        String employerName = job.getEmployer().getFullName();
+        // Greeting - use employer company name
+        String employerName = job.getEmployer().getCompanyName();
         coverLetter.append("Dear ").append(employerName).append(",\n\n");
         
         // Introduction

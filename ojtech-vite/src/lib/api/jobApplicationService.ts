@@ -115,6 +115,18 @@ const getEmployerCVDetails = async (cvId: string): Promise<CV> => {
   return response.data;
 };
 
+// Mark a job match as viewed
+const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }> => {
+  const response = await apiClient.put(`/api/student/job-matches/${matchId}/viewed`);
+  return response.data;
+};
+
+// Find jobs using simple search endpoint
+const findJobs = async (): Promise<JobDetails[]> => {
+  const response = await apiClient.get('/api/simple-findjobs');
+  return response.data;
+};
+
 const jobApplicationService = {
   getStudentApplications,
   getJobApplications,
@@ -124,6 +136,8 @@ const jobApplicationService = {
   withdrawApplication,
   getEmployerCVDetails,
   getStudentJobMatches,
+  markJobMatchViewed,
+  findJobs,
 };
 
 export default jobApplicationService; 

@@ -29,6 +29,7 @@ interface Job {
 interface JobWithMatchScore extends Job {
   match_score: number | null;
   company_logo_url: string | null;
+  viewed: boolean;
 }
 
 // Mock data for jobs - will be used as fallback if API fails
@@ -50,7 +51,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 92
+    match_score: 92,
+    viewed: false
   },
   {
     id: "6",
@@ -69,7 +71,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 88
+    match_score: 88,
+    viewed: false
   },
   {
     id: "2",
@@ -88,7 +91,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 75
+    match_score: 75,
+    viewed: false
   },
   {
     id: "3",
@@ -107,7 +111,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 50
+    match_score: 50,
+    viewed: false
   },
   {
     id: "4",
@@ -126,7 +131,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 85
+    match_score: 85,
+    viewed: false
   },
   {
     id: "5",
@@ -145,7 +151,8 @@ const MOCK_JOBS: JobWithMatchScore[] = [
     updated_at: null,
     status: "active",
     is_active: true,
-    match_score: 35
+    match_score: 35,
+    viewed: false
   }
 ];
 
@@ -221,34 +228,47 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       const matchedJobsData = await jobApplicationService.getStudentJobMatches();
       
       if (matchedJobsData && Array.isArray(matchedJobsData)) {
+        // Track seen job IDs to prevent duplicates
+        const seenIds = new Set<string>();
+        
         // Map API response to our JobWithMatchScore interface
-        const matchedJobs: JobWithMatchScore[] = matchedJobsData.map((match: any) => {
-          // Handle the nested structure from the API response
-          const job = match.job || {};
-          const employer = job.employer || {};
-          
-          return {
-            id: job.id,
-            employer_id: employer.id,
-            title: job.title,
-            description: job.description,
-            company_name: employer.companyName,
-            company_logo_url: employer.logoUrl,
-            location: job.location,
-            job_type: job.employmentType,
-            salary_range: job.minSalary && job.maxSalary ? 
-              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
-              null,
-            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
-            preferred_skills: null,
-            application_deadline: null,
-            created_at: job.postedAt || new Date().toISOString(),
-            updated_at: null,
-            status: "active",
-            is_active: true,
-            match_score: match.matchScore
-          };
-        });
+        const matchedJobs: JobWithMatchScore[] = matchedJobsData
+          .filter(match => !match.viewed) // Filter out viewed jobs
+          .map((match: any) => {
+            // Handle the nested structure from the API response
+            const job = match.job || {};
+            const employer = job.employer || {};
+            
+            // Ensure unique job ID
+            let jobId = job.id;
+            if (seenIds.has(jobId)) {
+              jobId = `${jobId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            }
+            seenIds.add(jobId);
+            
+            return {
+              id: jobId,
+              employer_id: employer.id,
+              title: job.title,
+              description: job.description,
+              company_name: employer.companyName,
+              company_logo_url: employer.logoUrl,
+              location: job.location,
+              job_type: job.employmentType,
+              salary_range: job.minSalary && job.maxSalary ? 
+                `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+                null,
+              required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+              preferred_skills: null,
+              application_deadline: null,
+              created_at: job.postedAt || new Date().toISOString(),
+              updated_at: null,
+              status: "active",
+              is_active: true,
+              match_score: match.matchScore,
+              viewed: match.viewed
+            };
+          });
         
         // Set jobs and update current index
         this.setState({
@@ -292,10 +312,91 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     }
   };
   
+  // Find jobs using simple search
+  findJobs = async () => {
+    this.setState({ loading: true, error: null });
+    
+    try {
+      // Call the simple find jobs API
+      const jobsData = await jobApplicationService.findJobs();
+      
+      if (jobsData && Array.isArray(jobsData)) {
+        // Map API response to our JobWithMatchScore interface
+        const mappedJobs: JobWithMatchScore[] = jobsData.map((job: any) => {
+          const employer = job.employer || {};
+          
+          return {
+            id: job.id,
+            employer_id: employer.id || '',
+            title: job.title || 'Untitled Position',
+            description: job.description || null,
+            company_name: employer.companyName || null,
+            company_logo_url: employer.logoUrl || null,
+            location: job.location || null,
+            job_type: job.employmentType || null,
+            salary_range: job.minSalary && job.maxSalary ? 
+              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+              null,
+            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+            preferred_skills: null,
+            application_deadline: null,
+            created_at: job.postedAt || new Date().toISOString(),
+            updated_at: null,
+            status: "active",
+            is_active: true,
+            match_score: null,
+            viewed: false
+          };
+        });
+        
+        // Set jobs and update current index
+        this.setState({
+          jobs: mappedJobs,
+          currentIndex: mappedJobs.length - 1,
+          loading: false
+        });
+        
+        // Initialize refs
+        this.childRefs = Array(mappedJobs.length)
+          .fill(0)
+          .map(() => createRef<any>());
+      } else {
+        // Fallback to mock data if API response is not as expected
+        console.warn("API response format unexpected, using mock data");
+        this.setState({
+          jobs: MOCK_JOBS,
+          currentIndex: MOCK_JOBS.length - 1,
+          loading: false
+        });
+        
+        // Initialize refs for mock data
+        this.childRefs = Array(MOCK_JOBS.length)
+          .fill(0)
+          .map(() => createRef<any>());
+      }
+    } catch (err) {
+      console.error("Find jobs error:", err);
+      // Fallback to mock data on error
+      console.warn("Error finding jobs, using mock data");
+      this.setState({
+        jobs: MOCK_JOBS,
+        currentIndex: MOCK_JOBS.length - 1,
+        loading: false
+      });
+      
+      // Initialize refs for mock data
+      this.childRefs = Array(MOCK_JOBS.length)
+        .fill(0)
+        .map(() => createRef<any>());
+    }
+  };
+  
   // Apply for a job using the API
   applyForJob = async (jobId: string) => {
     try {
-      await jobApplicationService.applyForJob(jobId, {});
+      // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
+      const response = await jobApplicationService.applyForJob(jobId, {});
+      console.log("Job application submitted successfully:", response);
       return { success: true, data: { letterGenerated: true } };
     } catch (error) {
       console.error("Error applying for job:", error);
@@ -392,15 +493,21 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   };
   
   // Implement undo swipe functionality
-  undoSwipe = () => {
+  undoSwipe = async () => {
     const { lastRemovedJob } = this.state;
     if (!lastRemovedJob) return;
     
     // Re-add the job to the state and update the index
     this.setState(prevState => {
       const newJobs = [...prevState.jobs];
+      // Reset the viewed status and ensure unique ID by adding timestamp
+      const jobToRestore = {
+        ...lastRemovedJob.job, 
+        viewed: false,
+        id: `${lastRemovedJob.job.id}-${Date.now()}`
+      };
       // Add the job back to the stack
-      newJobs.splice(prevState.currentIndex + 1, 0, lastRemovedJob.job);
+      newJobs.splice(prevState.currentIndex + 1, 0, jobToRestore);
       
       return {
         jobs: newJobs,
@@ -408,6 +515,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         lastRemovedJob: null
       };
     });
+    
+    // Try to reset the viewed status on the server
+    try {
+      // This would need a new API endpoint to unmark a job as viewed
+      // For now, we just update the UI state
+      console.log("Would reset viewed status for job:", lastRemovedJob.job.id);
+    } catch (error) {
+      console.error("Error resetting viewed status:", error);
+    }
     
     this.toast({
       title: "Undo Swipe",
@@ -456,8 +572,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     
     return (
       <main className="min-h-screen container mx-auto py-8 flex flex-col items-center relative overflow-hidden">
-        <h1 className="text-4xl font-bold mb-6 text-center">Job Opportunities</h1>
+        <h1 className="text-4xl font-bold mb-6 text-center">New Job Matches</h1>
         <p className="text-gray-600 mb-2 text-center">Swipe right to apply, left to pass.</p>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-4 mb-6">
+          <Button onClick={this.fetchJobs}>
+            Find Matched Jobs
+          </Button>
+          <Button onClick={this.findJobs} variant="outline">
+            Find More Jobs
+          </Button>
+        </div>
         
         {/* CV Processing Warning */}
         {isProcessingCV && (
@@ -495,9 +621,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
             <Info className="h-12 w-12 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No More Jobs</h2>
+            <h2 className="text-2xl font-semibold mb-2">No New Job Matches</h2>
             <p className="text-gray-600 mb-6">
-              You've gone through all available job matches. Check back later for new opportunities.
+              You've viewed all available job matches. Check back later for new opportunities.
             </p>
             <Button onClick={() => window.location.reload()}>
               Refresh Matches
@@ -506,7 +632,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         ) : (
           <div className="relative h-[480px] w-full max-w-md">
             {jobs.map((job, index) => (
-              <div className="absolute" key={job.id}>
+              <div className="absolute" key={`${job.id}-${index}`}>
                 <TinderCard
                   ref={this.childRefs[index]}
                   className="absolute cursor-grab"
@@ -602,7 +728,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         <div className="flex flex-wrap gap-1.5">
                           {job.required_skills.map((skill, i) => (
                             <span
-                              key={i}
+                              key={`${skill}-${i}`}
                               className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
                             >
                               {skill}

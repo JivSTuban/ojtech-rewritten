@@ -68,7 +68,16 @@ public class JobMatchService {
         
         System.out.println("Found " + activeJobs.size() + " active jobs to process");
         
-        List<JobMatch> matches = new ArrayList<>();
+        // Get existing job matches for this student
+        List<JobMatch> existingMatches = jobMatchRepository.findByStudentIdOrderByMatchScoreDesc(studentId);
+        Set<UUID> matchedJobIds = new HashSet<>();
+        for (JobMatch match : existingMatches) {
+            matchedJobIds.add(match.getJob().getId());
+        }
+        
+        System.out.println("Student already has " + matchedJobIds.size() + " job matches");
+        
+        List<JobMatch> newMatches = new ArrayList<>();
         
         // Get student's active CV
         CV activeCv = null;
@@ -83,6 +92,12 @@ public class JobMatchService {
         // Process each job and wait for AI response
         for (Job job : activeJobs) {
             try {
+                // Skip jobs that already have a match with this student
+                if (matchedJobIds.contains(job.getId())) {
+                    System.out.println("Skipping job: " + job.getTitle() + " (ID: " + job.getId() + ") - already matched");
+                    continue;
+                }
+                
                 System.out.println("Processing job: " + job.getTitle() + " (ID: " + job.getId() + ")");
                 System.out.println("Job required skills: " + job.getRequiredSkills());
                 
@@ -149,7 +164,7 @@ public class JobMatchService {
                 
                 // Save to database
                 JobMatch savedMatch = jobMatchRepository.save(jobMatch);
-                matches.add(savedMatch);
+                newMatches.add(savedMatch);
                 
                 System.out.println("Job match saved with ID: " + savedMatch.getId());
             } catch (Exception e) {
@@ -159,10 +174,25 @@ public class JobMatchService {
         }
         
         // Sort matches by score (highest first)
-        matches.sort((a, b) -> b.getMatchScore().compareTo(a.getMatchScore()));
+        newMatches.sort((a, b) -> b.getMatchScore().compareTo(a.getMatchScore()));
         
-        System.out.println("Total matches found: " + matches.size());
-        return matches;
+        System.out.println("Total new matches found: " + newMatches.size());
+        
+        // Combine existing and new matches if needed
+        if (minScore != null) {
+            // Filter both existing and new matches by minimum score
+            List<JobMatch> allMatches = new ArrayList<>();
+            for (JobMatch match : existingMatches) {
+                if (match.getMatchScore() >= minScore) {
+                    allMatches.add(match);
+                }
+            }
+            allMatches.addAll(newMatches);
+            allMatches.sort((a, b) -> b.getMatchScore().compareTo(a.getMatchScore()));
+            return allMatches;
+        }
+        
+        return newMatches;
     }
     
     private List<String> parseSkills(String skillsString) {
