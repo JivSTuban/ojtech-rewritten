@@ -13,10 +13,10 @@ import java.util.Set;
 @Entity
 @Table(name = "cvs")
 public class CV extends BaseEntity {
-    
+
     @Column(name = "parsed_resume", columnDefinition = "jsonb")
     private String parsedResume;
-    
+
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
@@ -34,10 +34,10 @@ public class CV extends BaseEntity {
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<JobApplication> applications = new ArrayList<>();
-    
+
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Certification> certifications = new HashSet<>();
-    
+
     @OneToMany(mappedBy = "cv", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<WorkExperience> experiences = new HashSet<>();
 
@@ -45,20 +45,20 @@ public class CV extends BaseEntity {
     protected void onCreate() {
         lastUpdated = LocalDateTime.now();
     }
-    
+
     @PreUpdate
     protected void onUpdate() {
         lastUpdated = LocalDateTime.now();
     }
-    
+
     public String getParsedResume() {
         return parsedResume;
     }
-    
+
     public void setParsedResume(String parsedResume) {
         this.parsedResume = parsedResume;
     }
-    
+
     public LocalDateTime getLastUpdated() {
         return lastUpdated;
     }

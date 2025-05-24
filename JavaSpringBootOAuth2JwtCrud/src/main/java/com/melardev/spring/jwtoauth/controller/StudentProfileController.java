@@ -77,6 +77,7 @@ public class StudentProfileController {
             responseMap.put("firstName", profile.getFirstName());
             responseMap.put("lastName", profile.getLastName());
             responseMap.put("fullName", profile.getFullName());
+            responseMap.put("location", profile.getLocation());
             responseMap.put("university", profile.getUniversity());
             responseMap.put("major", profile.getMajor());
             responseMap.put("graduationYear", profile.getGraduationYear());
@@ -356,6 +357,7 @@ public class StudentProfileController {
             responseMap.put("firstName", profile.getFirstName());
             responseMap.put("lastName", profile.getLastName());
             responseMap.put("fullName", profile.getFullName());
+            responseMap.put("location", profile.getLocation());
             responseMap.put("university", profile.getUniversity());
             responseMap.put("major", profile.getMajor());
             responseMap.put("graduationYear", profile.getGraduationYear());
@@ -498,16 +500,16 @@ public class StudentProfileController {
     }
 
     private void updateProfileFields(StudentProfile profile, Map<String, Object> data) {
-        if (data.containsKey("fullName")) {
-            profile.setFullName((String) data.get("fullName"));
-        }
-        
         if (data.containsKey("firstName")) {
             profile.setFirstName((String) data.get("firstName"));
         }
         
         if (data.containsKey("lastName")) {
             profile.setLastName((String) data.get("lastName"));
+        }
+        
+        if (data.containsKey("location")) {
+            profile.setLocation((String) data.get("location"));
         }
         
         if (data.containsKey("university")) {
@@ -518,8 +520,17 @@ public class StudentProfileController {
             profile.setMajor((String) data.get("major"));
         }
         
-        if (data.containsKey("graduationYear") && data.get("graduationYear") instanceof Number) {
-            profile.setGraduationYear(((Number) data.get("graduationYear")).intValue());
+        if (data.containsKey("graduationYear")) {
+            Object yearObj = data.get("graduationYear");
+            if (yearObj instanceof Integer) {
+                profile.setGraduationYear((Integer) yearObj);
+            } else if (yearObj instanceof String) {
+                try {
+                    profile.setGraduationYear(Integer.parseInt((String) yearObj));
+                } catch (NumberFormatException e) {
+                    logger.warn("Invalid graduation year format: " + yearObj);
+                }
+            }
         }
         
         if (data.containsKey("skills")) {
@@ -544,10 +555,6 @@ public class StudentProfileController {
         
         if (data.containsKey("bio")) {
             profile.setBio((String) data.get("bio"));
-        }
-        
-        if (data.containsKey("location")) {
-            profile.setLocation((String) data.get("location"));
         }
         
         if (data.containsKey("hasCompletedOnboarding")) {

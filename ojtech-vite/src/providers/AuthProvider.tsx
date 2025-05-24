@@ -104,14 +104,14 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       });
       
       return user;
-    } catch (error: any) {
+        } catch (error: any) {
       console.error("Error fetching user profile:", error);
       
       if (error.response && error.response.status === 401) {
         // Unauthorized - clear token and redirect to login
         this.logout();
         throw error; // Rethrow to handle in calling code
-      } else {
+          } else {
         // Other error - still authenticated but no profile
         const user: AppUser = {
           ...userData,
@@ -137,7 +137,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
         console.log('User found in localStorage, fetching full profile');
-        const fullUser = await this.fetchUserProfileData(currentUser);
+      const fullUser = await this.fetchUserProfileData(currentUser);
         
         // Explicitly check if onboarding is completed (ensure it's boolean true)
         const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
@@ -154,13 +154,13 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       }
     } catch (error) {
       console.error("Error initializing auth:", error);
-      this.setState({ isLoading: false });
+    this.setState({ isLoading: false });
     }
-  };
+    };
 
   login = async (usernameOrEmail: string, password: string) => {
     try {
-      this.setState({ isLoading: true });
+    this.setState({ isLoading: true });
       const baseUserData = await authService.login({
         usernameOrEmail,
         password
@@ -298,17 +298,17 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       
       try {
         console.log('Refreshing user profile data...');
-        const fullUser = await this.fetchUserProfileData(user);
+      const fullUser = await this.fetchUserProfileData(user);
         
         // Additional check to ensure onboarding status is correctly set
         console.log('Profile refresh completed. Onboarding status:', fullUser.hasCompletedOnboarding);
         
-        this.setState({
-          user: fullUser,
+      this.setState({
+        user: fullUser,
           isLoading: false,
           profile: fullUser.profile || null,
           needsOnboarding: fullUser.hasCompletedOnboarding !== true
-        });
+      });
       } catch (error) {
         console.error('Error refreshing user profile:', error);
         this.setState({ isLoading: false });
@@ -331,11 +331,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       fetchUserProfile: this.fetchUserProfile
     };
 
-    return (
+  return (
       <AuthContext.Provider value={value}>
         {this.props.children}
-      </AuthContext.Provider>
-    );
+    </AuthContext.Provider>
+  );
   }
 }
 
@@ -351,6 +351,6 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}; 
 
 export { AuthContext }; 

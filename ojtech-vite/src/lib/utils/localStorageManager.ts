@@ -10,6 +10,7 @@ interface OnboardingStep {
   personalInfo?: {
     firstName?: string;
     lastName?: string;
+    location?: string;
   };
   education?: {
     university?: string;
@@ -50,7 +51,7 @@ const saveStepData = (step: keyof OnboardingStep, data: any): void => {
     
     // If this is personalInfo, log specifically for debugging
     if (step === 'personalInfo') {
-      console.log(`Saved personal info with firstName="${data.firstName}" and lastName="${data.lastName}"`);
+      console.log(`Saved personal info with firstName="${data.firstName}", lastName="${data.lastName}", location="${data.location || ''}"`);
     }
   } catch (error) {
     console.error('Error saving onboarding data to localStorage:', error);
@@ -68,7 +69,7 @@ const getOnboardingData = (): OnboardingStep => {
     // Special debug for personalInfo to track name loading issues
     if (parsedData.personalInfo) {
       console.log('Retrieved personalInfo from localStorage:', 
-        `firstName="${parsedData.personalInfo.firstName}", lastName="${parsedData.personalInfo.lastName}"`);
+        `firstName="${parsedData.personalInfo.firstName}", lastName="${parsedData.personalInfo.lastName}", location="${parsedData.personalInfo.location || ''}"`);
     }
     
     return parsedData;

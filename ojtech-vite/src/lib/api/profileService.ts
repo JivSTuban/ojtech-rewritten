@@ -120,11 +120,25 @@ const completeStudentOnboarding = async (data: any) => {
     if (!profileExists) {
       try {
         console.log('Creating initial student profile...');
+        
+        // Extract education data properly
+        const education = data.education || {};
+        
         const initialProfileData = {
-          fullName: `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim(),
-          firstName: data.personalInfo?.firstName || '',
-          lastName: data.personalInfo?.lastName || '',
-          // Include minimal required fields
+          fullName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          location: data.location || '',
+          // Include education data
+          university: education.university || data.university || '',
+          major: education.major || data.major || '',
+          graduationYear: education.graduationYear || data.graduationYear || null,
+          // Include contact info and professional links
+          phoneNumber: data.phoneNumber || '',
+          githubUrl: data.githubUrl || '',
+          linkedinUrl: data.linkedinUrl || '',
+          portfolioUrl: data.portfolioUrl || '',
+          // Include other minimal required fields
           skills: data.skills || []
         };
         
@@ -211,11 +225,20 @@ const submitStudentOnboarding = async (data: any) => {
     if (!profileExists) {
       try {
         console.log('Creating initial student profile...');
+        
+        // Extract education data properly
+        const education = data.education || {};
+        
         const initialProfileData = {
-          fullName: `${data.personalInfo?.firstName || ''} ${data.personalInfo?.lastName || ''}`.trim(),
-          firstName: data.personalInfo?.firstName || '',
-          lastName: data.personalInfo?.lastName || '',
-          // Include minimal required fields
+          fullName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          location: data.location || '',
+          // Include education data
+          university: education.university || data.university || '',
+          major: education.major || data.major || '',
+          graduationYear: education.graduationYear || data.graduationYear || null,
+          // Include other minimal required fields
           skills: data.skills || []
         };
         
@@ -287,6 +310,31 @@ const getCurrentEmployerProfile = async () => {
   }
 };
 
+const updateEducationInfo = async (educationData: any) => {
+  try {
+    console.log('Updating education info:', educationData);
+    
+    // Format the education data for the API
+    const updateData = {
+      university: educationData.university || '',
+      major: educationData.major || '',
+      graduationYear: educationData.graduationYear || null
+    };
+    
+    // Update the profile via the API
+    const response = await axios.put(`${API_URL}/me`, updateData, { headers: getAuthHeaders() });
+    console.log('Education info updated successfully:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating education info:', error.message);
+    if (error.response) {
+      console.error("Server response status:", error.response.status);
+      console.error("Server response data:", error.response.data);
+    }
+    throw error;
+  }
+};
+
 const profileService = {
   getCurrentProfile,
   updateProfile,
@@ -298,6 +346,7 @@ const profileService = {
   completeEmployerOnboarding,
   uploadEmployerLogo,
   getCurrentEmployerProfile,
+  updateEducationInfo,
 };
 
 export default profileService; 

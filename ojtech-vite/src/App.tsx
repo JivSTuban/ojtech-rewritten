@@ -1,14 +1,14 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { ThemeProvider } from './providers/ThemeProvider';
-import { ToastProvider } from './providers/ToastContext';
+import { ToastProvider, ToastHelper } from './providers/ToastContext';
 import { Toaster } from './components/ui/Toaster';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
-import { ProfilePage } from './pages/ProfilePage';
+import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { JobDetailPage } from './pages/JobDetailPage';
@@ -25,6 +25,7 @@ import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import ResumeManagementPage from './pages/ResumeManagementPage';
 import './index.css';
 
 // Main layout with navigation for all non-auth pages
@@ -165,6 +166,7 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ToastProvider>
+        <ToastHelper />
         <Routes>
           {/* Auth routes without navigation - public only */}
           <Route element={<PublicOnlyRoute />}>
@@ -178,41 +180,6 @@ export const App: React.FC = () => {
           
           {/* All non-auth routes with the main layout and navbar */}
           <Route element={<MainLayout />}>
-            {/* Public routes */}
-            {/* <Route path="/" element={<HomePage />} />
-            <Route path="/opportunities" element={<OpportunitiesPage />} />
-            <Route path="/opportunities/:id" element={<JobDetailPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/track" element={<TrackApplicationsPage />} /> */}
-            
-            {/* Protected routes for all authenticated users */}
-            {/* <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
-              <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
-            </Route> */}
-            
-            {/* Employer-specific routes */}
-            {/* <Route element={<ProtectedRoute allowedRoles={['ROLE_EMPLOYER']} />}>
-              <Route path="/employer/jobs" element={<EmployerJobsPage />} />
-              <Route path="/employer/jobs/create" element={<JobFormPage />} />
-              <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
-              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
-            </Route> */}
-            
-            {/* Student-specific routes */}
-            {/* <Route element={<ProtectedRoute allowedRoles={['ROLE_STUDENT']} />}>
-              <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
-              <Route path="/track" element={<TrackApplicationsPage />} />
-            </Route> */}
-            
-            {/* Admin routes */}
-            {/* <Route element={<ProtectedRoute allowedRoles={["ROLE_ADMIN"]} />}>
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/admin/users" element={<UsersAdminPage />} />
-            </Route> */}
-
             {/* For Pre Testing mockdata */}
               <Route path="/" element={<HomePage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />
@@ -221,6 +188,7 @@ export const App: React.FC = () => {
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/track" element={<TrackApplicationsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/resume" element={<ResumeManagementPage />} />
               <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
               <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
               <Route path="/employer/jobs" element={<EmployerJobsPage />} />
@@ -234,7 +202,7 @@ export const App: React.FC = () => {
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <Toaster /> 
+        <Toaster />
       </ToastProvider>
     </ThemeProvider>
   );

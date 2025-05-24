@@ -10,6 +10,7 @@ import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.WorkExperienceRepository;
 import com.melardev.spring.jwtoauth.security.CurrentUser;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.service.GeminiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Map;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/cvs")
@@ -30,16 +33,19 @@ public class CVController {
     private final StudentProfileRepository studentProfileRepository;
     private final CertificationRepository certificationRepository;
     private final WorkExperienceRepository workExperienceRepository;
+    private final GeminiService geminiService;
 
     @Autowired
     public CVController(CVRepository cvRepository, 
                         StudentProfileRepository studentProfileRepository,
                         CertificationRepository certificationRepository,
-                        WorkExperienceRepository workExperienceRepository) {
+                        WorkExperienceRepository workExperienceRepository,
+                        GeminiService geminiService) {
         this.cvRepository = cvRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.certificationRepository = certificationRepository;
         this.workExperienceRepository = workExperienceRepository;
+        this.geminiService = geminiService;
     }
 
     @GetMapping
@@ -559,5 +565,121 @@ public class CVController {
         }
         
         return ResponseEntity.ok(cv.getParsedResume());
+    }
+
+    @PostMapping({"/cv/generate", "/cvs/generate"})
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<String> generateCVFromData(@RequestBody Map<String, Object> profileData, @CurrentUser UserDetailsImpl currentUser) {
+        try {
+            // Log user information for debugging
+            System.out.println("CV Generation request from user: " + currentUser.getUsername());
+            System.out.println("User roles: " + currentUser.getAuthorities());
+            System.out.println("CV Controller - Profile data keys: " + profileData.keySet());
+            
+            // Log some key profile data fields
+            System.out.println("CV Controller - First name: " + profileData.getOrDefault("firstName", "not provided"));
+            System.out.println("CV Controller - Last name: " + profileData.getOrDefault("lastName", "not provided"));
+            System.out.println("CV Controller - Email: " + profileData.getOrDefault("email", "not provided"));
+            
+            // Check if skills is present and is a list
+            Object skills = profileData.get("skills");
+            if (skills != null && skills instanceof List) {
+                System.out.println("CV Controller - Skills count: " + ((List<?>) skills).size());
+            } else {
+                System.out.println("CV Controller - Skills is null or not a list: " + skills);
+            }
+            
+            // Prepare input data for AI service
+            Map<String, Object> cvData = new HashMap<>();
+            
+            // Personal information
+            cvData.put("firstName", profileData.getOrDefault("firstName", ""));
+            cvData.put("lastName", profileData.getOrDefault("lastName", ""));
+            cvData.put("email", profileData.getOrDefault("email", ""));
+            cvData.put("phoneNumber", profileData.getOrDefault("phoneNumber", ""));
+            cvData.put("location", profileData.getOrDefault("location", ""));
+            cvData.put("address", profileData.getOrDefault("address", ""));
+            
+            // Education
+            cvData.put("university", profileData.getOrDefault("university", ""));
+            cvData.put("major", profileData.getOrDefault("major", ""));
+            cvData.put("graduationYear", profileData.getOrDefault("graduationYear", ""));
+            
+            // Professional information
+            cvData.put("skills", profileData.getOrDefault("skills", new ArrayList<>()));
+            cvData.put("experiences", profileData.getOrDefault("experiences", new ArrayList<>()));
+            cvData.put("certifications", profileData.getOrDefault("certifications", new ArrayList<>()));
+            cvData.put("githubProjects", profileData.getOrDefault("githubProjects", new ArrayList<>()));
+            cvData.put("bio", profileData.getOrDefault("bio", ""));
+            
+            // Online presence
+            cvData.put("githubUrl", profileData.getOrDefault("githubUrl", ""));
+            cvData.put("linkedinUrl", profileData.getOrDefault("linkedinUrl", ""));
+            cvData.put("portfolioUrl", profileData.getOrDefault("portfolioUrl", ""));
+            
+            System.out.println("CV Controller - Calling geminiService.generateResumeContent");
+            String resumeContent = geminiService.generateResumeContent(cvData);
+            System.out.println("CV Controller - Resume content generated successfully, length: " + 
+                              (resumeContent != null ? resumeContent.length() : "null"));
+            
+            // Log more details about the response content
+            if (resumeContent != null) {
+                System.out.println("CV Controller - Response content preview: " + 
+                    (resumeContent.length() > 200 ? resumeContent.substring(0, 200) + "..." : resumeContent));
+                
+                // Determine if response is JSON
+                boolean isJson = resumeContent.trim().startsWith("{") && resumeContent.trim().endsWith("}");
+                System.out.println("CV Controller - Response appears to be JSON: " + isJson);
+                
+                // Check if contains HTML
+                boolean containsHtml = resumeContent.contains("<html>") || resumeContent.contains("<!DOCTYPE");
+                System.out.println("CV Controller - Response contains HTML: " + containsHtml);
+                
+                // Count the number of JSON fields (if it's JSON)
+                if (isJson) {
+                    long fieldCount = resumeContent.chars().filter(ch -> ch == ':').count();
+                    System.out.println("CV Controller - Approximate number of JSON fields: " + fieldCount);
+                }
+            } else {
+                System.out.println("CV Controller - WARNING: Null response received from geminiService");
+            }
+            
+            return ResponseEntity.ok(resumeContent);
+        } catch (Exception e) {
+            System.out.println("CV Controller - Error generating CV: " + e.getClass().getName() + ": " + e.getMessage());
+            
+            // Log the stack trace
+            System.out.println("CV Controller - Error stack trace:");
+            e.printStackTrace();
+            
+            // Log more details about specific error types
+            if (e instanceof org.springframework.web.client.RestClientException) {
+                System.out.println("CV Controller - RestClientException detected - likely an issue with the AI service connection");
+                
+                // Check for connection timeouts
+                if (e.getMessage() != null && e.getMessage().contains("timed out")) {
+                    System.out.println("CV Controller - Connection timeout detected - check AI service availability");
+                    return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                        .body("Failed to generate CV: Connection to AI service timed out. Please try again later.");
+                }
+                
+                // Check for connection refusal
+                if (e.getMessage() != null && e.getMessage().contains("refused")) {
+                    System.out.println("CV Controller - Connection refused - check AI service endpoint configuration");
+                    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body("Failed to generate CV: Connection to AI service refused. Please check server configuration.");
+                }
+            } else if (e instanceof com.fasterxml.jackson.core.JsonProcessingException) {
+                System.out.println("CV Controller - JSON processing error - likely malformed response from AI service");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate CV: Error processing AI response. Please try again.");
+            } else if (e instanceof IllegalArgumentException) {
+                System.out.println("CV Controller - Invalid argument - check input data");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to generate CV: " + e.getMessage());
+            }
+            
+            return ResponseEntity.badRequest().body("Failed to generate CV: " + e.getMessage());
+        }
     }
 } 

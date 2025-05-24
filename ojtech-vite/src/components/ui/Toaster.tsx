@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { ToastConsumer } from '../../providers/ToastContext';
+import { ToastContext } from '../../providers/ToastContext';
 import {
   Toast,
   ToastClose,
@@ -10,12 +10,18 @@ import {
 } from '../../components/ui/Toast';
 
 export class Toaster extends Component {
+  static contextType = ToastContext;
+  
   render() {
+    const toastHelpers = this.context;
+    
+    if (!toastHelpers) {
+      return null; // No toast context available
+    }
+    
     return (
-      <ToastConsumer>
-        {(value) => (
           <ToastProvider>
-            {value.toasts.map(({ id, title, description, action, ...props }) => (
+        {toastHelpers.toasts.map(({ id, title, description, action, ...props }) => (
               <Toast key={id} {...props}>
                 <div className="grid gap-1">
                   {title && <ToastTitle>{title}</ToastTitle>}
@@ -29,8 +35,6 @@ export class Toaster extends Component {
             ))}
             <ToastViewport />
           </ToastProvider>
-        )}
-      </ToastConsumer>
     );
   }
 } 

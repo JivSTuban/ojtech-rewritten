@@ -2,6 +2,8 @@ import React, { Component, ChangeEvent, FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import profileService from '@/lib/api/profileService';
 import { AuthContext } from '@/providers/AuthProvider';
+import { toast } from '../../components/ui/toast-utils';
+import { ToastHelper } from '../../providers/ToastContext';
 
 interface EmployerProfileData {
     companyName?: string;
@@ -53,6 +55,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
   }
 
   componentDidMount() {
+    this.restoreFromLocalStorage();
     this.fetchProfile();
   }
 
@@ -129,9 +132,21 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       }
       
       this.setState({ redirectTo: '/employer/jobs' });
+      
+      ToastHelper.toast({
+        title: "Profile Updated",
+        description: "Your employer profile has been successfully updated.",
+        variant: "success"
+      });
     } catch (err: any) {
       this.setState({
         error: err.response?.data?.message || 'Onboarding failed. Please try again.'
+      });
+      
+      ToastHelper.toast({
+        title: "Error",
+        description: this.state.error || 'Onboarding failed. Please try again.',
+        variant: "destructive"
       });
     } finally {
       this.setState({ isLoading: false });
