@@ -4,7 +4,7 @@ import { setToastFunction } from '../components/ui/toast-utils';
 
 // Constants
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000;
 
 // Types
 type ToasterToast = ToasterToastProps & {
@@ -51,7 +51,7 @@ function genId() {
   return count.toString();
 }
 
-// Create context
+// Create context interface
 interface ToastContextValue extends State {
   toast: (props: Omit<ToasterToast, 'id'>) => {
     id: string;
@@ -61,13 +61,17 @@ interface ToastContextValue extends State {
   dismiss: (toastId?: string) => void;
 }
 
-const ToastContext = createContext<ToastContextValue>({
+// Default context value
+const defaultToastContext: ToastContextValue = {
   toasts: [],
   toast: () => ({ id: '', dismiss: () => {}, update: () => {} }),
   dismiss: () => {},
-});
+};
 
-// Main toast context provider
+// Create and export the context
+export const ToastContext = createContext<ToastContextValue>(defaultToastContext);
+
+// Props and state interfaces
 interface ToastProviderProps {
   children: React.ReactNode;
 }
@@ -79,6 +83,7 @@ interface ToastProviderState {
 // Timeout map
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
+// ToastProvider component
 export class ToastProvider extends Component<ToastProviderProps, ToastProviderState> {
   constructor(props: ToastProviderProps) {
     super(props);
@@ -243,22 +248,73 @@ export class ToastConsumer extends Component<ToastConsumerProps> {
 // Helper class to consume toast context
 export class ToastHelper extends Component {
   static contextType = ToastContext;
-  context!: React.ContextType<typeof ToastContext>;
+  static currentContext: ToastContextValue | null = null;
   
-  static toast(props: Omit<ToasterToast, 'id'>) {
-    const context = this.contextType;
-    if (context) {
-      return context.toast(props);
-    }
-    return { id: '', dismiss: () => {}, update: () => {} };
+  // Update the context reference when the component mounts
+  componentDidMount() {
+    ToastHelper.currentContext = this.context;
+    console.log('ToastHelper mounted, context available:', !!ToastHelper.currentContext);
   }
   
-  static dismiss(toastId?: string) {
-    const context = this.contextType;
-    if (context) {
-      context.dismiss(toastId);
-    }
+  // Update the context reference when the context changes
+  componentDidUpdate() {
+    ToastHelper.currentContext = this.context;
+  }
+  
+  render() {
+    // This component doesn't render anything, it just provides access to the context
+    return null;
   }
 }
 
-export { ToastContext };
+// Static helper methods
+ToastHelper.toast = function(props: Omit<ToasterToast, 'id'>) {
+  // Try to use the stored context reference
+  if (ToastHelper.currentContext) {
+    return ToastHelper.currentContext.toast(props);
+  }
+  
+  // If context is not available, create a fallback toast that will be shown once context is available
+  console.debug('Toast context not available yet, creating delayed toast');
+  
+  // Return a dummy object with the expected interface
+  const dummyId = `pending-${Date.now()}`;
+  
+  // Schedule the toast to appear when context becomes available
+  setTimeout(() => {
+    if (ToastHelper.currentContext) {
+      ToastHelper.currentContext.toast(props);
+    }
+  }, 100);
+  
+  return { 
+    id: dummyId, 
+    dismiss: () => {}, 
+    update: () => {} 
+  };
+};
+
+ToastHelper.dismiss = function(toastId?: string) {
+  // Try to use the stored context reference
+  if (ToastHelper.currentContext) {
+    try {
+      ToastHelper.currentContext.dismiss(toastId);
+      return;
+    } catch (error) {
+      console.error('Error calling dismiss from ToastHelper:', error);
+    }
+  }
+  
+  // Schedule dismiss when context becomes available
+  setTimeout(() => {
+    if (ToastHelper.currentContext) {
+      try {
+        ToastHelper.currentContext.dismiss(toastId);
+      } catch (error) {
+        console.error('Error in delayed dismiss:', error);
+  }
+}
+  }, 100);
+  
+  console.debug('Toast context not available yet for dismiss, scheduled for later');
+};

@@ -3,6 +3,8 @@ import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { ToastProps } from './use-toast.tsx';
+import { ToastContext } from '../../providers/ToastContext';
 
 // Provider component
 export class ToastProvider extends Component<ToastPrimitives.ToastProviderProps> {
@@ -49,6 +51,8 @@ const toastVariants = cva(
         default: 'border bg-background text-foreground',
         destructive:
           'destructive group border-destructive bg-destructive text-destructive-foreground',
+        success: 'border bg-green-600 text-white',
+        warning: 'border bg-yellow-500 text-white',
       },
     },
     defaultVariants: {
@@ -58,24 +62,22 @@ const toastVariants = cva(
 );
 
 // Toast component
-interface ToastProps extends 
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root>,
-  VariantProps<typeof toastVariants> {
-  forwardedRef?: React.RefObject<HTMLLIElement>;
+export interface ToastComponentProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root>, VariantProps<typeof toastVariants> {
+  forwardedRef?: React.RefObject<HTMLDivElement>;
 }
 
-export class Toast extends Component<ToastProps> {
-  private toastRef: RefObject<HTMLLIElement>;
+export class Toast extends Component<ToastComponentProps> {
+  private toastRef: RefObject<HTMLDivElement>;
   
-  constructor(props: ToastProps) {
+  constructor(props: ToastComponentProps) {
     super(props);
-    this.toastRef = props.forwardedRef || createRef<HTMLLIElement>();
+    this.toastRef = props.forwardedRef || createRef<HTMLDivElement>();
   }
   
   render() {
     const { className, variant, forwardedRef, ...props } = this.props;
-    
-    return (
+
+  return (
       <ToastPrimitives.Root
         ref={this.toastRef}
         className={cn(toastVariants({ variant }), className)}
@@ -206,5 +208,3 @@ export type ToasterToastProps = React.ComponentPropsWithoutRef<typeof Toast> & {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
-
-export type ToastActionElement = React.ReactElement<typeof ToastAction>; 

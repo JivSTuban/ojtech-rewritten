@@ -130,6 +130,18 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                       >
                         {user.roles?.includes('ROLE_EMPLOYER') ? "Company Profile" : "My Profile"}
                       </Link>
+                      
+                      {/* Resume Management link for students only */}
+                      {user.roles?.includes('ROLE_STUDENT') && (
+                        <Link 
+                          to="/resume" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          onClick={this.toggleDropdown}
+                        >
+                          Manage Resume
+                        </Link>
+                      )}
+                      
                       <button 
                         onClick={() => {
                           if (logout) logout();

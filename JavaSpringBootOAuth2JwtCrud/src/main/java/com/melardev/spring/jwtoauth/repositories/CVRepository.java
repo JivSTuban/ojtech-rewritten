@@ -13,4 +13,6 @@ public interface CVRepository extends JpaRepository<CV, UUID> {
     List<CV> findByStudent(StudentProfile student);
     
     List<CV> findByStudentAndActive(StudentProfile student, boolean active);
+    
+    List<CV> findByStudentOrderByLastUpdatedDesc(StudentProfile student);
 } 

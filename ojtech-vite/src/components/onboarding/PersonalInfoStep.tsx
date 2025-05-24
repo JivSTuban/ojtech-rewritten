@@ -4,6 +4,7 @@ import localStorageManager from '../../lib/utils/localStorageManager';
 interface StudentProfileData {
   firstName?: string;
   lastName?: string;
+  location?: string;
   phoneNumber?: string;
   [key: string]: any;
 }
@@ -31,6 +32,11 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
       
       if (savedPersonalInfo.lastName && !this.props.formData.lastName) {
         updates.lastName = savedPersonalInfo.lastName;
+        needsUpdate = true;
+      }
+      
+      if (savedPersonalInfo.location && !this.props.formData.location) {
+        updates.location = savedPersonalInfo.location;
         needsUpdate = true;
       }
       
@@ -62,7 +68,8 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
       // Save personal info to localStorage
       localStorageManager.saveStepData('personalInfo', {
         firstName: this.props.formData.firstName,
-        lastName: this.props.formData.lastName
+        lastName: this.props.formData.lastName,
+        location: this.props.formData.location
       });
       
       this.props.onNext();
@@ -128,6 +135,29 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                   placeholder="Your last name"
                 />
               </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 space-y-2">
+            <label htmlFor="location" className="block text-sm font-medium text-gray-300">
+              Location <span className="text-gray-400">(City, State/Province, Country)</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                name="location"
+                id="location"
+                value={formData.location || ''}
+                onChange={onChange}
+                className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                placeholder="e.g. Lapu-Lapu City, Cebu, Philippines"
+              />
             </div>
           </div>
           

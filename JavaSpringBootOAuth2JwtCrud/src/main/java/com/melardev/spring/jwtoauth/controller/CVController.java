@@ -13,6 +13,7 @@ import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -199,11 +200,45 @@ public class CVController {
     }
     
     /**
-     * Update a CV with the AI-generated HTML content
+     * Update a CV with the content (JSON data)
      */
     @PutMapping("/{id}/content")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<CV> updateCVContent(
+            @PathVariable UUID id,
+            @RequestBody String content,
+            @CurrentUser UserDetailsImpl currentUser) {
+        
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        if (!cv.getStudent().getUser().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to update this CV");
+        }
+        
+        // Validate that content is not empty
+        if (content == null || content.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Content cannot be empty");
+        }
+        
+        // Store the content in the parsedResume field without conversion
+        // The frontend will handle parsing and display
+        cv.setParsedResume(content);
+        cv.setLastUpdated(LocalDateTime.now());
+        
+        CV updatedCV = cvRepository.save(cv);
+        return ResponseEntity.ok(updatedCV);
+    }
+    
+    /**
+     * Update a CV with HTML content
+     */
+    @PutMapping("/{id}/html")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<CV> updateCVHtmlContent(
             @PathVariable UUID id,
             @RequestBody String htmlContent,
             @CurrentUser UserDetailsImpl currentUser) {
@@ -218,8 +253,13 @@ public class CVController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to update this CV");
         }
         
-        // Store the HTML content in the parsedResume field
-        cv.setParsedResume(htmlContent);
+        // Validate that content is not empty
+        if (htmlContent == null || htmlContent.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content cannot be empty");
+        }
+        
+        // Store the HTML content
+        cv.setHtmlContent(htmlContent);
         cv.setLastUpdated(LocalDateTime.now());
         
         CV updatedCV = cvRepository.save(cv);
@@ -227,26 +267,102 @@ public class CVController {
     }
     
     /**
-     * Get the HTML content of a CV
+     * Get the raw content of a CV
      */
     @GetMapping("/{id}/content")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> getCVContent(@PathVariable UUID id, @CurrentUser UserDetailsImpl currentUser) {
-        Optional<CV> cvOpt = cvRepository.findById(id);
-        if (cvOpt.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        try {
+            Optional<CV> cvOpt = cvRepository.findById(id);
+            if (cvOpt.isEmpty()) {
+                System.out.println("CVController - getCVContent - CV not found with ID: " + id);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+            }
+            
+            CV cv = cvOpt.get();
+            if (!cv.getStudent().getUser().getId().equals(currentUser.getId())) {
+                System.out.println("CVController - getCVContent - Permission denied for user: " + currentUser.getId());
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to access this CV");
+            }
+            
+            // First check if HTML content is available
+            if (cv.getHtmlContent() != null && !cv.getHtmlContent().trim().isEmpty()) {
+                System.out.println("CVController - getCVContent - Returning HTML content");
+                return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(cv.getHtmlContent());
+            }
+            
+            // Fall back to JSON content
+            if (cv.getParsedResume() == null) {
+                System.out.println("CVController - getCVContent - CV has null parsedResume field");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not found");
+            }
+            
+            // Log the content type and preview for debugging
+            String content = cv.getParsedResume();
+            
+            // Handle potentially invalid content gracefully
+            try {
+                String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
+                System.out.println("CVController - getCVContent - Raw content preview: " + preview);
+                
+                // Detect content type - either JSON or HTML
+                MediaType contentType;
+                if (content.trim().startsWith("{") || content.trim().startsWith("[")) {
+                    contentType = MediaType.APPLICATION_JSON;
+                    System.out.println("CVController - getCVContent - Detected JSON content");
+                } else {
+                    contentType = MediaType.TEXT_HTML;
+                    System.out.println("CVController - getCVContent - Detected HTML content");
+                }
+                
+                // Return the raw content (JSON or HTML) and let the frontend handle it
+                return ResponseEntity.ok()
+                    .contentType(contentType)
+                    .body(content);
+            } catch (Exception e) {
+                System.err.println("CVController - getCVContent - Error processing content: " + e.getMessage());
+                
+                // If content is causing errors, try to sanitize it before returning
+                try {
+                    // Try to sanitize the content if it's invalid
+                    if (content == null) {
+                        System.err.println("CVController - getCVContent - Content is null");
+                        return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_PLAIN)
+                            .body("{}"); // Return empty JSON object
+                    }
+                    
+                    // If it looks like JSON but might be corrupted, try to validate/fix it
+                    if (content.contains("{") && content.contains("}")) {
+                        System.err.println("CVController - getCVContent - Attempting to sanitize JSON content");
+                        
+                        // Return minimal valid JSON
+                        return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body("{}");
+                    } else {
+                        // For any other type, return empty JSON
+                        System.err.println("CVController - getCVContent - Returning empty JSON for non-JSON content");
+                        return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body("{}");
+                    }
+                } catch (Exception sanitizeError) {
+                    System.err.println("CVController - getCVContent - Failed to sanitize content: " + sanitizeError.getMessage());
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error processing CV content");
+                }
+            }
+        } catch (ResponseStatusException rse) {
+            // Rethrow ResponseStatusException as is
+            throw rse;
+        } catch (Exception e) {
+            // Log any unexpected errors
+            System.err.println("CVController - getCVContent - Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving CV content: " + e.getMessage());
         }
-        
-        CV cv = cvOpt.get();
-        if (!cv.getStudent().getUser().getId().equals(currentUser.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You don't have permission to access this CV");
-        }
-        
-        if (cv.getParsedResume() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not found");
-        }
-        
-        return ResponseEntity.ok(cv.getParsedResume());
     }
 
     @DeleteMapping("/{id}")
@@ -621,31 +737,77 @@ public class CVController {
     }
     
     /**
-     * Get the HTML content of the current user's active CV
+     * Get the current user's active CV content
      */
     @GetMapping("/me/content")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> getCurrentUserCVContent(@CurrentUser UserDetailsImpl currentUser) {
-        Optional<StudentProfile> studentOpt = studentProfileRepository.findByUserId(currentUser.getId());
-        if (studentOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+        try {
+            Optional<StudentProfile> studentOpt = studentProfileRepository.findByUserId(currentUser.getId());
+            if (studentOpt.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Student profile not found");
+            }
+            
+            StudentProfile student = studentOpt.get();
+            
+            // Check if the student has an active CV
+            UUID activeCvId = student.getActiveCvId();
+            if (activeCvId == null) {
+                // Find most recent CV if no active CV is set
+                List<CV> cvs = cvRepository.findByStudentOrderByLastUpdatedDesc(student);
+                if (cvs.isEmpty()) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No CV found");
+                }
+                
+                // Use the most recent CV
+                CV cv = cvs.get(0);
+                
+                // First check if HTML content is available
+                if (cv.getHtmlContent() != null && !cv.getHtmlContent().trim().isEmpty()) {
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_HTML)
+                        .body(cv.getHtmlContent());
+                }
+                
+                // Fall back to parsed resume content
+                if (cv.getParsedResume() == null) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not found");
+                }
+                
+                return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(cv.getParsedResume());
+            }
+            
+            // Get the active CV
+            Optional<CV> cvOpt = cvRepository.findById(activeCvId);
+            if (cvOpt.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Active CV not found");
+            }
+            
+            CV cv = cvOpt.get();
+            
+            // First check if HTML content is available
+            if (cv.getHtmlContent() != null && !cv.getHtmlContent().trim().isEmpty()) {
+                return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(cv.getHtmlContent());
+            }
+            
+            // Fall back to parsed resume content
+            if (cv.getParsedResume() == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not found");
+            }
+            
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(cv.getParsedResume());
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            System.err.println("CVController - getCurrentUserCVContent - Error: " + e.getMessage());
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving CV content");
         }
-        
-        StudentProfile student = studentOpt.get();
-        if (student.getActiveCvId() == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        Optional<CV> cvOpt = cvRepository.findById(student.getActiveCvId());
-        if (cvOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        CV cv = cvOpt.get();
-        if (cv.getParsedResume() == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        return ResponseEntity.ok(cv.getParsedResume());
     }
 } 

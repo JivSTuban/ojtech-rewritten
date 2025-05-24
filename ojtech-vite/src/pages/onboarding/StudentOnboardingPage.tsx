@@ -13,6 +13,7 @@ import ReviewStep from '../../components/onboarding/ReviewStep';
 import CertificationsStep, { Certification } from '../../components/onboarding/CertificationsStep';
 import ExperiencesStep, { WorkExperience } from '../../components/onboarding/ExperiencesStep';
 import localStorageManager from '../../lib/utils/localStorageManager';
+import { ToastHelper } from '../../providers/ToastContext';
 
 // Types for github project
 interface GitHubProject {
@@ -43,6 +44,7 @@ interface StudentProfileData {
     githubProjects?: GitHubProject[];
     certifications?: Certification[];
     experiences?: WorkExperience[];
+    location?: string;
 }
 
 interface StudentOnboardingState {
@@ -76,7 +78,8 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         linkedinUrl: '',
         portfolioUrl: '',
         certifications: [],
-        experiences: []
+        experiences: [],
+        location: ''
       },
       error: null,
       isLoading: false,
@@ -87,10 +90,10 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
   }
 
   componentDidMount() {
-    // First restore from localStorage, then fetch from API
-    this.restoreFromLocalStorage();
+    // Remove toast.dismissAll() call to prevent clearing important notifications
     
-    // Fetch profile data after local storage restoration
+    // Continue with the rest of the componentDidMount logic
+    this.restoreFromLocalStorage();
     this.fetchProfile();
   }
   
@@ -120,6 +123,11 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         if (savedData.personalInfo.lastName) {
           updatedFormData.lastName = savedData.personalInfo.lastName;
           console.log('Restored last name from localStorage:', savedData.personalInfo.lastName);
+        }
+        
+        if (savedData.personalInfo.location) {
+          updatedFormData.location = savedData.personalInfo.location;
+          console.log('Restored location from localStorage:', savedData.personalInfo.location);
         }
       }
       
@@ -195,9 +203,10 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       
       // Show toast if we have progress
       if (Object.keys(savedData).length > 0) {
-        toast.success({
+        ToastHelper.toast({
           title: "Onboarding Progress Restored",
-          description: "We've restored your previous progress. Continue from where you left off."
+          description: "We've restored your previous progress. Continue from where you left off.",
+          variant: "success"
         });
       }
     }
@@ -214,11 +223,6 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     try {
       this.setState({ isLoading: true, error: null });
       
-      toast.default({
-        title: "Loading Your Profile Data",
-        description: "We're retrieving your existing profile information to pre-fill your onboarding form."
-      });
-      
       const profileData = await profileService.getCurrentStudentProfile();
       
       if (profileData) {
@@ -228,21 +232,22 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         // Create updated form data by merging profile data with any existing local storage data
         const updatedFormData = {
           // Start with API profile data
-          firstName: profileData.firstName || '',
-          lastName: profileData.lastName || '',
-          phoneNumber: profileData.phoneNumber || '',
-          university: profileData.university || '',
-          major: profileData.major || '',
-          graduationYear: profileData.graduationYear || undefined,
-          bio: profileData.bio || '',
-          skills: profileData.skills || [],
-          githubUrl: profileData.githubUrl || '',
-          linkedinUrl: profileData.linkedinUrl || '',
-          portfolioUrl: profileData.portfolioUrl || '',
-          hasCompletedOnboarding: profileData.hasCompletedOnboarding,
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
+            phoneNumber: profileData.phoneNumber || '',
+            university: profileData.university || '',
+            major: profileData.major || '',
+            graduationYear: profileData.graduationYear || undefined,
+            bio: profileData.bio || '',
+            skills: profileData.skills || [],
+            githubUrl: profileData.githubUrl || '',
+            linkedinUrl: profileData.linkedinUrl || '',
+            portfolioUrl: profileData.portfolioUrl || '',
+            hasCompletedOnboarding: profileData.hasCompletedOnboarding,
           githubProjects: profileData.githubProjects || [],
           certifications: profileData.certifications || [],
-          experiences: profileData.experiences || []
+            experiences: profileData.experiences || [],
+            location: profileData.location || ''
         };
         
         // Now override with localStorage data if it exists
@@ -268,9 +273,10 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         }
     
         if (profileData.hasCompletedOnboarding) {
-          toast.success({
+          ToastHelper.toast({
             title: "Profile Successfully Loaded",
-            description: "Your profile is already complete. You can review and update your information as needed."
+            description: "Your profile is already complete. You can review and update your information as needed.",
+            variant: "success"
           });
         }
         
@@ -279,34 +285,34 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     } catch (err: any) {
       console.error("Error in fetchProfile:", err);
       
-      let errorMsg = "Failed to load profile data. Please try again or contact support if the problem persists.";
-      
+      // Only show errors for non-404 responses
       if (err.response) {
         if (err.response.status === 404) {
           console.log("No profile found - this is normal for new users");
-          toast.default({
-            title: "Welcome to OJTech Onboarding",
-            description: "Please complete all steps of your student profile to be matched with internship opportunities."
-          });
+          // No need for a toast for new users - they'll see the onboarding steps
         } else {
-          errorMsg = err.response.data?.message || errorMsg;
-          toast.destructive({
+          let errorMsg = err.response.data?.message || "Failed to load profile data. Please try again or contact support if the problem persists.";
+          ToastHelper.toast({
             title: "Error Loading Profile Data",
-            description: `${errorMsg} (Status: ${err.response.status})`
+            description: `${errorMsg} (Status: ${err.response.status})`,
+            variant: "destructive"
           });
           this.setState({ error: errorMsg });
         }
       } else if (err.request) {
-        errorMsg = "No response received from server. Please check your network connection and try again.";
-        toast.destructive({
+        let errorMsg = "No response received from server. Please check your network connection and try again.";
+        ToastHelper.toast({
           title: "Network Connection Error",
-          description: errorMsg
+          description: errorMsg,
+          variant: "destructive"
         });
         this.setState({ error: errorMsg });
       } else {
-        toast.destructive({
+        let errorMsg = "Failed to load profile data. Please try again or contact support if the problem persists.";
+        ToastHelper.toast({
           title: "Unexpected Error",
-          description: errorMsg
+          description: errorMsg,
+          variant: "destructive"
         });
         this.setState({ error: errorMsg });
       }
@@ -381,16 +387,29 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     this.setState({ error: null, isLoading: true });
     
     try {
-      toast.default({
+      ToastHelper.toast({
         title: "Saving Your Profile",
-        description: "Please wait while we save your complete profile information to our database."
+        description: "Please wait while we save your complete profile information to our database.",
+        variant: "default"
       });
+      
+      // Make sure education data is properly formatted for backend
+      const { formData } = this.state;
+      const educationData = {
+        university: formData.university || '',
+        major: formData.major || '',
+        graduationYear: formData.graduationYear || null
+      };
       
       // Combine all the data from the steps
       const completeFormData = {
         ...this.state.formData,
-        githubProjects: this.state.projectsData
+        githubProjects: this.state.projectsData,
+        education: educationData, // Add education data in the expected format
+        location: this.state.formData.location || '' // Explicitly include location
       };
+      
+      console.log('Submitting complete form data with education:', completeFormData);
       
       // Submit the onboarding data
       const profileData = await profileService.completeStudentOnboarding(completeFormData);
@@ -404,9 +423,10 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         console.log('Auth context refreshed after onboarding completion');
       }
       
-      toast.success({
+      ToastHelper.toast({
         title: "Onboarding Successfully Completed",
-        description: "Your student profile has been saved. You can now explore internship opportunities and apply for positions."
+        description: "Your student profile has been saved. You can now explore internship opportunities and apply for positions.",
+        variant: "success"
       });
       
       this.setState({ redirectTo: '/track' });
@@ -417,20 +437,23 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       
       if (err.response) {
         errorMsg = err.response.data?.message || errorMsg;
-        toast.destructive({
+        ToastHelper.toast({
           title: "Error Saving Profile",
-          description: `${errorMsg} (Status: ${err.response.status})`
+          description: `${errorMsg} (Status: ${err.response.status})`,
+          variant: "destructive"
         });
       } else if (err.request) {
         errorMsg = "No response received from server. Please check your network connection and try again.";
-        toast.destructive({
+        ToastHelper.toast({
           title: "Network Connection Error",
-          description: errorMsg
+          description: errorMsg,
+          variant: "destructive"
         });
       } else {
-        toast.destructive({
+        ToastHelper.toast({
           title: "Profile Submission Error",
-          description: "Please complete all required fields in each step before submitting your profile."
+          description: "Please complete all required fields in each step before submitting your profile.",
+          variant: "destructive"
         });
       }
       

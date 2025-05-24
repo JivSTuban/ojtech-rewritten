@@ -34,6 +34,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "framer-motion": "^12.10.3",
+    "handlebars": "^4.7.8",
     "html2pdf.js": "^0.10.3",
     "lucide-react": "^0.446.0",
     "next-themes": "^0.3.0",

@@ -11,13 +11,15 @@ interface SkillsStepProps {
 
 interface SkillsStepState {
   suggestedSkills: string[];
+  selectedSkills: Set<string>;
 }
 
 export default class SkillsStep extends Component<SkillsStepProps, SkillsStepState> {
   constructor(props: SkillsStepProps) {
     super(props);
     this.state = {
-      suggestedSkills: []
+      suggestedSkills: [],
+      selectedSkills: new Set()
     };
   }
 
@@ -53,6 +55,24 @@ export default class SkillsStep extends Component<SkillsStepProps, SkillsStepSta
         this.props.onChange(mockEvent);
       }
     }
+
+    // Initialize selectedSkills with current skills
+    const selectedSkillsSet = new Set(this.props.skills.map(skill => skill.toLowerCase()));
+    this.setState({ selectedSkills: selectedSkillsSet });
+
+    // Save current step data to localStorage
+    localStorageManager.saveStepData('skills', this.props.skills);
+  }
+
+  componentDidUpdate(prevProps: SkillsStepProps) {
+    // Update localStorage when skills change
+    if (prevProps.skills !== this.props.skills) {
+      localStorageManager.saveStepData('skills', this.props.skills);
+      
+      // Update selectedSkills set when props.skills changes
+      const selectedSkillsSet = new Set(this.props.skills.map(skill => skill.toLowerCase()));
+      this.setState({ selectedSkills: selectedSkillsSet });
+    }
   }
 
   isValid = (): boolean => {
@@ -69,33 +89,54 @@ export default class SkillsStep extends Component<SkillsStepProps, SkillsStepSta
   };
   
   addSuggestedSkill = (skill: string) => {
-    // Check if the skill is already in the list
-    if (this.props.skills.includes(skill)) return;
-    
-    // Create a new skills string with the added skill
-    const newSkillsInput = this.props.skillsInput
+    this.handleAddSkill(skill);
+  };
+
+  handleAddSkill = (skill: string) => {
+    // Check if skill already exists in the input
+    if (!this.isSkillAlreadySelected(skill)) {
+      // Add skill to the input with a comma if there are already skills
+      const updatedInput = this.props.skillsInput 
       ? `${this.props.skillsInput}, ${skill}`
       : skill;
     
-    // Simulate an input change event
-    const mockEvent = {
+      // Create a synthetic event to pass to the onChange handler
+      const syntheticEvent = {
       target: {
-        name: 'skills',
-        value: newSkillsInput
+          name: 'skillsInput',
+          value: updatedInput
       }
     } as ChangeEvent<HTMLInputElement>;
     
-    this.props.onChange(mockEvent);
+      this.props.onChange(syntheticEvent);
     
-    // Remove this skill from suggestions
-    this.setState(prevState => ({
-      suggestedSkills: prevState.suggestedSkills.filter(s => s !== skill)
-    }));
-  };
+      // Add to selected skills set
+      this.setState(prevState => {
+        const newSelectedSkills = new Set(prevState.selectedSkills);
+        newSelectedSkills.add(skill.toLowerCase());
+        return { selectedSkills: newSelectedSkills };
+      });
+    }
+  }
+  
+  isSkillAlreadySelected = (skill: string): boolean => {
+    // Check if skill is already in the selected skills
+    return this.state.selectedSkills.has(skill.toLowerCase()) || 
+           this.props.skills.some(s => s.toLowerCase() === skill.toLowerCase()) ||
+           this.props.skillsInput.toLowerCase().includes(skill.toLowerCase());
+  }
 
   render() {
     const { skillsInput, skills, onChange, onPrev } = this.props;
     const { suggestedSkills } = this.state;
+
+    // Most common software engineering intern skills
+    const commonSkills = [
+      "JavaScript", "Python", "Java", "React", "Git",
+      "SQL", "Data Structures", "Algorithms", "Problem Solving", "HTML/CSS",
+      "Node.js", "TypeScript", "Docker", "REST APIs", "Object-Oriented Programming",
+      "AWS", "Testing", "Agile/Scrum", "Communication", "Teamwork"
+    ];
 
     return (
       <div className="space-y-6">
@@ -131,25 +172,49 @@ export default class SkillsStep extends Component<SkillsStepProps, SkillsStepSta
               </div>
             </div>
 
-            {/* Suggested skills from projects */}
-            {suggestedSkills.length > 0 && (
-              <div className="mt-4">
-                <div className="text-sm font-medium text-gray-300 mb-2">
-                  Suggested from your GitHub projects:
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {suggestedSkills.map((skill, index) => (
+            {/* Suggested Skills Section */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-gray-300">Suggested Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {/* Common skills */}
+                {commonSkills
+                  .filter(skill => !this.isSkillAlreadySelected(skill))
+                  .map((skill, index) => (
                     <button
-                      key={index}
-                      onClick={() => this.addSuggestedSkill(skill)}
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-gray-800/50 text-gray-300 border border-gray-700/30 hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                      key={`common-${index}`}
+                      type="button"
+                      onClick={() => this.handleAddSkill(skill)}
+                      className="bg-black/80 text-gray-300 border border-gray-700/30 px-3 py-1 rounded-full text-sm hover:bg-gray-800 hover:text-white transition-colors"
                     >
-                      <span className="mr-1">+</span> {skill}
+                      + {skill}
                     </button>
-                  ))}
-                </div>
+                  ))
+                }
+                
+                {/* GitHub project skills */}
+                {suggestedSkills
+                  .filter(skill => !this.isSkillAlreadySelected(skill) && 
+                                  !commonSkills.some(cs => cs.toLowerCase() === skill.toLowerCase()))
+                  .map((skill, index) => (
+                    <button
+                      key={`github-${index}`}
+                      type="button"
+                      onClick={() => this.addSuggestedSkill(skill)}
+                      className="bg-black/80 text-gray-300 border border-gray-700/30 px-3 py-1 rounded-full text-sm hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      + {skill}
+                    </button>
+                  ))
+                }
               </div>
+              
+              {/* Show message when no suggestions available */}
+              {commonSkills.filter(skill => !this.isSkillAlreadySelected(skill)).length === 0 && 
+               suggestedSkills.filter(skill => !this.isSkillAlreadySelected(skill) && 
+                                             !commonSkills.some(cs => cs.toLowerCase() === skill.toLowerCase())).length === 0 && (
+                <p className="text-sm text-gray-500 italic mt-2">No more suggestions available</p>
             )}
+            </div>
 
             {skills && skills.length > 0 && (
               <div>
