@@ -19,6 +19,16 @@ export interface JobApplication {
   jobId: string;
   jobTitle: string;
   jobDescription: string;
+  jobLocation?: string;
+  jobRequiredSkills?: string;
+  jobEmploymentType?: string;
+  jobMinSalary?: number;
+  jobMaxSalary?: number;
+  jobCurrency?: string;
+  jobPostedAt?: string;
+  employerId?: string;
+  employerName?: string;
+  employerCompanyName?: string;
   matchScore: number;
 }
 

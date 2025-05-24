@@ -46,6 +46,7 @@ import com.melardev.spring.jwtoauth.security.jwt.JwtUtils;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.entities.*;
 import com.melardev.spring.jwtoauth.service.UserService;
+import com.melardev.spring.jwtoauth.service.EmailService;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -56,6 +57,9 @@ import java.util.UUID;
 public class AuthController {
     @Autowired
     AuthenticationManager authenticationManager;
+
+    @Value("${app.base-url}")
+    private String baseURL;
 
     @Autowired
     UserRepository userRepository;
@@ -80,6 +84,9 @@ public class AuthController {
     
     @Autowired
     private RestTemplate restTemplate;
+    
+    @Autowired
+    private EmailService emailService;
     
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
@@ -324,7 +331,15 @@ public class AuthController {
             }
 
             user.setRoles(userRoles);
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            
+            // Send verification email
+            try {
+                emailService.sendVerificationEmail(savedUser.getEmail(), savedUser.getId().toString());
+            } catch (Exception e) {
+                System.out.println("Failed to send verification email: " + e.getMessage());
+                // Don't return error to user, just log it
+            }
             
             // Check if user has admin role and create profile with hasCompletedOnboarding=true
             boolean isAdmin = userRoles.stream()
@@ -333,13 +348,13 @@ public class AuthController {
             if (isAdmin) {
                 // Create admin profile with hasCompletedOnboarding set to true
                 AdminProfile adminProfile = new AdminProfile();
-                adminProfile.setUser(user);
+                adminProfile.setUser(savedUser);
                 adminProfile.setHasCompletedOnboarding(true);
                 adminProfileRepository.save(adminProfile);
             }
 
             // Return user ID in the response to allow for email verification
-            return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email. User ID: " + user.getId()));
+            return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email.", savedUser.getId().toString()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
@@ -480,7 +495,7 @@ public class AuthController {
             
             if (verified) {
                 // Email was verified successfully, redirect to login
-                return new RedirectView("http://localhost:5173/login");
+                return new RedirectView(baseURL+"/login");
             } else {
                 // Check if the user exists
                 Optional<User> userOptional = userRepository.findById(userUUID);
@@ -491,7 +506,7 @@ public class AuthController {
                 // Check if email is already verified
                 if (userOptional.get().isEmailVerified()) {
                     // Email was already verified, redirect to login
-                    return new RedirectView("http://localhost:5173/login");
+                    return new RedirectView(baseURL+"/login");
                 }
                 
                 return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to verify email"));

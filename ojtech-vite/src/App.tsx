@@ -13,6 +13,7 @@ import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { JobApplicationPage } from './pages/JobApplicationPage';
+import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import { ProtectedRoute, PublicOnlyRoute } from './components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
 import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
@@ -187,6 +188,7 @@ export const App: React.FC = () => {
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/track" element={<TrackApplicationsPage />} />
+              <Route path="/application/:id" element={<ApplicationDetailsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/resume" element={<ResumeManagementPage />} />
               <Route path="/onboarding/student" element={<StudentOnboardingPage />} />

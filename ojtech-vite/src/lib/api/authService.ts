@@ -63,8 +63,16 @@ const login = async (data: LoginData) => {
     console.log('Login response data structure:', Object.keys(response.data));
     
     if (response.data.accessToken) {
-      console.log('Access token received, storing user data');
+      console.log('Access token received (first 10 chars):', response.data.accessToken.substring(0, 10) + '...');
       localStorage.setItem('user', JSON.stringify(response.data));
+      console.log('User data stored in localStorage with key "user"');
+      
+      // Verify storage
+      const storedData = localStorage.getItem('user');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        console.log('Verified localStorage - token exists:', !!parsedData.accessToken);
+      }
     } else {
       console.warn('No access token in response data');
     }
@@ -121,12 +129,37 @@ const getCurrentUser = (): UserData | null => {
   return null;
 };
 
+// Add this function to check authentication status
+const checkAuthStatus = () => {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const userData = JSON.parse(userStr);
+      console.log('Auth check - User found in localStorage:', {
+        username: userData.username,
+        email: userData.email,
+        roles: userData.roles,
+        hasToken: !!userData.accessToken,
+        tokenStart: userData.accessToken ? userData.accessToken.substring(0, 10) + '...' : 'No token'
+      });
+      return true;
+    } catch (error) {
+      console.error('Auth check - Error parsing user data:', error);
+      return false;
+    }
+  } else {
+    console.warn('Auth check - No user data found in localStorage');
+    return false;
+  }
+};
+
 const authService = {
   register,
   login,
   googleLogin,
   logout,
   getCurrentUser,
+  checkAuthStatus, // Add the new function to the exported service
 };
 
 export default authService; 

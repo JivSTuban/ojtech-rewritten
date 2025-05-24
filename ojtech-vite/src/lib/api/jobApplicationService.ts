@@ -42,6 +42,7 @@ interface JobMatch {
 
 // Get all applications for the logged-in student
 const getStudentApplications = async (): Promise<JobApplication[]> => {
+  console.log('Fetching student applications from:', API_URL);
   const response = await apiClient.get(API_URL);
   return response.data;
 };
@@ -90,6 +91,13 @@ const getApplicationById = async (applicationId: string): Promise<JobApplication
   return response.data;
 };
 
+// Get detailed application information by ID
+const getApplicationDetails = async (applicationId: string): Promise<JobApplication> => {
+  console.log("jobApplicationService.getApplicationDetails called with applicationId:", applicationId);
+  const response = await apiClient.get(`${API_URL}/${applicationId}`);
+  return response.data;
+};
+
 // Withdraw an application (for students)
 const withdrawApplication = async (applicationId: string): Promise<{ message: string }> => {
   const response = await apiClient.delete(`${API_URL}/${applicationId}`);
@@ -115,6 +123,18 @@ const getEmployerCVDetails = async (cvId: string): Promise<CV> => {
   return response.data;
 };
 
+// Mark a job match as viewed
+const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }> => {
+  const response = await apiClient.put(`/api/student/job-matches/${matchId}/viewed`);
+  return response.data;
+};
+
+// Find jobs using simple search endpoint
+const findJobs = async (): Promise<JobDetails[]> => {
+  const response = await apiClient.get('/api/simple-findjobs');
+  return response.data;
+};
+
 const jobApplicationService = {
   getStudentApplications,
   getJobApplications,
@@ -124,6 +144,9 @@ const jobApplicationService = {
   withdrawApplication,
   getEmployerCVDetails,
   getStudentJobMatches,
+  markJobMatchViewed,
+  findJobs,
+  getApplicationDetails,
 };
 
 export default jobApplicationService; 

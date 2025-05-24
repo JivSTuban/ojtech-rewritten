@@ -29,125 +29,9 @@ interface Job {
 interface JobWithMatchScore extends Job {
   match_score: number | null;
   company_logo_url: string | null;
+  viewed: boolean;
+  original_id?: string; // Add original job ID for API calls
 }
-
-// Mock data for jobs - will be used as fallback if API fails
-const MOCK_JOBS: JobWithMatchScore[] = [
-  {
-    id: "1",
-    employer_id: "emp1",
-    title: "Frontend Developer",
-    description: "We are looking for a skilled frontend developer proficient in React, TypeScript, and modern CSS frameworks. You will be responsible for building responsive web applications and maintaining existing projects.",
-    company_name: "TechCorp Solutions",
-    company_logo_url: "https://placekitten.com/150/150",
-    location: "New York, NY (Remote)",
-    job_type: "Full-time",
-    salary_range: "$90,000 - $120,000",
-    required_skills: ["React", "TypeScript", "CSS", "HTML5", "Git"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 92
-  },
-  {
-    id: "6",
-    employer_id: "symph",
-    title: "Software Engineering Intern",
-    description: "In Web and Mobile App Development, you will first study the company's tech stack for 2-3 weeks, then collaborate with developers, designers, and project managers to build real-world applications. If you join the QA Technical track, your role focuses on ensuring excellent quality by writing and implementing automated testing for web and mobile apps. Those in Internal Technical Operations will contribute to improving Symph's internal systems by fixing, enhancing, or developing tools that support the company's efficiency.",
-    company_name: "Symph",
-    company_logo_url: null,
-    location: "Cebu IT Park",
-    job_type: "Internship",
-    salary_range: null,
-    required_skills: ["Web Development", "Mobile Development", "QA Testing", "Technical Operations"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 88
-  },
-  {
-    id: "2",
-    employer_id: "emp2",
-    title: "Backend Engineer",
-    description: "Join our talented engineering team to build scalable microservices and RESTful APIs using Java Spring Boot. Experience with cloud platforms and containerization is a plus.",
-    company_name: "DataDrive Inc.",
-    company_logo_url: "https://placekitten.com/151/151",
-    location: "San Francisco, CA",
-    job_type: "Full-time",
-    salary_range: "$110,000 - $150,000",
-    required_skills: ["Java", "Spring Boot", "SQL", "RESTful APIs", "Microservices"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 75
-  },
-  {
-    id: "3",
-    employer_id: "emp3",
-    title: "DevOps Engineer",
-    description: "Help us build and maintain our cloud infrastructure using AWS, Terraform, and Kubernetes. You will be responsible for automating deployment pipelines and ensuring system reliability.",
-    company_name: "CloudScale Technologies",
-    company_logo_url: null,
-    location: "Chicago, IL (Hybrid)",
-    job_type: "Full-time",
-    salary_range: "$100,000 - $135,000",
-    required_skills: ["AWS", "Terraform", "Kubernetes", "CI/CD", "Linux"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 50
-  },
-  {
-    id: "4",
-    employer_id: "emp4",
-    title: "Full Stack Developer",
-    description: "Looking for a versatile developer who can work across our entire stack. You'll build features using React on the frontend and Node.js on the backend.",
-    company_name: "OmniTech Solutions",
-    company_logo_url: "https://placekitten.com/152/152",
-    location: "Remote",
-    job_type: "Contract",
-    salary_range: "$60-75/hour",
-    required_skills: ["React", "Node.js", "MongoDB", "Express", "JavaScript"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 85
-  },
-  {
-    id: "5",
-    employer_id: "emp5",
-    title: "Data Scientist",
-    description: "Join our analytics team to develop machine learning models and extract insights from large datasets. You will work closely with product teams to implement data-driven solutions.",
-    company_name: "Analytix",
-    company_logo_url: null,
-    location: "Boston, MA",
-    job_type: "Full-time",
-    salary_range: "$120,000 - $160,000",
-    required_skills: ["Python", "Machine Learning", "SQL", "Data Visualization", "Statistics"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 35
-  }
-];
 
 // Define the toast interface (simplified for now)
 interface Toast {
@@ -221,34 +105,49 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       const matchedJobsData = await jobApplicationService.getStudentJobMatches();
       
       if (matchedJobsData && Array.isArray(matchedJobsData)) {
+        // Track seen job IDs to prevent duplicates
+        const seenIds = new Set<string>();
+        
         // Map API response to our JobWithMatchScore interface
-        const matchedJobs: JobWithMatchScore[] = matchedJobsData.map((match: any) => {
-          // Handle the nested structure from the API response
-          const job = match.job || {};
-          const employer = job.employer || {};
-          
-          return {
-            id: job.id,
-            employer_id: employer.id,
-            title: job.title,
-            description: job.description,
-            company_name: employer.companyName,
-            company_logo_url: employer.logoUrl,
-            location: job.location,
-            job_type: job.employmentType,
-            salary_range: job.minSalary && job.maxSalary ? 
-              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
-              null,
-            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
-            preferred_skills: null,
-            application_deadline: null,
-            created_at: job.postedAt || new Date().toISOString(),
-            updated_at: null,
-            status: "active",
-            is_active: true,
-            match_score: match.matchScore
-          };
-        });
+        const matchedJobs: JobWithMatchScore[] = matchedJobsData
+          .filter(match => !match.viewed) // Filter out viewed jobs
+          .map((match: any) => {
+            // Handle the nested structure from the API response
+            const job = match.job || {};
+            const employer = job.employer || {};
+            
+            // Ensure unique job ID
+            let jobId = job.id;
+            const originalJobId = jobId; // Store the original job ID for API calls
+            if (seenIds.has(jobId)) {
+              jobId = `${jobId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            }
+            seenIds.add(jobId);
+            
+            return {
+              id: jobId,
+              original_id: originalJobId, // Store the original job ID
+              employer_id: employer.id || '',
+              title: job.title || 'Untitled Position',
+              description: job.description || null,
+              company_name: employer.companyName || null,
+              company_logo_url: employer.logoUrl || null,
+              location: job.location || null,
+              job_type: job.employmentType || null,
+              salary_range: job.minSalary && job.maxSalary ? 
+                `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+                null,
+              required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+              preferred_skills: null,
+              application_deadline: null,
+              created_at: job.postedAt || new Date().toISOString(),
+              updated_at: null,
+              status: "active",
+              is_active: true,
+              match_score: match.matchScore,
+              viewed: match.viewed
+            };
+          });
         
         // Set jobs and update current index
         this.setState({
@@ -262,40 +161,105 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           .fill(0)
           .map(() => createRef<any>());
       } else {
-        // Fallback to mock data if API response is not as expected
-        console.warn("API response format unexpected, using mock data");
+        // Handle empty or invalid response
         this.setState({
-          jobs: MOCK_JOBS,
-          currentIndex: MOCK_JOBS.length - 1,
-          loading: false
+          jobs: [],
+          currentIndex: -1,
+          loading: false,
+          error: "No job matches found. Try again later."
         });
-        
-        // Initialize refs for mock data
-        this.childRefs = Array(MOCK_JOBS.length)
-          .fill(0)
-          .map(() => createRef<any>());
       }
     } catch (err) {
       console.error("Fetch jobs error:", err);
-      // Fallback to mock data on error
-      console.warn("Error fetching jobs, using mock data");
       this.setState({
-        jobs: MOCK_JOBS,
-        currentIndex: MOCK_JOBS.length - 1,
-        loading: false
+        jobs: [],
+        currentIndex: -1,
+        loading: false,
+        error: "Failed to load job matches. Please try again."
       });
+    }
+  };
+  
+  // Find jobs using simple search
+  findJobs = async () => {
+    this.setState({ loading: true, error: null });
+    
+    try {
+      // Call the simple find jobs API
+      const jobsData = await jobApplicationService.findJobs();
       
-      // Initialize refs for mock data
-      this.childRefs = Array(MOCK_JOBS.length)
-        .fill(0)
-        .map(() => createRef<any>());
+      if (jobsData && Array.isArray(jobsData)) {
+        // Map API response to our JobWithMatchScore interface
+        const mappedJobs: JobWithMatchScore[] = jobsData.map((job: any) => {
+          const employer = job.employer || {};
+          const jobId = job.id;
+          
+          return {
+            id: jobId,
+            original_id: jobId, // Store the original job ID
+            employer_id: employer.id || '',
+            title: job.title || 'Untitled Position',
+            description: job.description || null,
+            company_name: employer.companyName || null,
+            company_logo_url: employer.logoUrl || null,
+            location: job.location || null,
+            job_type: job.employmentType || null,
+            salary_range: job.minSalary && job.maxSalary ? 
+              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+              null,
+            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+            preferred_skills: null,
+            application_deadline: null,
+            created_at: job.postedAt || new Date().toISOString(),
+            updated_at: null,
+            status: "active",
+            is_active: true,
+            match_score: null,
+            viewed: false
+          };
+        });
+        
+        // Set jobs and update current index
+        this.setState({
+          jobs: mappedJobs,
+          currentIndex: mappedJobs.length - 1,
+          loading: false
+        });
+        
+        // Initialize refs
+        this.childRefs = Array(mappedJobs.length)
+          .fill(0)
+          .map(() => createRef<any>());
+      } else {
+        // Handle empty or invalid response
+        this.setState({
+          jobs: [],
+          currentIndex: -1,
+          loading: false,
+          error: "No jobs found. Try again later."
+        });
+      }
+    } catch (err) {
+      console.error("Find jobs error:", err);
+      this.setState({
+        jobs: [],
+        currentIndex: -1,
+        loading: false,
+        error: "Failed to find jobs. Please try again."
+      });
     }
   };
   
   // Apply for a job using the API
   applyForJob = async (jobId: string) => {
     try {
-      await jobApplicationService.applyForJob(jobId, {});
+      // Find the job in our state to get the original ID if available
+      const job = this.state.jobs.find(j => j.id === jobId);
+      const apiJobId = job?.original_id || jobId;
+      
+      // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
+      const response = await jobApplicationService.applyForJob(apiJobId, {});
+      console.log("Job application submitted successfully:", response);
       return { success: true, data: { letterGenerated: true } };
     } catch (error) {
       console.error("Error applying for job:", error);
@@ -306,8 +270,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Decline a job
   declineJob = async (jobId: string) => {
     try {
+      // Find the job in our state to get the original ID if available
+      const job = this.state.jobs.find(j => j.id === jobId);
+      const apiJobId = job?.original_id || jobId;
+      
       // This would be replaced with a real API call in the future
-      console.log(`Declined job ${jobId}`);
+      console.log(`Declined job ${apiJobId}`);
       return { success: true, data: {} };
     } catch (error) {
       console.error("Error declining job:", error);
@@ -392,15 +360,23 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   };
   
   // Implement undo swipe functionality
-  undoSwipe = () => {
+  undoSwipe = async () => {
     const { lastRemovedJob } = this.state;
     if (!lastRemovedJob) return;
     
     // Re-add the job to the state and update the index
     this.setState(prevState => {
       const newJobs = [...prevState.jobs];
+      // Reset the viewed status and ensure unique ID by adding timestamp
+      const jobToRestore = {
+        ...lastRemovedJob.job, 
+        viewed: false,
+        id: `${lastRemovedJob.job.id}-${Date.now()}`,
+        // Preserve the original ID for API calls
+        original_id: lastRemovedJob.job.original_id || lastRemovedJob.job.id
+      };
       // Add the job back to the stack
-      newJobs.splice(prevState.currentIndex + 1, 0, lastRemovedJob.job);
+      newJobs.splice(prevState.currentIndex + 1, 0, jobToRestore);
       
       return {
         jobs: newJobs,
@@ -408,6 +384,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         lastRemovedJob: null
       };
     });
+    
+    // Try to reset the viewed status on the server
+    try {
+      // This would need a new API endpoint to unmark a job as viewed
+      // For now, we just update the UI state
+      console.log("Would reset viewed status for job:", lastRemovedJob.job.id);
+    } catch (error) {
+      console.error("Error resetting viewed status:", error);
+    }
     
     this.toast({
       title: "Undo Swipe",
@@ -456,8 +441,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     
     return (
       <main className="min-h-screen container mx-auto py-8 flex flex-col items-center relative overflow-hidden">
-        <h1 className="text-4xl font-bold mb-6 text-center">Job Opportunities</h1>
+        <h1 className="text-4xl font-bold mb-6 text-center">New Job Matches</h1>
         <p className="text-gray-600 mb-2 text-center">Swipe right to apply, left to pass.</p>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-4 mb-6">
+          <Button onClick={this.fetchJobs}>
+            Find Matched Jobs
+          </Button>
+          <Button onClick={this.findJobs} variant="outline">
+            Find More Jobs
+          </Button>
+        </div>
         
         {/* CV Processing Warning */}
         {isProcessingCV && (
@@ -495,9 +490,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
             <Info className="h-12 w-12 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No More Jobs</h2>
+            <h2 className="text-2xl font-semibold mb-2">No New Job Matches</h2>
             <p className="text-gray-600 mb-6">
-              You've gone through all available job matches. Check back later for new opportunities.
+              You've viewed all available job matches. Check back later for new opportunities.
             </p>
             <Button onClick={() => window.location.reload()}>
               Refresh Matches
@@ -506,7 +501,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         ) : (
           <div className="relative h-[480px] w-full max-w-md">
             {jobs.map((job, index) => (
-              <div className="absolute" key={job.id}>
+              <div className="absolute" key={`${job.id}-${index}`}>
                 <TinderCard
                   ref={this.childRefs[index]}
                   className="absolute cursor-grab"
@@ -602,7 +597,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         <div className="flex flex-wrap gap-1.5">
                           {job.required_skills.map((skill, i) => (
                             <span
-                              key={i}
+                              key={`${skill}-${i}`}
                               className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
                             >
                               {skill}
@@ -614,7 +609,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
 
                     {/* View Details Button */}
                     <div className="mt-auto pt-2">
-                      <Link to={`/opportunities/${job.id}`} className="block w-full">
+                      <Link to={`/opportunities/${job.original_id}`} className="block w-full">
                         <Button variant="outline" className="w-full flex items-center justify-center text-sm">
                           View Full Details
                           <ChevronRight className="ml-1 h-4 w-4" />

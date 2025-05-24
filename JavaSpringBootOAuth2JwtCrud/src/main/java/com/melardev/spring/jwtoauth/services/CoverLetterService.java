@@ -183,8 +183,8 @@ public class CoverLetterService {
         // Current date
         coverLetter.append(new Date().toString()).append("\n\n");
         
-        // Greeting - use employer name if available
-        String employerName = job.getEmployer().getFullName();
+        // Greeting - use employer company name
+        String employerName = job.getEmployer().getCompanyName();
         coverLetter.append("Dear ").append(employerName).append(",\n\n");
         
         // Introduction
@@ -220,8 +220,6 @@ public class CoverLetterService {
         // Sign-off
         coverLetter.append("Sincerely,\n")
                   .append(student.getFirstName()).append(" ").append(student.getLastName());
-        
-        coverLetter.append("\n\nNote: This is a basic cover letter template. For a more personalized letter, please ensure the Gemini API is properly configured.");
         
         return coverLetter.toString();
     }

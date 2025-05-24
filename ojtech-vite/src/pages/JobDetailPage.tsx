@@ -1,27 +1,53 @@
 import React, { Component } from 'react';
-import axios from 'axios';
 import { Link, useParams, useNavigate, NavigateFunction, useLocation, Location } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
 import { Button } from '../components/ui/Button';
-import { Loader2, MapPin, Briefcase, DollarSign, ArrowLeft, Calendar } from 'lucide-react';
+import { Loader2, MapPin, Briefcase, DollarSign, ArrowLeft, Calendar, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import apiClient from '../lib/api/apiClient';
+import authService from '../lib/api/authService';
+
+// Application interface
+interface JobApplication {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  coverLetter: string;
+  status: string;
+  appliedAt: string;
+  lastUpdatedAt: string;
+  active: boolean;
+}
+
+// Job Match interface
+interface JobMatch {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  matchScore: number;
+  matchedAt: string;
+  matchDetails: string;
+  detailedAnalysis: string;
+  viewed: boolean;
+  active: boolean;
+}
 
 // Base Job interface
 interface Job {
   id: string;
-  employer_id: string;
+  createdAt: string;
+  updatedAt: string;
   title: string;
-  description: string | null;
-  company_name: string | null;
-  company_logo_url: string | null;
+  description: string;
   location: string | null;
-  job_type: string | null;
-  salary_range: string | null;
-  required_skills: string[] | null;
-  application_deadline: string | null;
-  created_at: string;
-  updated_at: string | null;
-  status: string;
-  is_active: boolean;
+  requiredSkills: string;
+  employmentType: string;
+  minSalary: number | null;
+  maxSalary: number | null;
+  currency: string | null;
+  postedAt: string;
+  active: boolean;
+  applications?: JobApplication[];
+  jobMatches?: JobMatch[];
   match_score?: number | null;
 }
 
@@ -39,6 +65,7 @@ interface JobDetailPageState {
   error: string | null;
   isAuthenticated: boolean;
   userRole: string | null;
+  showMatchDetails: boolean;
 }
 
 // Helper function to get match score color
@@ -59,12 +86,29 @@ const getScoreLabel = (score: number | null): string => {
   return "Low Match";
 };
 
+// Format salary range
+const formatSalary = (min: number | null, max: number | null, currency: string | null): string => {
+  if (min === null && max === null) return "Not specified";
+  
+  const currencySymbol = currency === "USD" ? "$" : 
+                         currency === "EUR" ? "€" : 
+                         currency === "GBP" ? "£" : 
+                         currency || "";
+  
+  if (min !== null && max !== null) {
+    return `${currencySymbol}${min.toLocaleString()} - ${currencySymbol}${max.toLocaleString()}`;
+  } else if (min !== null) {
+    return `From ${currencySymbol}${min.toLocaleString()}`;
+  } else if (max !== null) {
+    return `Up to ${currencySymbol}${max.toLocaleString()}`;
+  }
+  
+  return "Not specified";
+};
+
 class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageState> {
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
-  
-  // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
   
   constructor(props: JobDetailPageProps) {
     super(props);
@@ -73,7 +117,8 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       loading: true,
       error: null,
       isAuthenticated: false,
-      userRole: null
+      userRole: null,
+      showMatchDetails: false
     };
   }
   
@@ -85,6 +130,9 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         userRole: this.context.user.roles?.[0] || null
       });
     }
+    
+    // Check auth status in localStorage
+    authService.checkAuthStatus();
     
     this.fetchJobDetails();
   }
@@ -102,36 +150,22 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
     this.setState({ loading: true, error: null });
     
     try {
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {};
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.get(`${this.API_BASE_URL}/jobs/${jobId}`, {
-        headers
-      });
+      const response = await apiClient.get(`/api/jobs/${jobId}`);
       
       if (response.data) {
+        const jobData = response.data;
+        
+        // Find the user's match score if available
+        let userMatchScore = null;
+        if (jobData.jobMatches && jobData.jobMatches.length > 0) {
+          // Get the first match score for now (could be filtered by current user ID in the future)
+          userMatchScore = jobData.jobMatches[0].matchScore;
+        }
+        
         this.setState({
           job: {
-            id: response.data.id,
-            employer_id: response.data.employerId,
-            title: response.data.title,
-            description: response.data.description,
-            company_name: response.data.companyName,
-            company_logo_url: response.data.companyLogoUrl,
-            location: response.data.location,
-            job_type: response.data.jobType,
-            salary_range: response.data.salaryRange,
-            required_skills: Array.isArray(response.data.requiredSkills) ? response.data.requiredSkills : [],
-            application_deadline: response.data.applicationDeadline,
-            created_at: response.data.createdAt,
-            updated_at: response.data.updatedAt,
-            status: response.data.status,
-            is_active: response.data.isActive,
-            match_score: response.data.matchScore
+            ...jobData,
+            match_score: userMatchScore
           },
           loading: false
         });
@@ -148,6 +182,12 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         loading: false
       });
     }
+  };
+  
+  toggleMatchDetails = () => {
+    this.setState(prevState => ({
+      showMatchDetails: !prevState.showMatchDetails
+    }));
   };
   
   handleApplyClick = async () => {
@@ -181,16 +221,9 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
     // Check if user is a student
     if (user.roles && user.roles.includes('ROLE_STUDENT')) {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.post(
-          `${this.API_BASE_URL}/job-applications/apply`,
-          { jobId: job.id },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
+        const response = await apiClient.post(
+          `/api/job-applications/apply`,
+          { jobId: job.id }
         );
         
         // Redirect to applications tracking page
@@ -206,7 +239,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
   };
   
   render() {
-    const { job, loading, error } = this.state;
+    const { job, loading, error, showMatchDetails } = this.state;
     
     if (loading) {
       return (
@@ -257,114 +290,155 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="mb-6">
           <Link to="/opportunities">
-            <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent">
+            <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent text-white">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Opportunities
             </Button>
           </Link>
-                </div>
+        </div>
                 
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-black rounded-xl border border-gray-800 shadow-sm overflow-hidden text-white">
           {/* Header Section */}
-          <div className="p-6 border-b">
+          <div className="p-6 border-b border-gray-800">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-semibold">{job.title}</h1>
-                <p className="text-lg text-gray-600 mt-1">{job.company_name}</p>
-                </div>
+                <h1 className="text-2xl font-semibold text-white">{job.title}</h1>
+                <p className="text-sm text-gray-400 mt-1">Posted on {new Date(job.postedAt).toLocaleDateString()}</p>
+              </div>
                 
               {job.match_score !== undefined && job.match_score !== null && (
-                <div className="bg-gray-50 px-3 py-2 rounded-lg border text-center min-w-[100px]">
+                <div className="bg-gray-900 px-3 py-2 rounded-lg border border-gray-800 text-center min-w-[100px]">
                   <span className={`text-2xl font-bold ${getScoreColor(job.match_score)}`}>
-                      {job.match_score}%
-                    </span>
-                  <p className="text-xs text-gray-500">{getScoreLabel(job.match_score)}</p>
-                  </div>
-                )}
+                    {job.match_score.toFixed(1)}%
+                  </span>
+                  <p className="text-xs text-gray-400">{getScoreLabel(job.match_score)}</p>
+                  {job.jobMatches && job.jobMatches.length > 0 && (
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="text-xs p-0 h-auto mt-1 text-blue-400 hover:text-blue-300"
+                      onClick={this.toggleMatchDetails}
+                    >
+                      {showMatchDetails ? 'Hide details' : 'View match details'}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="flex flex-wrap gap-y-2 text-gray-600">
+            {/* Match Details Section */}
+            {showMatchDetails && job.jobMatches && job.jobMatches.length > 0 && (
+              <div className="mb-4 p-4 bg-gray-900 rounded-lg border border-gray-800">
+                <h3 className="text-md font-medium mb-2 text-white">Match Analysis</h3>
+                <pre className="whitespace-pre-wrap text-sm text-gray-300 bg-gray-800 p-3 rounded border border-gray-700">
+                  {job.jobMatches[0].detailedAnalysis}
+                </pre>
+              </div>
+            )}
+            
+            <div className="flex flex-wrap gap-y-2 text-gray-400">
                 {job.location && (
                 <div className="flex items-center mr-6">
-                  <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                  <MapPin className="h-4 w-4 mr-1 text-gray-500" />
                   <span>{job.location}</span>
-                  </div>
+                </div>
                 )}
                 
-                {job.job_type && (
+                {job.employmentType && (
                 <div className="flex items-center mr-6">
-                  <Briefcase className="h-4 w-4 mr-1 text-gray-400" />
-                  <span>{job.job_type}</span>
-                  </div>
+                  <Briefcase className="h-4 w-4 mr-1 text-gray-500" />
+                  <span>{job.employmentType}</span>
+                </div>
                 )}
                 
-                {job.salary_range && (
+                {(job.minSalary !== null || job.maxSalary !== null) && (
                 <div className="flex items-center mr-6">
-                  <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
-                  <span>{job.salary_range}</span>
-                    </div>
-              )}
+                  <DollarSign className="h-4 w-4 mr-1 text-gray-500" />
+                  <span>{formatSalary(job.minSalary, job.maxSalary, job.currency)}</span>
+                </div>
+                )}
+                
               
-              {job.application_deadline && (
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-1 text-gray-400" />
-                  <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
-                  </div>
-                )}
               </div>
               
-            <div className="mt-4">
-              <Button 
-                className="w-full sm:w-auto" 
-                size="lg"
-                onClick={this.handleApplyClick}
-              >
-                Apply Now
-              </Button>
-            </div>
+            
           </div>
           
           {/* Description Section */}
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">About this position</h2>
-            <div className="prose max-w-none">
+          <div className="p-6 border-t border-gray-800">
+            <h2 className="text-xl font-semibold mb-4 text-white">About this position</h2>
+            <div className="prose max-w-none prose-invert">
               {job.description ? (
-                <div dangerouslySetInnerHTML={{ __html: job.description }} />
+                <p className="text-gray-300">{job.description}</p>
               ) : (
                 <p className="text-gray-500">No description provided.</p>
               )}
-                </div>
-              </div>
-              
-          {/* Skills Section */}
-          {job.required_skills && job.required_skills.length > 0 && (
-            <div className="p-6 border-t">
-              <h2 className="text-xl font-semibold mb-4">Required Skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                {job.required_skills.map((skill, index) => (
-                      <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Apply Button */}
-          <div className="p-6 border-t bg-gray-50">
-                <Button 
-              className="w-full sm:w-auto" 
-                  size="lg"
-                  onClick={this.handleApplyClick}
-                >
-              Apply Now
-                </Button>
-              </div>
             </div>
           </div>
+              
+          {/* Skills Section */}
+          {job.requiredSkills && (
+            <div className="p-6 border-t border-gray-800">
+              <h2 className="text-xl font-semibold mb-4 text-white">Required Skills</h2>
+              <div className="flex flex-wrap gap-2">
+                {job.requiredSkills.split(',').map((skill, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-gray-800 text-blue-400 rounded-full text-sm border border-gray-700"
+                  >
+                    {skill.trim()}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Application Status Section - Show if user has applied */}
+          {job.applications && job.applications.length > 0 && this.state.isAuthenticated && (
+            <div className="p-6 border-t border-gray-800 bg-gray-900">
+              <h2 className="text-xl font-semibold mb-4 text-white">Your Application Status</h2>
+              <div className="flex items-center">
+                {job.applications[0].status === 'PENDING' && (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 text-yellow-500" />
+                    <span className="font-medium text-yellow-400">Application Pending Review</span>
+                  </>
+                )}
+                {job.applications[0].status === 'REVIEWED' && (
+                  <>
+                    <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                    <span className="font-medium text-blue-400">Application Reviewed</span>
+                  </>
+                )}
+                {job.applications[0].status === 'INTERVIEW' && (
+                  <>
+                    <Users className="h-5 w-5 mr-2 text-purple-500" />
+                    <span className="font-medium text-purple-400">Interview Stage</span>
+                  </>
+                )}
+                {job.applications[0].status === 'ACCEPTED' && (
+                  <>
+                    <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+                    <span className="font-medium text-green-400">Application Accepted</span>
+                  </>
+                )}
+                {job.applications[0].status === 'REJECTED' && (
+                  <>
+                    <XCircle className="h-5 w-5 mr-2 text-red-500" />
+                    <span className="font-medium text-red-400">Application Rejected</span>
+                  </>
+                )}
+                <span className="ml-auto text-sm text-gray-400">
+                  Applied on {new Date(job.applications[0].appliedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          )}
+              
+         
+        
+        </div>
+      </div>
     );
   }
 }
