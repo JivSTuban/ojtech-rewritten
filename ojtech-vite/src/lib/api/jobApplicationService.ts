@@ -3,6 +3,43 @@ import { JobApplication, ApplicationStatus } from '../types/application';
 
 const API_URL = '/api/applications';
 
+// Job matching interfaces
+interface JobEmployer {
+  id: string;
+  companyName: string;
+  industry?: string;
+  location?: string;
+  companySize?: string;
+  companyDescription?: string;
+  websiteUrl?: string;
+  logoUrl?: string;
+  description?: string;
+  website?: string;
+}
+
+interface JobDetails {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  requiredSkills: string;
+  employmentType: string;
+  minSalary?: number;
+  maxSalary?: number;
+  currency?: string;
+  postedAt: string;
+  employer: JobEmployer;
+}
+
+interface JobMatch {
+  id: string;
+  job: JobDetails;
+  matchScore: number;
+  matchedAt: string;
+  matchDetails?: string;
+  viewed: boolean;
+}
+
 // Get all applications for the logged-in student
 const getStudentApplications = async (): Promise<JobApplication[]> => {
   const response = await apiClient.get(API_URL);
@@ -13,6 +50,12 @@ const getStudentApplications = async (): Promise<JobApplication[]> => {
 const getJobApplications = async (jobId: string): Promise<JobApplication[]> => {
   console.log("jobApplicationService.getJobApplications called with jobId:", jobId);
   const response = await apiClient.get(`${API_URL}/job/${jobId}`);
+  return response.data;
+};
+
+// Get job matches for the logged-in student
+const getStudentJobMatches = async (): Promise<JobMatch[]> => {
+  const response = await apiClient.get('/api/student/job-matches');
   return response.data;
 };
 
@@ -80,6 +123,7 @@ const jobApplicationService = {
   getApplicationById,
   withdrawApplication,
   getEmployerCVDetails,
+  getStudentJobMatches,
 };
 
 export default jobApplicationService; 

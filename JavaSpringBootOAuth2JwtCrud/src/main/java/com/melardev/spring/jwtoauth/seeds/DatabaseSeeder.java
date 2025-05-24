@@ -139,6 +139,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 User adminUser = new User("admin", "admin@ojtech.com", passwordEncoder.encode("password"));
                 Role adminRole = getOrCreateRole(ERole.ROLE_ADMIN);
                 adminUser.getRoles().add(adminRole);
+                adminUser.setEmailVerified(true);
                 userRepository.save(adminUser);
 
                 // Create student users

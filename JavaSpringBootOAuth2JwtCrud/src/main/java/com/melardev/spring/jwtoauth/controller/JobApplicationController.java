@@ -7,9 +7,11 @@ import com.melardev.spring.jwtoauth.exceptions.BadRequestException;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
 import com.melardev.spring.jwtoauth.repositories.CVRepository;
 import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
+import com.melardev.spring.jwtoauth.repositories.JobMatchRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.services.CoverLetterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -39,6 +42,12 @@ public class JobApplicationController {
 
     @Autowired
     private CVRepository cvRepository;
+    
+    @Autowired
+    private CoverLetterService coverLetterService;
+    
+    @Autowired
+    private JobMatchRepository jobMatchRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -88,7 +97,7 @@ public class JobApplicationController {
 
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<?> applyForJob(@PathVariable UUID jobId, @RequestBody Map<String, String> applicationData) {
+    public ResponseEntity<?> applyForJob(@PathVariable UUID jobId, @RequestBody(required = false) Map<String, String> applicationData) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
@@ -113,14 +122,19 @@ public class JobApplicationController {
             throw new BadRequestException("You have already applied for this job");
         }
 
-        // Get CV
+        // Initialize application data if null
+        if (applicationData == null) {
+            applicationData = new HashMap<>();
+        }
+
+        // Get CV (use active CV if not specified)
         UUID cvId = null;
         if (applicationData.containsKey("cvId")) {
             cvId = UUID.fromString(applicationData.get("cvId"));
         } else if (studentProfile.getActiveCvId() != null) {
             cvId = studentProfile.getActiveCvId();
         } else {
-            throw new BadRequestException("No CV provided or set as active");
+            throw new BadRequestException("No active CV found. Please set an active CV in your profile.");
         }
 
         Optional<CV> cvOpt = cvRepository.findById(cvId);
@@ -129,18 +143,30 @@ public class JobApplicationController {
         }
 
         CV cv = cvOpt.get();
+        
+        // Always generate a cover letter automatically
+        String coverLetter = coverLetterService.generateCoverLetter(studentProfile.getId(), jobId, cvId);
 
         // Create application
         JobApplication application = new JobApplication();
         application.setStudent(studentProfile);
         application.setJob(job);
         application.setCv(cv);
-        application.setCoverLetter(applicationData.getOrDefault("coverLetter", ""));
+        application.setCoverLetter(coverLetter);
         application.setStatus(ApplicationStatus.PENDING);
         application.setAppliedAt(LocalDateTime.now());
         application.setLastUpdatedAt(LocalDateTime.now());
 
         application = jobApplicationRepository.save(application);
+        
+        // Find and mark any job matches as viewed
+        List<JobMatch> jobMatches = jobMatchRepository.findByStudentIdAndJobId(studentProfile.getId(), jobId);
+        if (!jobMatches.isEmpty()) {
+            for (JobMatch match : jobMatches) {
+                match.setViewed(true);
+                jobMatchRepository.save(match);
+            }
+        }
 
         return ResponseEntity.ok(new JobApplicationResponseDTO(application));
     }
@@ -250,5 +276,35 @@ public class JobApplicationController {
         jobApplicationRepository.delete(application);
         
         return ResponseEntity.ok(new MessageResponse("Application withdrawn successfully"));
+    }
+
+    @PostMapping("/generate-cover-letter/{jobId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> generateCoverLetter(@PathVariable UUID jobId, @RequestBody Map<String, String> requestData) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UUID userId = userDetails.getId();
+
+        Optional<StudentProfile> studentProfileOpt = studentProfileRepository.findByUserId(userId);
+        if (studentProfileOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Student profile not found");
+        }
+
+        StudentProfile studentProfile = studentProfileOpt.get();
+
+        // Get CV
+        UUID cvId = null;
+        if (requestData.containsKey("cvId")) {
+            cvId = UUID.fromString(requestData.get("cvId"));
+        } else if (studentProfile.getActiveCvId() != null) {
+            cvId = studentProfile.getActiveCvId();
+        } else {
+            throw new BadRequestException("No CV provided or set as active");
+        }
+
+        // Generate cover letter
+        String coverLetter = coverLetterService.generateCoverLetter(studentProfile.getId(), jobId, cvId);
+        
+        return ResponseEntity.ok(Map.of("coverLetter", coverLetter));
     }
 } 
