@@ -36,13 +36,14 @@ interface JobFormData {
   title: string;
   description: string;
   location: string;
-  jobType: string;
+  employmentType: string;
   minSalary?: string;
   maxSalary?: string;
-  skillsRequired: string[];
+  currency: string;
+  requiredSkills: string[];
   skillsPreferred: string[];
   closingDate?: string;
-  isActive: boolean;
+  active: boolean;
 }
 
 interface JobFormPageProps {
@@ -71,13 +72,14 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
         title: '',
         description: '',
         location: 'Remote',
-        jobType: 'Full-time',
+        employmentType: 'FULL_TIME',
         minSalary: '',
         maxSalary: '',
-        skillsRequired: [],
+        currency: 'USD',
+        requiredSkills: [],
         skillsPreferred: [],
         closingDate: '',
-        isActive: true,
+        active: true,
       },
       requiredSkillInput: '',
       preferredSkillInput: '',
@@ -111,29 +113,28 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     try {
       const job = await jobService.getEmployerJobById(jobId);
       
-      // Parse salary range if available
-      let minSalary = '';
-      let maxSalary = '';
-      if (job.salaryRange) {
-        const salaryParts = job.salaryRange.split('-').map((part: string) => part.trim());
-        if (salaryParts.length === 2) {
-          minSalary = salaryParts[0].replace(/[^\d]/g, '');
-          maxSalary = salaryParts[1].replace(/[^\d]/g, '');
-        }
-      }
+      // Convert salary numbers to strings for form state
+      const minSalary = job.minSalary ? job.minSalary.toString() : '';
+      const maxSalary = job.maxSalary ? job.maxSalary.toString() : '';
       
+      // Parse required skills from string to array if needed
+      const requiredSkills = typeof job.requiredSkills === 'string' 
+        ? job.requiredSkills.split(',').map((skill: string) => skill.trim())
+        : job.requiredSkills || [];
+
       this.setState({
         formData: {
           title: job.title || '',
           description: job.description || '',
           location: job.location || 'Remote',
-          jobType: job.jobType || 'Full-time',
+          employmentType: job.employmentType || 'FULL_TIME',
           minSalary,
           maxSalary,
-          skillsRequired: job.skillsRequired || [],
+          currency: job.currency || 'USD',
+          requiredSkills,
           skillsPreferred: job.skillsPreferred || [],
           closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '',
-          isActive: job.isActive === undefined ? true : job.isActive,
+          active: job.active === undefined ? true : job.active,
         },
         requiredSkillInput: '',
         preferredSkillInput: ''
@@ -184,11 +185,11 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
   handleSuggestionSelect = (suggestion: string) => {
     const { formData } = this.state;
-    if (!formData.skillsRequired.includes(suggestion)) {
+    if (!formData.requiredSkills.includes(suggestion)) {
       this.setState({
         formData: {
           ...formData,
-          skillsRequired: [...formData.skillsRequired, suggestion]
+          requiredSkills: [...formData.requiredSkills, suggestion]
         },
         requiredSkillInput: '',
         showSuggestions: false
@@ -204,7 +205,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     });
   };
 
-  handlePreferredSkillSelect = (tech: string) => {
+  handlePreferredSkillSelect = (tech: string): void => {
     const { formData } = this.state;
     if (!formData.skillsPreferred.includes(tech)) {
       this.setState({
@@ -218,16 +219,16 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     }
   };
 
-  removeRequiredSkill = (skillToRemove: string) => {
+  removeRequiredSkill = (skillToRemove: string): void => {
     this.setState(prev => ({
       formData: {
         ...prev.formData,
-        skillsRequired: prev.formData.skillsRequired.filter(skill => skill !== skillToRemove)
+        requiredSkills: prev.formData.requiredSkills.filter((skill) => skill !== skillToRemove)
       }
     }));
   };
 
-  removePreferredSkill = (skillToRemove: string) => {
+  removePreferredSkill = (skillToRemove: string): void => {
     this.setState(prev => ({
       formData: {
         ...prev.formData,
@@ -241,18 +242,18 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     if (!requiredSkillInput.trim()) return;
     
     const newSkill = requiredSkillInput.trim();
-    if (!formData.skillsRequired.includes(newSkill)) {
+    if (!formData.requiredSkills.includes(newSkill)) {
       this.setState({
         formData: {
           ...formData,
-          skillsRequired: [...formData.skillsRequired, newSkill]
+          requiredSkills: [...formData.requiredSkills, newSkill]
         },
         requiredSkillInput: ''
       });
     }
   };
 
-  addPreferredSkill = () => {
+  addPreferredSkill = (): void => {
     const { preferredSkillInput, formData } = this.state;
     if (!preferredSkillInput.trim()) return;
     
@@ -312,7 +313,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     }
 
     // Validate required skills
-    if (formData.skillsRequired.length === 0) {
+    if (formData.requiredSkills.length === 0) {
       return {
         isValid: false,
         error: "At least one required skill must be specified"
@@ -341,15 +342,15 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
       : '';
 
     // Prepare payload
+    const { minSalary, maxSalary, requiredSkills, ...rest } = this.state.formData;
+    
     const payload = {
-      ...this.state.formData,
-      salaryRange,
+      ...rest,
+      minSalary: minSalary ? parseInt(minSalary) : undefined,
+      maxSalary: maxSalary ? parseInt(maxSalary) : undefined,
+      requiredSkills: requiredSkills.join(', '),
       closingDate: this.state.formData.closingDate ? new Date(this.state.formData.closingDate).toISOString() : null,
     };
-
-    // Remove temporary fields not needed in API
-    delete (payload as any).minSalary;
-    delete (payload as any).maxSalary;
 
     const isEditMode = Boolean(this.props.jobId);
 
@@ -483,9 +484,9 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     Job Type <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    name="jobType"
-                    value={formData.jobType}
-                    onValueChange={(value: string) => this.handleChange({ target: { name: 'jobType', value } } as any)}
+                    name="employmentType"
+                    value={formData.employmentType}
+                    onValueChange={(value: string) => this.handleChange({ target: { name: 'employmentType', value } } as any)}
                   >
                     <SelectTrigger 
                       id="jobType"
@@ -494,29 +495,24 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Full-time">
+                      <SelectItem value="FULL_TIME">
                         <span className="flex items-center gap-2">
-                          <span>🌟</span> Full-time
+                          <span>🌟</span> Full Time
                         </span>
                       </SelectItem>
-                      <SelectItem value="Part-time">
+                      <SelectItem value="PART_TIME">
                         <span className="flex items-center gap-2">
-                          <span>⭐</span> Part-time
+                          <span>⭐</span> Part Time
                         </span>
                       </SelectItem>
-                      <SelectItem value="Internship">
-                        <span className="flex items-center gap-2">
-                          <span>📚</span> Internship
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="Contract">
+                      <SelectItem value="CONTRACT">
                         <span className="flex items-center gap-2">
                           <span>📝</span> Contract
                         </span>
                       </SelectItem>
-                      <SelectItem value="Temporary">
+                      <SelectItem value="INTERNSHIP">
                         <span className="flex items-center gap-2">
-                          <span>⏳</span> Temporary
+                          <span>📚</span> Internship
                         </span>
                       </SelectItem>
                     </SelectContent>
@@ -633,11 +629,11 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                               <CommandEmpty>No results found.</CommandEmpty>
                               <CommandGroup heading="Popular Technologies">
                                 {techSuggestions
-                                  .filter(tech => 
+                                  .filter((tech: string) => 
                                     tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
-                                    !formData.skillsRequired.includes(tech)
+                                    !formData.requiredSkills.includes(tech)
                                   )
-                                  .map((tech, index) => (
+                                  .map((tech: string, index: number) => (
                                     <CommandItem
                                       key={index}
                                       value={tech}
@@ -662,9 +658,9 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     </Button>
                   </div>
                   <div className="bg-gray-900/50 rounded-lg p-4 min-h-[100px] border border-gray-800">
-                    {formData.skillsRequired.length > 0 ? (
+                    {formData.requiredSkills.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {formData.skillsRequired.map((skill, index) => (
+                        {formData.requiredSkills.map((skill: string, index: number) => (
                           <div 
                             key={index} 
                             className="group bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm border border-blue-500/30 hover:bg-blue-500/30 transition-colors cursor-pointer flex items-center gap-2"
@@ -715,12 +711,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                           <CommandList>
                             <CommandEmpty>No results found.</CommandEmpty>
                             <CommandGroup heading="Popular Technologies">
-                              {techSuggestions
-                                .filter(tech => 
-                                  tech.toLowerCase().includes(preferredSkillInput.toLowerCase()) &&
-                                  !formData.skillsPreferred.includes(tech)
-                                )
-                                .map((tech, index) => (
+                                {techSuggestions
+                                  .filter((tech: string) => 
+                                    tech.toLowerCase().includes(preferredSkillInput.toLowerCase()) &&
+                                    !formData.skillsPreferred.includes(tech)
+                                  )
+                                  .map((tech: string, index: number) => (
                                   <CommandItem
                                     key={index}
                                     value={tech}
@@ -774,18 +770,18 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div 
                   className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    formData.isActive 
+                    formData.active 
                       ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/10' 
                       : 'border-gray-800 hover:border-gray-700'
                   }`}
                   onClick={() => {
                     this.setState(prev => ({
-                      formData: { ...prev.formData, isActive: true }
+                      formData: { ...prev.formData, active: true }
                     }));
                   }}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full ${formData.isActive ? 'bg-green-500' : 'bg-gray-700'}`} />
+                    <div className={`w-4 h-4 rounded-full ${formData.active ? 'bg-green-500' : 'bg-gray-700'}`} />
                     <div>
                       <h3 className="font-semibold">Open</h3>
                       <p className="text-sm text-gray-400">Visible to candidates</p>
@@ -795,21 +791,21 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                 
                 <div 
                   className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    !formData.isActive 
+                    !formData.active 
                       ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/10' 
                       : 'border-gray-800 hover:border-gray-700'
                   }`}
                   onClick={() => {
                     this.setState(prev => ({
-                      formData: { ...prev.formData, isActive: false }
+                      formData: { ...prev.formData, active: false }
                     }));
                   }}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full ${!formData.isActive ? 'bg-yellow-500' : 'bg-gray-700'}`} />
+                    <div className={`w-4 h-4 rounded-full ${!formData.active ? 'bg-yellow-500' : 'bg-gray-700'}`} />
                     <div>
-                      <h3 className="font-semibold">Draft</h3>
-                      <p className="text-sm text-gray-400">Save without publishing</p>
+                      <h3 className="font-semibold">Close</h3>
+                      <p className="text-sm text-gray-400">No longer accepting applications</p>
                     </div>
                   </div>
                 </div>

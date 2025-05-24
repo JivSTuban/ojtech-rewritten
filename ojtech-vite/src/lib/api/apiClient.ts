@@ -13,9 +13,18 @@ const apiClient = axios.create({
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    // Get the user data from localStorage
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        // Extract the access token from user data
+        if (userData && userData.accessToken) {
+          config.headers.Authorization = `Bearer ${userData.accessToken}`;
+        }
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error);
+      }
     }
     return config;
   },
@@ -41,7 +50,7 @@ apiClient.interceptors.response.use(
           description: 'Your session has expired. Please sign in again.',
         });
         // Optionally redirect to login or clear auth state
-        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
         window.location.href = '/login';
       } else if (response.status === 404) {
         toast.destructive({

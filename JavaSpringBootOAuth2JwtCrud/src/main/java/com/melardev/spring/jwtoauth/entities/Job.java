@@ -2,6 +2,7 @@ package com.melardev.spring.jwtoauth.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -50,7 +51,13 @@ public class Job extends BaseEntity {
     
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
     @JsonManagedReference
+    @JsonIgnoreProperties("job")
     private List<JobApplication> applications = new ArrayList<>();
+    
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    @JsonIgnoreProperties("job")
+    private List<JobMatch> jobMatches = new ArrayList<>();
     
     public Job() {
     }
@@ -149,5 +156,23 @@ public class Job extends BaseEntity {
     
     public void setApplications(List<JobApplication> applications) {
         this.applications = applications;
+    }
+    
+    public List<JobMatch> getJobMatches() {
+        return jobMatches;
+    }
+    
+    public void setJobMatches(List<JobMatch> jobMatches) {
+        this.jobMatches = jobMatches;
+    }
+    
+    public void addJobMatch(JobMatch jobMatch) {
+        jobMatches.add(jobMatch);
+        jobMatch.setJob(this);
+    }
+    
+    public void removeJobMatch(JobMatch jobMatch) {
+        jobMatches.remove(jobMatch);
+        jobMatch.setJob(null);
     }
 } 

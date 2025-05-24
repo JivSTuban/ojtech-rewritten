@@ -140,10 +140,33 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(StackOverflowError.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<ErrorResponse> handleStackOverflowError(
+            StackOverflowError ex, HttpServletRequest request) {
+        
+        // Log the error
+        System.err.println("StackOverflowError occurred: " + ex.getMessage());
+        ex.printStackTrace();
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Server Error",
+                "A processing error occurred. This has been logged and will be addressed.",
+                request.getRequestURI()
+        );
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex, HttpServletRequest request) {
+        
+        // Log the error
+        System.err.println("Unexpected error occurred: " + ex.getMessage());
+        ex.printStackTrace();
         
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

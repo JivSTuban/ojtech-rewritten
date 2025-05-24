@@ -13,24 +13,25 @@ const getAuthHeaders = () => {
 
 // For Employers
 const createJob = async (jobData: any) => {
-  return axios.post(API_URL, jobData, { headers: getAuthHeaders() });
+  return axios.post(`${API_URL}/jobs`, jobData, { headers: getAuthHeaders() });
 };
 
 const updateJob = async (jobId: string | number, jobData: any) => {
-  return axios.put(`${API_URL}/${jobId}`, jobData, { headers: getAuthHeaders() });
+  return axios.put(`${API_URL}/jobs/${jobId}`, jobData, { headers: getAuthHeaders() });
 };
 
 const deleteJob = async (jobId: string | number) => {
-  return axios.delete(`${API_URL}/${jobId}`, { headers: getAuthHeaders() });
+  return axios.delete(`${API_URL}/jobs/${jobId}`, { headers: getAuthHeaders() });
 };
 
 const getEmployerJobs = async (page = 0, size = 10) => {
-  const response = await axios.get(`${API_URL}/my-jobs?page=${page}&size=${size}`, { headers: getAuthHeaders() });
+  const response = await axios.get(`${API_URL}/jobs/employer?page=${page}&size=${size}`, { headers: getAuthHeaders() });
+
   return response.data; // Expected to be a Page<Job> object
 };
 
 const getEmployerJobById = async (jobId: string | number) => {
-  const response = await axios.get(`${API_URL}/my-jobs/${jobId}`, { headers: getAuthHeaders() });
+  const response = await axios.get(`${API_URL}/jobs/${jobId}`, { headers: getAuthHeaders() });
   return response.data;
 };
 
@@ -64,4 +65,4 @@ const jobService = {
   searchActiveJobsByTitle,
 };
 
-export default jobService; 
+export default jobService;

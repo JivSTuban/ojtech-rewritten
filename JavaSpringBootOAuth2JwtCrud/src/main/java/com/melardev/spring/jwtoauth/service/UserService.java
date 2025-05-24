@@ -66,4 +66,22 @@ public class UserService implements UserDetailsService {
     public long count() {
         return userRepository.count();
     }
+    
+    public boolean verifyEmail(UUID userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (!user.isEmailVerified()) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean isEmailVerified(UUID userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        return userOptional.map(User::isEmailVerified).orElse(false);
+    }
 }

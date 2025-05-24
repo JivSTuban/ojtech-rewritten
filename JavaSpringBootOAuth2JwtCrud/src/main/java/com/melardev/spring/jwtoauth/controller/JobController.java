@@ -1,5 +1,6 @@
 package com.melardev.spring.jwtoauth.controller;
 
+import com.melardev.spring.jwtoauth.dtos.responses.JobResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.EmployerProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -61,7 +63,7 @@ public class JobController {
     
     @GetMapping("/employer")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<List<Job>> getEmployerJobs() {
+    public ResponseEntity<List<JobResponseDTO>> getEmployerJobs() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
@@ -73,6 +75,65 @@ public class JobController {
 
         EmployerProfile employerProfile = employerProfileOpt.get();
         List<Job> jobs = jobRepository.findByEmployer(employerProfile);
+        
+        List<JobResponseDTO> jobResponseDTOs = jobs.stream()
+            .map(JobResponseDTO::new)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(jobResponseDTOs);
+    }
+    
+    @GetMapping("/employer/{id}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<?> getEmployerJobById(@PathVariable UUID id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UUID userId = userDetails.getId();
+
+        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
+        if (employerProfileOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Employer profile not found");
+        }
+
+        EmployerProfile employerProfile = employerProfileOpt.get();
+        
+        Optional<Job> jobOpt = jobRepository.findById(id);
+        if (jobOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Job not found");
+        }
+        
+        Job job = jobOpt.get();
+        
+        // Check if the employer owns the job
+        if (!job.getEmployer().getId().equals(employerProfile.getId())) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("You are not authorized to view this job"));
+        }
+        
+        return ResponseEntity.ok(new JobResponseDTO(job));
+    }
+    
+    @GetMapping("/search")
+    public ResponseEntity<Page<Job>> searchJobs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String title,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "postedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        
+        Page<Job> jobs;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            jobs = jobRepository.searchJobsByKeyword(keyword, pageable);
+        } else if (location != null && title != null) {
+            jobs = jobRepository.searchJobs(location, title, pageable);
+        } else {
+            jobs = jobRepository.findByActive(true, pageable);
+        }
         
         return ResponseEntity.ok(jobs);
     }

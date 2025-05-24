@@ -161,9 +161,9 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       return <Navigate to={redirectTo} />;
     }
 
-  // if (!user) {
-  //     return <Navigate to="/login" />;
-  // }
+  if (!user) {
+      return <Navigate to="/login" />;
+  }
 
   if (isLoading && !formData.companyName) { 
     return <div className="min-h-screen flex items-center justify-center"><p>Loading profile...</p></div>;

@@ -18,6 +18,8 @@ interface Application {
   appliedDate: string;
   status: 'pending' | 'reviewed' | 'interview' | 'rejected' | 'accepted';
   lastUpdated: string;
+  coverLetter: string;
+  studentSkills: string;
 }
 
 interface TrackApplicationsPageState {
@@ -69,7 +71,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
           companyLogo: 'TC',
           appliedDate: new Date().toISOString(),
           status: 'pending',
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
+          coverLetter: "I am excited to apply for the Frontend Developer position at TechCorp. With my experience in React and TypeScript, I believe I would be a great fit for your team.",
+          studentSkills: "React, TypeScript, CSS, HTML, JavaScript"
         },
         {
           id: '2',
@@ -79,7 +83,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
           companyLogo: 'DS',
           appliedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'interview',
-          lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+          lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          coverLetter: "As a passionate UX Designer with experience in creating user-centered designs, I am applying for the position at DesignStudio. My portfolio demonstrates my ability to solve complex design problems.",
+          studentSkills: "Figma, Adobe XD, User Research, Prototyping, UI Design"
         },
         {
           id: '3',
@@ -89,7 +95,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
           companyLogo: 'ST',
           appliedDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'rejected',
-          lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          coverLetter: "I am writing to express my interest in the Backend Developer position at ServerTech. With my strong background in Node.js and database design, I am confident in my ability to contribute to your team.",
+          studentSkills: "Node.js, Express, MongoDB, SQL, API Development"
         },
         {
           id: '4',
@@ -99,7 +107,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
           companyLogo: 'WS',
           appliedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
           status: 'accepted',
-          lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          coverLetter: "I am thrilled to apply for the Full Stack Engineer position at WebSolutions. My experience with both frontend and backend technologies makes me well-suited for this role, and I am eager to contribute to your innovative projects.",
+          studentSkills: "JavaScript, React, Node.js, Python, AWS, Docker"
         }
       ];
       
@@ -379,6 +389,22 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                             Updated: {this.formatDate(application.lastUpdated).replace(', ', ' ')}
                           </div>
                         </div>
+                        
+                        <div className="mb-3">
+                          <div className="text-sm font-medium text-gray-300 mb-1">Skills</div>
+                          <div className="flex flex-wrap gap-1">
+                            {application.studentSkills.split(',').map((skill, index) => (
+                              <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                {skill.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <div className="text-sm font-medium text-gray-300 mb-1">Cover Letter</div>
+                          <p className="text-sm text-gray-400 line-clamp-3">{application.coverLetter}</p>
+                        </div>
                       </div>
                       
                       <div className="border-t border-gray-800 p-4">
@@ -404,6 +430,7 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                         <th className="text-left py-3 px-4">Company</th>
                         <th className="text-left py-3 px-4">Applied Date</th>
                         <th className="text-left py-3 px-4">Status</th>
+                        <th className="text-left py-3 px-4">Skills</th>
                         <th className="text-left py-3 px-4">Last Updated</th>
                         <th className="text-left py-3 px-4"></th>
                       </tr>
@@ -433,6 +460,20 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                                  }`}>
                               {application.status}
                             </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-1">
+                              {application.studentSkills.split(',').slice(0, 3).map((skill, index) => (
+                                <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                  {skill.trim()}
+                                </span>
+                              ))}
+                              {application.studentSkills.split(',').length > 3 && (
+                                <span className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                  +{application.studentSkills.split(',').length - 3}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-gray-400">{this.formatDate(application.lastUpdated)}</td>
                           <td className="py-3 px-4">

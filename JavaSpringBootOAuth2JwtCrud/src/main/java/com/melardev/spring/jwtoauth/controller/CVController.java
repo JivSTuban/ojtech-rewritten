@@ -72,6 +72,94 @@ public class CVController {
     }
 
     /**
+     * Endpoint for employers to view a student's CV by ID
+     */
+    @GetMapping("/employer/view/{id}")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<CV> getStudentCVById(@PathVariable UUID id) {
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        
+        // Only return active CVs to employers
+        if (!cv.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not active");
+        }
+        
+        return ResponseEntity.ok(cv);
+    }
+    
+    /**
+     * Endpoint for employers to get the HTML content of a student's CV
+     */
+    @GetMapping("/employer/view/{id}/content")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<String> getStudentCVContent(@PathVariable UUID id) {
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        
+        // Only return active CVs to employers
+        if (!cv.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not active");
+        }
+        
+        if (cv.getParsedResume() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not found");
+        }
+        
+        return ResponseEntity.ok(cv.getParsedResume());
+    }
+
+    /**
+     * Endpoint for employers to get certifications for a student's CV
+     */
+    @GetMapping("/employer/view/{id}/certifications")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Set<Certification>> getStudentCVCertifications(@PathVariable UUID id) {
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        
+        // Only return active CVs to employers
+        if (!cv.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not active");
+        }
+        
+        return ResponseEntity.ok(cv.getCertifications());
+    }
+    
+    /**
+     * Endpoint for employers to get work experiences for a student's CV
+     */
+    @GetMapping("/employer/view/{id}/experiences")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Set<WorkExperience>> getStudentCVExperiences(@PathVariable UUID id) {
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        
+        // Only return active CVs to employers
+        if (!cv.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not active");
+        }
+        
+        return ResponseEntity.ok(cv.getExperiences());
+    }
+
+    /**
      * Generate a CV based on student profile data
      * This creates a placeholder CV entity that will be updated with the actual CV data later
      */
