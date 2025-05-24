@@ -8,18 +8,31 @@ import { Table } from '../components/ui/Table';
 import { Badge } from '../components/ui/Badge';
 import { ApplicationCard } from '../components/ui/ApplicationCard';
 import { toast } from '../components/ui/toast-utils';
+import jobApplicationService from '../lib/api/jobApplicationService';
+import authService from '../lib/api/authService';
 
 interface Application {
   id: string;
+  createdAt: string;
+  updatedAt: string;
+  coverLetter: string;
+  status: 'PENDING' | 'REVIEWED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED';
+  appliedAt: string;
+  lastUpdatedAt: string;
+  active: boolean;
+  studentId: string;
+  studentFullName: string;
+  studentFirstName: string;
+  studentLastName: string;
+  studentUniversity: string;
+  studentMajor: string;
+  studentGraduationYear: number;
+  studentSkills: string;
+  cvId: string;
   jobId: string;
   jobTitle: string;
-  companyName: string;
-  companyLogo: string;
-  appliedDate: string;
-  status: 'pending' | 'reviewed' | 'interview' | 'rejected' | 'accepted';
-  lastUpdated: string;
-  coverLetter: string;
-  studentSkills: string;
+  jobDescription: string;
+  matchScore: number;
 }
 
 interface TrackApplicationsPageState {
@@ -50,92 +63,24 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
   async componentDidMount() {
     // Check if user is authenticated
     const user = this.context?.user;
-    // Comment out the authentication check to always load mock data
-    /*if (!user) {
+    if (!user) {
       this.setState({ 
-        // error: 'Authentication required', // Commented out as requested
         isLoading: false
       });
       return;
-    }*/
+    }
+
+    // Check auth status in localStorage
+    authService.checkAuthStatus();
 
     try {
-      // TEMPORARY: Using mock data until backend is ready
-      // TODO: Replace with actual API call when backend is implemented
-      const mockApplications: Application[] = [
-        {
-          id: '1',
-          jobId: 'job-1',
-          jobTitle: 'Frontend Developer',
-          companyName: 'TechCorp',
-          companyLogo: 'TC',
-          appliedDate: new Date().toISOString(),
-          status: 'pending',
-          lastUpdated: new Date().toISOString(),
-          coverLetter: "I am excited to apply for the Frontend Developer position at TechCorp. With my experience in React and TypeScript, I believe I would be a great fit for your team.",
-          studentSkills: "React, TypeScript, CSS, HTML, JavaScript"
-        },
-        {
-          id: '2',
-          jobId: 'job-2',
-          jobTitle: 'UX Designer',
-          companyName: 'DesignStudio',
-          companyLogo: 'DS',
-          appliedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'interview',
-          lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          coverLetter: "As a passionate UX Designer with experience in creating user-centered designs, I am applying for the position at DesignStudio. My portfolio demonstrates my ability to solve complex design problems.",
-          studentSkills: "Figma, Adobe XD, User Research, Prototyping, UI Design"
-        },
-        {
-          id: '3',
-          jobId: 'job-3',
-          jobTitle: 'Backend Developer',
-          companyName: 'ServerTech',
-          companyLogo: 'ST',
-          appliedDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'rejected',
-          lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          coverLetter: "I am writing to express my interest in the Backend Developer position at ServerTech. With my strong background in Node.js and database design, I am confident in my ability to contribute to your team.",
-          studentSkills: "Node.js, Express, MongoDB, SQL, API Development"
-        },
-        {
-          id: '4',
-          jobId: 'job-4',
-          jobTitle: 'Full Stack Engineer',
-          companyName: 'WebSolutions',
-          companyLogo: 'WS',
-          appliedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'accepted',
-          lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          coverLetter: "I am thrilled to apply for the Full Stack Engineer position at WebSolutions. My experience with both frontend and backend technologies makes me well-suited for this role, and I am eager to contribute to your innovative projects.",
-          studentSkills: "JavaScript, React, Node.js, Python, AWS, Docker"
-        }
-      ];
+      // Fetch applications using the service
+      const applications = await jobApplicationService.getStudentApplications();
       
-      this.setState({
-        isLoading: false,
-        applications: mockApplications
-      });
-
-      // Optional: Once real API is available, you can uncomment this code
-      /*
-      const response = await fetch('/api/job-applications', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch applications');
-      }
-      
-      const applications = await response.json();
       this.setState({
         isLoading: false,
         applications: applications
       });
-      */
     } catch (error) {
       console.error('Error fetching applications:', error);
       this.setState({
@@ -159,31 +104,56 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
 
   getStatusColor = (status: Application['status']) => {
     switch (status) {
-      case 'pending':
+      case 'PENDING':
         return 'yellow';
-      case 'reviewed':
+      case 'REVIEWED':
         return 'gray';
-      case 'interview':
+      case 'INTERVIEW':
         return 'purple';
-      case 'rejected':
+      case 'REJECTED':
         return 'red';
-      case 'accepted':
+      case 'ACCEPTED':
         return 'green';
       default:
         return 'gray';
     }
   };
 
-  getInitialBgColor = (initial: string) => {
+  getInitialBgColor = (companyName: string) => {
+    // Generate background color based on first letter of company name
+    const initial = companyName.charAt(0).toUpperCase();
+    
     switch (initial) {
-      case 'TC':
+      case 'A':
+      case 'E':
+      case 'I':
+      case 'M':
+      case 'Q':
+      case 'U':
+      case 'Y':
         return 'bg-green-100 text-green-800';
-      case 'DS':
+      case 'B':
+      case 'F':
+      case 'J':
+      case 'N':
+      case 'R':
+      case 'V':
+      case 'Z':
+        return 'bg-blue-100 text-blue-800';
+      case 'C':
+      case 'G':
+      case 'K':
+      case 'O':
+      case 'S':
+      case 'W':
         return 'bg-purple-100 text-purple-800';
-      case 'ST':
+      case 'D':
+      case 'H':
+      case 'L':
+      case 'P':
+      case 'T':
+      case 'X':
         return 'bg-red-100 text-red-800';
-      case 'WS':
-        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -202,14 +172,13 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
     const { applications, filterStatus, searchTerm } = this.state;
     
     return applications.filter(app => {
-      // Apply status filter
-      if (filterStatus && app.status !== filterStatus) {
+      // Apply status filter (convert to lowercase for comparison)
+      if (filterStatus && app.status.toLowerCase() !== filterStatus) {
         return false;
       }
       
       // Apply search filter
-      if (searchTerm && !app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) && 
-          !app.companyName.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (searchTerm && !app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
       
@@ -240,10 +209,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
     
     // If not authenticated, redirect to login
     const user = this.context?.user;
-    // Commented out to use mock data without authentication
-    /*if (!user) {
+    if (!user) {
       return <Navigate to="/login" state={{ returnTo: '/track' }} />;
-    }*/
+    }
     
     if (isLoading) {
       return (
@@ -320,7 +288,7 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search by company or position..."
+                    placeholder="Search by position..."
                     className="w-full p-3 pr-10 bg-gray-900 border-none rounded-md text-white placeholder-gray-500"
                     onChange={this.handleSearch}
                   />
@@ -353,73 +321,97 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                 </div>
               ) : view === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredApplications.map(application => (
-                    <Card key={application.id} className="bg-gray-900 border-gray-800 p-0 overflow-hidden">
-                      <div className="p-5">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className={`w-12 h-12 flex items-center justify-center rounded-md ${this.getInitialBgColor(application.companyLogo)}`}>
-                            <span className="text-lg font-bold">{application.companyLogo}</span>
+                  {filteredApplications.map(application => {
+                    const companyInitial = application.jobTitle.charAt(0);
+                    return (
+                      <Card key={application.id} className="bg-gray-900 border-gray-800 p-0 overflow-hidden">
+                        <div className="p-5">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className={`w-12 h-12 flex items-center justify-center rounded-md ${this.getInitialBgColor(application.jobTitle)}`}>
+                              <span className="text-lg font-bold">{companyInitial}</span>
+                            </div>
+                            <Badge variant={application.status === 'ACCEPTED' ? 'default' : 
+                                           application.status === 'REJECTED' ? 'destructive' : 
+                                           application.status === 'INTERVIEW' ? 'secondary' : 'outline'} 
+                                   className={`capitalize ${
+                                     application.status === 'ACCEPTED' ? 'bg-green-500' : 
+                                     application.status === 'REJECTED' ? 'bg-red-500' : 
+                                     application.status === 'INTERVIEW' ? 'bg-purple-500' : 
+                                     'bg-yellow-500 text-yellow-900'
+                                   }`}>
+                              {application.status.toLowerCase()}
+                            </Badge>
                           </div>
-                          <Badge variant={application.status === 'accepted' ? 'default' : 
-                                         application.status === 'rejected' ? 'destructive' : 
-                                         application.status === 'interview' ? 'secondary' : 'outline'} 
-                                 className={`capitalize ${
-                                   application.status === 'accepted' ? 'bg-green-500' : 
-                                   application.status === 'rejected' ? 'bg-red-500' : 
-                                   application.status === 'interview' ? 'bg-purple-500' : 
-                                   'bg-yellow-500 text-yellow-900'
-                                 }`}>
-                            {application.status}
-                          </Badge>
+                          <h3 className="text-xl font-bold mb-1">{application.jobTitle}</h3>
+                          
+                          <div className="space-y-1 text-sm text-gray-400 mb-3">
+                            <div className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Applied: {this.formatDate(application.appliedAt).replace(', ', ' ')}
+                            </div>
+                            <div className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Updated: {this.formatDate(application.lastUpdatedAt).replace(', ', ' ')}
+                            </div>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <div className="text-sm font-medium text-gray-300 mb-1">Skills</div>
+                            <div className="flex flex-wrap gap-1">
+                              {application.studentSkills.split(',').map((skill, index) => (
+                                <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                  {skill.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <div className="text-sm font-medium text-gray-300 mb-1">Cover Letter</div>
+                            <p className="text-sm text-gray-400 line-clamp-3">{application.coverLetter}</p>
+                          </div>
+                          
+                          <div className="mb-3">
+                            <div className="text-sm font-medium text-gray-300 mb-1">Match Score</div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-full bg-gray-700 rounded-full h-2">
+                                <div 
+                                  className="bg-green-500 h-2 rounded-full" 
+                                  style={{ width: `${application.matchScore}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs font-medium">{application.matchScore.toFixed(0)}%</span>
+                            </div>
+                          </div>
                         </div>
-                        <h3 className="text-xl font-bold mb-1">{application.jobTitle}</h3>
-                        <p className="text-gray-400 mb-3">{application.companyName}</p>
                         
-                        <div className="space-y-1 text-sm text-gray-400 mb-3">
-                          <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Applied: {this.formatDate(application.appliedDate).replace(', ', ' ')}
-                          </div>
-                          <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Updated: {this.formatDate(application.lastUpdated).replace(', ', ' ')}
-                          </div>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <div className="text-sm font-medium text-gray-300 mb-1">Skills</div>
-                          <div className="flex flex-wrap gap-1">
-                            {application.studentSkills.split(',').map((skill, index) => (
-                              <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
-                                {skill.trim()}
-                              </span>
-                            ))}
+                        <div className="border-t border-gray-800 p-4">
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.location.href = `/application/${application.id}`}
+                              className="text-blue-400 hover:text-blue-300 flex-1"
+                            >
+                              View Application Details
+                            </Button>
+                            {/* <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.location.href = `/opportunities/${application.jobId}`}
+                              className="text-green-400 hover:text-green-300 flex-1"
+                            >
+                              View Job Posting
+                            </Button> */}
                           </div>
                         </div>
-                        
-                        <div className="mb-3">
-                          <div className="text-sm font-medium text-gray-300 mb-1">Cover Letter</div>
-                          <p className="text-sm text-gray-400 line-clamp-3">{application.coverLetter}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="border-t border-gray-800 p-4">
-                        <button 
-                          onClick={() => window.location.href = `/opportunities/${application.jobId}`}
-                          className="flex items-center justify-between w-full text-green-400 hover:text-green-300 transition"
-                        >
-                          <span>View Job Details</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="overflow-x-auto bg-gray-900 rounded-md">
@@ -427,67 +419,83 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                     <thead className="border-b border-gray-800">
                       <tr>
                         <th className="text-left py-3 px-4">Position</th>
-                        <th className="text-left py-3 px-4">Company</th>
                         <th className="text-left py-3 px-4">Applied Date</th>
                         <th className="text-left py-3 px-4">Status</th>
                         <th className="text-left py-3 px-4">Skills</th>
+                        <th className="text-left py-3 px-4">Match Score</th>
                         <th className="text-left py-3 px-4">Last Updated</th>
                         <th className="text-left py-3 px-4"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredApplications.map(application => (
-                        <tr key={application.id} className="border-b border-gray-800">
-                          <td className="py-3 px-4 font-medium">{application.jobTitle}</td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-8 h-8 flex items-center justify-center rounded ${this.getInitialBgColor(application.companyLogo)}`}>
-                                <span className="text-sm font-bold">{application.companyLogo}</span>
+                      {filteredApplications.map(application => {
+                        const companyInitial = application.jobTitle.charAt(0);
+                        return (
+                          <tr key={application.id} className="border-b border-gray-800">
+                            <td className="py-3 px-4 font-medium">{application.jobTitle}</td>
+                            <td className="py-3 px-4 text-gray-400">{this.formatDate(application.appliedAt)}</td>
+                            <td className="py-3 px-4">
+                              <Badge variant={application.status === 'ACCEPTED' ? 'default' : 
+                                           application.status === 'REJECTED' ? 'destructive' : 
+                                           application.status === 'INTERVIEW' ? 'secondary' : 'outline'} 
+                                   className={`capitalize ${
+                                     application.status === 'ACCEPTED' ? 'bg-green-500' : 
+                                     application.status === 'REJECTED' ? 'bg-red-500' : 
+                                     application.status === 'INTERVIEW' ? 'bg-purple-500' : 
+                                     'bg-yellow-500 text-yellow-900'
+                                   }`}>
+                                {application.status.toLowerCase()}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1">
+                                {application.studentSkills.split(',').slice(0, 3).map((skill, index) => (
+                                  <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                    {skill.trim()}
+                                  </span>
+                                ))}
+                                {application.studentSkills.split(',').length > 3 && (
+                                  <span className="px-2 py-1 text-xs bg-gray-800 rounded-full">
+                                    +{application.studentSkills.split(',').length - 3}
+                                  </span>
+                                )}
                               </div>
-                              {application.companyName}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-gray-400">{this.formatDate(application.appliedDate)}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant={application.status === 'accepted' ? 'default' : 
-                                         application.status === 'rejected' ? 'destructive' : 
-                                         application.status === 'interview' ? 'secondary' : 'outline'} 
-                                 className={`capitalize ${
-                                   application.status === 'accepted' ? 'bg-green-500' : 
-                                   application.status === 'rejected' ? 'bg-red-500' : 
-                                   application.status === 'interview' ? 'bg-purple-500' : 
-                                   'bg-yellow-500 text-yellow-900'
-                                 }`}>
-                              {application.status}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {application.studentSkills.split(',').slice(0, 3).map((skill, index) => (
-                                <span key={index} className="px-2 py-1 text-xs bg-gray-800 rounded-full">
-                                  {skill.trim()}
-                                </span>
-                              ))}
-                              {application.studentSkills.split(',').length > 3 && (
-                                <span className="px-2 py-1 text-xs bg-gray-800 rounded-full">
-                                  +{application.studentSkills.split(',').length - 3}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-gray-400">{this.formatDate(application.lastUpdated)}</td>
-                          <td className="py-3 px-4">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.location.href = `/opportunities/${application.jobId}`}
-                              className="text-green-400 hover:text-green-300"
-                            >
-                              View Job
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 bg-gray-700 rounded-full h-2">
+                                  <div 
+                                    className="bg-green-500 h-2 rounded-full" 
+                                    style={{ width: `${application.matchScore}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs font-medium">{application.matchScore.toFixed(0)}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-gray-400">{this.formatDate(application.lastUpdatedAt)}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => window.location.href = `/application/${application.id}`}
+                                  className="text-blue-400 hover:text-blue-300"
+                                >
+                                  View Application Details
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => window.location.href = `/opportunities/${application.jobId}`}
+                                  className="text-green-400 hover:text-green-300"
+                                >
+                                  View Job
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </Table>
                 </div>

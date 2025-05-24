@@ -339,7 +339,7 @@ public class AuthController {
             }
 
             // Return user ID in the response to allow for email verification
-            return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email. User ID: " + user.getId()));
+            return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email.", user.getId().toString()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }

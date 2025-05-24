@@ -20,11 +20,16 @@ apiClient.interceptors.request.use(
         const userData = JSON.parse(userStr);
         // Extract the access token from user data
         if (userData && userData.accessToken) {
+          console.log('Adding auth token to request:', config.url);
           config.headers.Authorization = `Bearer ${userData.accessToken}`;
+        } else {
+          console.warn('No accessToken found in user data for request:', config.url);
         }
       } catch (error) {
         console.error('Error parsing user data from localStorage:', error);
       }
+    } else {
+      console.warn('No user data found in localStorage for request:', config.url);
     }
     return config;
   },

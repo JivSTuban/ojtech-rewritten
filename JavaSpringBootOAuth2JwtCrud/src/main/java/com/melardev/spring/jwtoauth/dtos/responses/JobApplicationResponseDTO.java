@@ -33,6 +33,18 @@ public class JobApplicationResponseDTO {
     private UUID jobId;
     private String jobTitle;
     private String jobDescription;
+    private String jobLocation;
+    private String jobRequiredSkills;
+    private String jobEmploymentType;
+    private Double jobMinSalary;
+    private Double jobMaxSalary;
+    private String jobCurrency;
+    private LocalDateTime jobPostedAt;
+    
+    // Employer details
+    private UUID employerId;
+    private String employerName;
+    private String employerCompanyName;
     
     // Match score (if available)
     private Double matchScore;
@@ -69,6 +81,20 @@ public class JobApplicationResponseDTO {
             this.jobId = application.getJob().getId();
             this.jobTitle = application.getJob().getTitle();
             this.jobDescription = application.getJob().getDescription();
+            this.jobLocation = application.getJob().getLocation();
+            this.jobRequiredSkills = application.getJob().getRequiredSkills();
+            this.jobEmploymentType = application.getJob().getEmploymentType();
+            this.jobMinSalary = application.getJob().getMinSalary();
+            this.jobMaxSalary = application.getJob().getMaxSalary();
+            this.jobCurrency = application.getJob().getCurrency();
+            this.jobPostedAt = application.getJob().getPostedAt();
+            
+            // Employer details
+            if (application.getJob().getEmployer() != null) {
+                this.employerId = application.getJob().getEmployer().getId();
+                this.employerName = application.getJob().getEmployer().getFullName();
+                this.employerCompanyName = application.getJob().getEmployer().getCompanyName();
+            }
             
             // Try to find match score from job's matches
             if (application.getStudent() != null) {
@@ -296,5 +322,85 @@ public class JobApplicationResponseDTO {
 
     public void setMatchScore(Double matchScore) {
         this.matchScore = matchScore;
+    }
+
+    public String getJobLocation() {
+        return jobLocation;
+    }
+
+    public void setJobLocation(String jobLocation) {
+        this.jobLocation = jobLocation;
+    }
+
+    public String getJobRequiredSkills() {
+        return jobRequiredSkills;
+    }
+
+    public void setJobRequiredSkills(String jobRequiredSkills) {
+        this.jobRequiredSkills = jobRequiredSkills;
+    }
+
+    public String getJobEmploymentType() {
+        return jobEmploymentType;
+    }
+
+    public void setJobEmploymentType(String jobEmploymentType) {
+        this.jobEmploymentType = jobEmploymentType;
+    }
+
+    public Double getJobMinSalary() {
+        return jobMinSalary;
+    }
+
+    public void setJobMinSalary(Double jobMinSalary) {
+        this.jobMinSalary = jobMinSalary;
+    }
+
+    public Double getJobMaxSalary() {
+        return jobMaxSalary;
+    }
+
+    public void setJobMaxSalary(Double jobMaxSalary) {
+        this.jobMaxSalary = jobMaxSalary;
+    }
+
+    public String getJobCurrency() {
+        return jobCurrency;
+    }
+
+    public void setJobCurrency(String jobCurrency) {
+        this.jobCurrency = jobCurrency;
+    }
+
+    public LocalDateTime getJobPostedAt() {
+        return jobPostedAt;
+    }
+
+    public void setJobPostedAt(LocalDateTime jobPostedAt) {
+        this.jobPostedAt = jobPostedAt;
+    }
+
+    public UUID getEmployerId() {
+        return employerId;
+    }
+
+    public void setEmployerId(UUID employerId) {
+        this.employerId = employerId;
+    }
+
+    public String getEmployerName() {
+        return employerName;
+    }
+
+    public void setEmployerName(String employerName) {
+        this.employerName = employerName;
+    }
+
+    public String getEmployerCompanyName() {
+        return employerCompanyName;
+    }
+
+    public void setEmployerCompanyName(String employerCompanyName) {
+        this.employerCompanyName = employerCompanyName;
     }
 } 

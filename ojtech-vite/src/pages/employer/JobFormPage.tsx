@@ -11,6 +11,9 @@ import * as RadioGroup from '@radix-ui/react-radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/Command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Clock, DollarSign, FileText, Code, Plus, X } from "lucide-react";
 
 // Tech stack suggestions
 const techSuggestions = [
@@ -383,80 +386,83 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     }
 
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto bg-black/90 backdrop-blur-sm text-white rounded-lg shadow-xl border border-gray-800">
-          <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-gray-700 p-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              {isEditMode ? 'Edit Job Posting' : 'Create New Job Posting'}
-            </h1>
-            <p className="text-gray-400 mt-3">
-              Fill out the form below to create a compelling job posting. Take your time to provide detailed information to attract the right candidates.
-            </p>
+      <div className="min-h-screen bg-black p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="bg-black5 rounded-lg p-6 mb-6">
+              <h1 className="text-white text-2xl font-bold mb-2">
+                {isEditMode ? 'Edit Job Posting' : 'Create New Job Posting'}
+              </h1>
+              <p className="text-blue-100">
+                Fill out the form below to create a compelling job posting. Take your time to provide detailed information
+                to attract the right candidates.
+              </p>
+            </div>
           </div>
 
-          <form onSubmit={this.handleSubmit} className="p-6">
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">Job Details</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="title" className="block mb-2 text-base">
+          <form onSubmit={this.handleSubmit} className="space-y-6">
+            {/* Job Details Card */}
+            <Card className="bg-black border-gray-600">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Job Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Job Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-gray-200">
                     Job Title <span className="text-red-500">*</span>
                   </Label>
-                  <div className="relative group">
-                    <Input
-                      type="text"
-                      name="title"
-                      id="title"
-                      value={formData.title}
-                      onChange={this.handleChange}
-                      required
-                      className="w-full bg-gray-900/70 border-gray-700 text-white pl-4 h-11 hover:border-gray-600 focus:border-blue-500 transition-colors"
-                      placeholder="e.g. Senior React Developer"
-                      pattern="^[a-zA-Z0-9\s\-&]+$"
-                      maxLength={100}
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-gray-400 text-sm">3-100 characters</span>
-                    </div>
-                  </div>
+                  <Input
+                    type="text"
+                    name="title"
+                    id="title"
+                    value={formData.title}
+                    onChange={this.handleChange}
+                    required
+                    className="bg-gray-900/70 border-gray-700 text-white placeholder:text-gray-400"
+                    placeholder="e.g. Senior React Developer"
+                    pattern="^[a-zA-Z0-9\s\-&]+$"
+                    maxLength={100}
+                  />
                 </div>
 
-                <div>
-                  <Label className="block mb-2">
+                {/* Job Location */}
+                <div className="space-y-3">
+                  <Label className="text-gray-200 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
                     Job Location <span className="text-red-500">*</span>
                   </Label>
                   <RadioGroup.Root
                     value={formData.location}
                     onValueChange={this.handleLocationChange}
-                    className="gap-4 flex flex-col"
-                    aria-label="Job Location"
+                    className="space-y-3"
                   >
                     <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${
                       formData.location === "Remote" 
-                        ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10' 
-                        : 'border-gray-800 hover:border-gray-700'
+                        ? 'border-blue-500 bg-blue-500/10' 
+                        : 'border-gray-700 hover:border-gray-600'
                     }`}>
                       <RadioGroup.Item 
                         value="Remote" 
-                        id="location-remote" 
+                        id="location-remote"
                         className="aspect-square h-4 w-4 rounded-full border border-gray-400 cursor-pointer relative
                           before:content-[''] before:block before:w-2 before:h-2 before:rounded-full 
                           before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2
                           before:bg-blue-500 before:scale-0 data-[state=checked]:before:scale-100
                           before:transition-transform hover:border-blue-400"
                       />
-                      <Label htmlFor="location-remote" className="font-medium">
-                        <div className="flex flex-col">
-                          <span>Remote</span>
-                          <span className="text-sm text-gray-400">Work from anywhere</span>
-                        </div>
+                      <Label htmlFor="location-remote" className="font-medium text-white cursor-pointer">
+                        Remote - Work from anywhere
                       </Label>
                     </div>
                     <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${
                       formData.location === "Rubicomm Center Sumlion Road Cebu Business Park, Cebu City"
-                        ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10' 
-                        : 'border-gray-800 hover:border-gray-700'
+                        ? 'border-blue-500 bg-blue-500/10' 
+                        : 'border-gray-700 hover:border-gray-600'
                     }`}>
                       <RadioGroup.Item 
                         value="Rubicomm Center Sumlion Road Cebu Business Park, Cebu City" 
@@ -467,20 +473,17 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                           before:bg-blue-500 before:scale-0 data-[state=checked]:before:scale-100
                           before:transition-transform hover:border-blue-400"
                       />
-                      <Label htmlFor="location-office" className="font-medium">
-                        <div className="flex flex-col">
-                          <span>Office-based</span>
-                          <span className="text-sm text-gray-400">
-                            Rubicomm Center, Sumlion Road, Cebu Business Park, Cebu City
-                          </span>
-                        </div>
+                      <Label htmlFor="location-office" className="font-medium text-white cursor-pointer">
+                        Office-based - Rubicomm Center, Cebu Business Park
                       </Label>
                     </div>
                   </RadioGroup.Root>
                 </div>
 
-                <div>
-                  <Label htmlFor="jobType" className="block mb-2">
+                {/* Job Type */}
+                <div className="space-y-2">
+                  <Label className="text-gray-200 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
                     Job Type <span className="text-red-500">*</span>
                   </Label>
                   <Select
@@ -488,40 +491,23 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     value={formData.employmentType}
                     onValueChange={(value: string) => this.handleChange({ target: { name: 'employmentType', value } } as any)}
                   >
-                    <SelectTrigger 
-                      id="jobType"
-                      className="w-full bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors"
-                    >
+                    <SelectTrigger className="bg-gray-900/70 border-gray-700 text-white">
                       <SelectValue placeholder="Select job type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="FULL_TIME">
-                        <span className="flex items-center gap-2">
-                          <span>🌟</span> Full Time
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="PART_TIME">
-                        <span className="flex items-center gap-2">
-                          <span>⭐</span> Part Time
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="CONTRACT">
-                        <span className="flex items-center gap-2">
-                          <span>📝</span> Contract
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="INTERNSHIP">
-                        <span className="flex items-center gap-2">
-                          <span>📚</span> Internship
-                        </span>
-                      </SelectItem>
+                      <SelectItem value="FULL_TIME">Full Time</SelectItem>
+                      <SelectItem value="PART_TIME">Part Time</SelectItem>
+                      <SelectItem value="CONTRACT">Contract</SelectItem>
+                      <SelectItem value="INTERNSHIP">Internship</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="minSalary" className="block mb-1">
+                {/* Salary Range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minSalary" className="text-gray-200 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
                       Minimum Salary
                     </Label>
                     <div className="relative">
@@ -535,16 +521,14 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                         value={formData.minSalary}
                         onChange={this.handleChange}
                         min="0"
-                        className="w-full pl-12 bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="pl-12 bg-gray-900/70 border-gray-700 text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="e.g. 20000"
-                        title="Enter minimum salary amount"
                       />
                     </div>
-                    <p className="text-gray-500 text-xs mt-1">Optional - minimum salary offered</p>
+                    <p className="text-xs text-gray-400">Optional - minimum salary offered</p>
                   </div>
-                  
-                  <div>
-                    <Label htmlFor="maxSalary" className="block mb-1">
+                  <div className="space-y-2">
+                    <Label htmlFor="maxSalary" className="text-gray-200">
                       Maximum Salary
                     </Label>
                     <div className="relative">
@@ -558,18 +542,17 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                         value={formData.maxSalary}
                         onChange={this.handleChange}
                         min="0"
-                        className="w-full pl-12 bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="pl-12 bg-gray-900/70 border-gray-700 text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="e.g. 30000"
-                        title="Enter maximum salary amount"
                       />
                     </div>
-                    <p className="text-gray-500 text-xs mt-1">Optional - maximum salary offered</p>
+                    <p className="text-xs text-gray-400">Optional - maximum salary offered</p>
                   </div>
                 </div>
 
-
-                <div>
-                  <Label htmlFor="description" className="block mb-1 flex items-center justify-between">
+                {/* Job Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-gray-200 flex items-center justify-between">
                     <span>Job Description <span className="text-red-500">*</span></span>
                     <span className={`text-sm ${formData.description.length >= 100 ? 'text-green-500' : 'text-gray-500'}`}>
                       {formData.description.length}/100 min characters
@@ -582,7 +565,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     value={formData.description}
                     onChange={this.handleChange}
                     required
-                    className={`w-full bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors resize-none ${
+                    className={`bg-gray-900/70 border-gray-700 text-white resize-none ${
                       formData.description.length > 0 && formData.description.length < 100
                         ? 'border-yellow-500'
                         : formData.description.length >= 100
@@ -592,237 +575,134 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     placeholder="Describe the role in detail, including:&#13;&#10;• Key responsibilities&#13;&#10;• Required experience&#13;&#10;• Technical requirements&#13;&#10;• Benefits and perks"
                   />
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <span className="bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent">Required Skills</span>
-                  <span className="text-red-500 ml-1">*</span>
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <div className="flex-1 relative">
-                            <Input
-                              type="text"
-                              name="requiredSkill"
-                              value={requiredSkillInput}
-                              onChange={this.handleRequiredSkillsChange}
-                              className="w-full bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors"
-                              placeholder="Search or enter a skill"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  this.addRequiredSkill();
-                                }
-                              }}
-                            />
-                          </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Search skills..." />
-                            <CommandList>
-                              <CommandEmpty>No results found.</CommandEmpty>
-                              <CommandGroup heading="Popular Technologies">
-                                {techSuggestions
-                                  .filter((tech: string) => 
-                                    tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
-                                    !formData.requiredSkills.includes(tech)
-                                  )
-                                  .map((tech: string, index: number) => (
-                                    <CommandItem
-                                      key={index}
-                                      value={tech}
-                                      onSelect={() => this.handleSuggestionSelect(tech)}
-                                      className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-blue-500/20 hover:text-blue-400 transition-colors rounded"
-                                    >
-                                      {tech}
-                                    </CommandItem>
-                                  ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    <Button 
-                      type="button" 
-                      onClick={this.addRequiredSkill}
-                      variant="outline"
-                      className="ml-2 border-gray-700 hover:bg-blue-500/20 hover:text-blue-400 transition-colors"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  <div className="bg-gray-900/50 rounded-lg p-4 min-h-[100px] border border-gray-800">
-                    {formData.requiredSkills.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {formData.requiredSkills.map((skill: string, index: number) => (
-                          <div 
-                            key={index} 
-                            className="group bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm border border-blue-500/30 hover:bg-blue-500/30 transition-colors cursor-pointer flex items-center gap-2"
-                            onClick={() => this.removeRequiredSkill(skill)}
-                            title="Click to remove"
-                          >
-                            <span>{skill}</span>
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity">×</span>
-                          </div>
-                        ))}
+            {/* Required Skills Card */}
+            <Card className="bg-black border-gray-600">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Code className="h-5 w-5" />
+                  Required Skills <span className="text-red-500">*</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Add Skills Input */}
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex-1">
+                        <Input
+                          type="text"
+                          value={requiredSkillInput}
+                          onChange={this.handleRequiredSkillsChange}
+                          className="w-full bg-gray-900/70 border-gray-700 text-white"
+                          placeholder="Search or enter a skill"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              this.addRequiredSkill();
+                            }
+                          }}
+                        />
                       </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm italic">No required skills added yet</p>
-                    )}
-                  </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search skills..." />
+                        <CommandList>
+                          <CommandEmpty>No results found.</CommandEmpty>
+                          <CommandGroup heading="Popular Technologies">
+                            {techSuggestions
+                              .filter((tech) => 
+                                tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
+                                !formData.requiredSkills.includes(tech)
+                              )
+                              .map((tech, index) => (
+                                <CommandItem
+                                  key={index}
+                                  value={tech}
+                                  onSelect={() => this.handleSuggestionSelect(tech)}
+                                  className="cursor-pointer"
+                                >
+                                  {tech}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Button 
+                    type="button" 
+                    onClick={this.addRequiredSkill}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
                 </div>
-              </div>
 
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Preferred Skills</span>
-                  <span className="text-gray-500 text-sm ml-2">(Optional)</span>
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <div className="flex-1 relative">
-                          <Input
-                            type="text"
-                            name="preferredSkill"
-                            value={preferredSkillInput}
-                            onChange={this.handlePreferredSkillsChange}
-                            className="w-full bg-gray-900/70 border-gray-700 text-white hover:border-gray-600 focus:border-blue-500 transition-colors"
-                            placeholder="Search or enter a skill"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                this.addPreferredSkill();
-                              }
-                            }}
-                          />
-                        </div>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Search skills..." />
-                          <CommandList>
-                            <CommandEmpty>No results found.</CommandEmpty>
-                            <CommandGroup heading="Popular Technologies">
-                                {techSuggestions
-                                  .filter((tech: string) => 
-                                    tech.toLowerCase().includes(preferredSkillInput.toLowerCase()) &&
-                                    !formData.skillsPreferred.includes(tech)
-                                  )
-                                  .map((tech: string, index: number) => (
-                                  <CommandItem
-                                    key={index}
-                                    value={tech}
-                                      onSelect={() => this.handlePreferredSkillSelect(tech)}
-                                      className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-purple-500/20 hover:text-purple-400 transition-colors rounded"
-                                  >
-                                    {tech}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <Button 
-                      type="button" 
-                      onClick={this.addPreferredSkill}
-                      variant="outline"
-                      className="ml-2 border-gray-700 hover:bg-purple-500/20 hover:text-purple-400 transition-colors"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  <div className="bg-gray-900/50 rounded-lg p-4 min-h-[100px] border border-gray-800">
-                    {formData.skillsPreferred.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {formData.skillsPreferred.map((skill, index) => (
-                          <div 
-                            key={index} 
-                            className="group bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-sm border border-purple-500/30 hover:bg-purple-500/30 transition-colors cursor-pointer flex items-center gap-2"
-                            onClick={() => this.removePreferredSkill(skill)}
-                            title="Click to remove"
-                          >
-                            <span>{skill}</span>
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity">×</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm italic">No preferred skills added yet</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">
-                Job Status <span className="text-red-500">*</span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div 
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    formData.active 
-                      ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/10' 
-                      : 'border-gray-800 hover:border-gray-700'
-                  }`}
-                  onClick={() => {
-                    this.setState(prev => ({
-                      formData: { ...prev.formData, active: true }
-                    }));
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full ${formData.active ? 'bg-green-500' : 'bg-gray-700'}`} />
-                    <div>
-                      <h3 className="font-semibold">Open</h3>
-                      <p className="text-sm text-gray-400">Visible to candidates</p>
+                {/* Selected Skills */}
+                {formData.requiredSkills.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">Selected Skills</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.requiredSkills.map((skill, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="bg-blue-900/30 text-blue-300 border border-blue-700 hover:bg-blue-900/50 cursor-pointer"
+                          onClick={() => this.removeRequiredSkill(skill)}
+                        >
+                          {skill}
+                          <button className="ml-2 hover:text-blue-100">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                </div>
-                
-                <div 
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    !formData.active 
-                      ? 'border-yellow-500 bg-yellow-500/10 shadow-lg shadow-yellow-500/10' 
-                      : 'border-gray-800 hover:border-gray-700'
-                  }`}
-                  onClick={() => {
-                    this.setState(prev => ({
-                      formData: { ...prev.formData, active: false }
-                    }));
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full ${!formData.active ? 'bg-yellow-500' : 'bg-gray-700'}`} />
-                    <div>
-                      <h3 className="font-semibold">Close</h3>
-                      <p className="text-sm text-gray-400">No longer accepting applications</p>
-                    </div>
+                )}
+
+                {/* Popular Skills */}
+                <div className="space-y-2">
+                  <Label className="text-gray-200">Popular Technologies</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {techSuggestions.slice(0, 15).map((skill, index) => (
+                      <Badge
+                        key={index}
+                        variant="outline"
+                        className={`cursor-pointer transition-colors ${
+                          formData.requiredSkills.includes(skill)
+                            ? "bg-blue-900/30 text-blue-300 border-blue-700"
+                            : "border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white"
+                        }`}
+                        onClick={() => this.handleSuggestionSelect(skill)}
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Job Status Card */}
+            
 
             {error && (
-              <div key={error} className="mb-6 bg-red-900/30 border-l-4 border-red-500 p-4 animate-shake">
-                <p className="text-red-400 font-medium">{error}</p>
+              <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded">
+                <p className="text-red-400">{error}</p>
               </div>
             )}
 
-            <div className="flex justify-end space-x-4 border-t border-gray-800 pt-6">
+            {/* Action Buttons */}
+            <div className="flex justify-between pt-6">
               <Button 
                 type="button" 
                 variant="outline" 
-                className="border-gray-700 hover:bg-gray-800 min-w-[100px]"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
                 onClick={() => this.props.navigate('/employer/jobs')}
               >
                 Cancel
@@ -830,7 +710,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 min-w-[150px] transition-all duration-300 shadow-lg shadow-blue-900/20"
+                className="bg-blue-600 hover:bg-blue-700 min-w-[150px]"
               >
                 {isLoading 
                   ? (isEditMode ? 'Saving Changes...' : 'Creating Job...') 

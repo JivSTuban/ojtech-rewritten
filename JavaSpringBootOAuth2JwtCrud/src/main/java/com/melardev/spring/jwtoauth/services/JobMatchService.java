@@ -1684,7 +1684,7 @@ public class JobMatchService {
             analysis.append("- Adding a detailed profile README highlighting your experience with relevant skills\n");
         }
         
-        analysis.append("\nNote: This is a basic analysis. For a more detailed assessment, please ensure the Gemini API is properly configured.");
+    
         
         return analysis.toString();
     }

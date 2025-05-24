@@ -221,8 +221,6 @@ public class CoverLetterService {
         coverLetter.append("Sincerely,\n")
                   .append(student.getFirstName()).append(" ").append(student.getLastName());
         
-        coverLetter.append("\n\nNote: This is a basic cover letter template. For a more personalized letter, please ensure the Gemini API is properly configured.");
-        
         return coverLetter.toString();
     }
     

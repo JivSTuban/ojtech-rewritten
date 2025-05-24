@@ -42,6 +42,7 @@ interface JobMatch {
 
 // Get all applications for the logged-in student
 const getStudentApplications = async (): Promise<JobApplication[]> => {
+  console.log('Fetching student applications from:', API_URL);
   const response = await apiClient.get(API_URL);
   return response.data;
 };
@@ -86,6 +87,13 @@ const updateApplicationStatus = async (
 
 // Get a specific application by ID
 const getApplicationById = async (applicationId: string): Promise<JobApplication> => {
+  const response = await apiClient.get(`${API_URL}/${applicationId}`);
+  return response.data;
+};
+
+// Get detailed application information by ID
+const getApplicationDetails = async (applicationId: string): Promise<JobApplication> => {
+  console.log("jobApplicationService.getApplicationDetails called with applicationId:", applicationId);
   const response = await apiClient.get(`${API_URL}/${applicationId}`);
   return response.data;
 };
@@ -138,6 +146,7 @@ const jobApplicationService = {
   getStudentJobMatches,
   markJobMatchViewed,
   findJobs,
+  getApplicationDetails,
 };
 
 export default jobApplicationService; 

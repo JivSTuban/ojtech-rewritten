@@ -244,10 +244,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
   register = async (data: any) => {
     try {
       // Register the user
-      await authService.register(data);
-
+      const registrationResponse = await authService.register(data);
+      
       // Store the email for login
       console.log('Registration successful for email:', data.email);
+      console.log('Registration response:', registrationResponse);
 
       // Add a small delay before attempting login to ensure backend processing is complete
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -257,7 +258,12 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       console.log('Attempting automatic login with email:', data.email);
 
       try {
-        return await this.login(data.email, data.password);
+        const loginResponse = await this.login(data.email, data.password);
+        // Return both the user data from login and the userId from registration
+        return {
+          ...loginResponse,
+          userId: registrationResponse.userId
+        };
       } catch (error: any) {
         console.error('Automatic login failed after registration:', error);
 
@@ -284,7 +290,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
             profile: null,
           });
 
-          return minimalUser;
+          // Return both the minimal user and the userId from registration
+          return {
+            ...minimalUser,
+            userId: registrationResponse.userId
+          };
         }
 
         // For other errors, redirect to login page

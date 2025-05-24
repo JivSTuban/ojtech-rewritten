@@ -30,131 +30,8 @@ interface JobWithMatchScore extends Job {
   match_score: number | null;
   company_logo_url: string | null;
   viewed: boolean;
+  original_id?: string; // Add original job ID for API calls
 }
-
-// Mock data for jobs - will be used as fallback if API fails
-const MOCK_JOBS: JobWithMatchScore[] = [
-  {
-    id: "1",
-    employer_id: "emp1",
-    title: "Frontend Developer",
-    description: "We are looking for a skilled frontend developer proficient in React, TypeScript, and modern CSS frameworks. You will be responsible for building responsive web applications and maintaining existing projects.",
-    company_name: "TechCorp Solutions",
-    company_logo_url: "https://placekitten.com/150/150",
-    location: "New York, NY (Remote)",
-    job_type: "Full-time",
-    salary_range: "$90,000 - $120,000",
-    required_skills: ["React", "TypeScript", "CSS", "HTML5", "Git"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 92,
-    viewed: false
-  },
-  {
-    id: "6",
-    employer_id: "symph",
-    title: "Software Engineering Intern",
-    description: "In Web and Mobile App Development, you will first study the company's tech stack for 2-3 weeks, then collaborate with developers, designers, and project managers to build real-world applications. If you join the QA Technical track, your role focuses on ensuring excellent quality by writing and implementing automated testing for web and mobile apps. Those in Internal Technical Operations will contribute to improving Symph's internal systems by fixing, enhancing, or developing tools that support the company's efficiency.",
-    company_name: "Symph",
-    company_logo_url: null,
-    location: "Cebu IT Park",
-    job_type: "Internship",
-    salary_range: null,
-    required_skills: ["Web Development", "Mobile Development", "QA Testing", "Technical Operations"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 88,
-    viewed: false
-  },
-  {
-    id: "2",
-    employer_id: "emp2",
-    title: "Backend Engineer",
-    description: "Join our talented engineering team to build scalable microservices and RESTful APIs using Java Spring Boot. Experience with cloud platforms and containerization is a plus.",
-    company_name: "DataDrive Inc.",
-    company_logo_url: "https://placekitten.com/151/151",
-    location: "San Francisco, CA",
-    job_type: "Full-time",
-    salary_range: "$110,000 - $150,000",
-    required_skills: ["Java", "Spring Boot", "SQL", "RESTful APIs", "Microservices"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 75,
-    viewed: false
-  },
-  {
-    id: "3",
-    employer_id: "emp3",
-    title: "DevOps Engineer",
-    description: "Help us build and maintain our cloud infrastructure using AWS, Terraform, and Kubernetes. You will be responsible for automating deployment pipelines and ensuring system reliability.",
-    company_name: "CloudScale Technologies",
-    company_logo_url: null,
-    location: "Chicago, IL (Hybrid)",
-    job_type: "Full-time",
-    salary_range: "$100,000 - $135,000",
-    required_skills: ["AWS", "Terraform", "Kubernetes", "CI/CD", "Linux"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 50,
-    viewed: false
-  },
-  {
-    id: "4",
-    employer_id: "emp4",
-    title: "Full Stack Developer",
-    description: "Looking for a versatile developer who can work across our entire stack. You'll build features using React on the frontend and Node.js on the backend.",
-    company_name: "OmniTech Solutions",
-    company_logo_url: "https://placekitten.com/152/152",
-    location: "Remote",
-    job_type: "Contract",
-    salary_range: "$60-75/hour",
-    required_skills: ["React", "Node.js", "MongoDB", "Express", "JavaScript"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 85,
-    viewed: false
-  },
-  {
-    id: "5",
-    employer_id: "emp5",
-    title: "Data Scientist",
-    description: "Join our analytics team to develop machine learning models and extract insights from large datasets. You will work closely with product teams to implement data-driven solutions.",
-    company_name: "Analytix",
-    company_logo_url: null,
-    location: "Boston, MA",
-    job_type: "Full-time",
-    salary_range: "$120,000 - $160,000",
-    required_skills: ["Python", "Machine Learning", "SQL", "Data Visualization", "Statistics"],
-    preferred_skills: null,
-    application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    status: "active",
-    is_active: true,
-    match_score: 35,
-    viewed: false
-  }
-];
 
 // Define the toast interface (simplified for now)
 interface Toast {
@@ -241,6 +118,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             
             // Ensure unique job ID
             let jobId = job.id;
+            const originalJobId = jobId; // Store the original job ID for API calls
             if (seenIds.has(jobId)) {
               jobId = `${jobId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
             }
@@ -248,13 +126,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             
             return {
               id: jobId,
-              employer_id: employer.id,
-              title: job.title,
-              description: job.description,
-              company_name: employer.companyName,
-              company_logo_url: employer.logoUrl,
-              location: job.location,
-              job_type: job.employmentType,
+              original_id: originalJobId, // Store the original job ID
+              employer_id: employer.id || '',
+              title: job.title || 'Untitled Position',
+              description: job.description || null,
+              company_name: employer.companyName || null,
+              company_logo_url: employer.logoUrl || null,
+              location: job.location || null,
+              job_type: job.employmentType || null,
               salary_range: job.minSalary && job.maxSalary ? 
                 `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
                 null,
@@ -282,33 +161,22 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           .fill(0)
           .map(() => createRef<any>());
       } else {
-        // Fallback to mock data if API response is not as expected
-        console.warn("API response format unexpected, using mock data");
+        // Handle empty or invalid response
         this.setState({
-          jobs: MOCK_JOBS,
-          currentIndex: MOCK_JOBS.length - 1,
-          loading: false
+          jobs: [],
+          currentIndex: -1,
+          loading: false,
+          error: "No job matches found. Try again later."
         });
-        
-        // Initialize refs for mock data
-        this.childRefs = Array(MOCK_JOBS.length)
-          .fill(0)
-          .map(() => createRef<any>());
       }
     } catch (err) {
       console.error("Fetch jobs error:", err);
-      // Fallback to mock data on error
-      console.warn("Error fetching jobs, using mock data");
       this.setState({
-        jobs: MOCK_JOBS,
-        currentIndex: MOCK_JOBS.length - 1,
-        loading: false
+        jobs: [],
+        currentIndex: -1,
+        loading: false,
+        error: "Failed to load job matches. Please try again."
       });
-      
-      // Initialize refs for mock data
-      this.childRefs = Array(MOCK_JOBS.length)
-        .fill(0)
-        .map(() => createRef<any>());
     }
   };
   
@@ -324,9 +192,11 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         // Map API response to our JobWithMatchScore interface
         const mappedJobs: JobWithMatchScore[] = jobsData.map((job: any) => {
           const employer = job.employer || {};
+          const jobId = job.id;
           
           return {
-            id: job.id,
+            id: jobId,
+            original_id: jobId, // Store the original job ID
             employer_id: employer.id || '',
             title: job.title || 'Untitled Position',
             description: job.description || null,
@@ -361,41 +231,34 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           .fill(0)
           .map(() => createRef<any>());
       } else {
-        // Fallback to mock data if API response is not as expected
-        console.warn("API response format unexpected, using mock data");
+        // Handle empty or invalid response
         this.setState({
-          jobs: MOCK_JOBS,
-          currentIndex: MOCK_JOBS.length - 1,
-          loading: false
+          jobs: [],
+          currentIndex: -1,
+          loading: false,
+          error: "No jobs found. Try again later."
         });
-        
-        // Initialize refs for mock data
-        this.childRefs = Array(MOCK_JOBS.length)
-          .fill(0)
-          .map(() => createRef<any>());
       }
     } catch (err) {
       console.error("Find jobs error:", err);
-      // Fallback to mock data on error
-      console.warn("Error finding jobs, using mock data");
       this.setState({
-        jobs: MOCK_JOBS,
-        currentIndex: MOCK_JOBS.length - 1,
-        loading: false
+        jobs: [],
+        currentIndex: -1,
+        loading: false,
+        error: "Failed to find jobs. Please try again."
       });
-      
-      // Initialize refs for mock data
-      this.childRefs = Array(MOCK_JOBS.length)
-        .fill(0)
-        .map(() => createRef<any>());
     }
   };
   
   // Apply for a job using the API
   applyForJob = async (jobId: string) => {
     try {
+      // Find the job in our state to get the original ID if available
+      const job = this.state.jobs.find(j => j.id === jobId);
+      const apiJobId = job?.original_id || jobId;
+      
       // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
-      const response = await jobApplicationService.applyForJob(jobId, {});
+      const response = await jobApplicationService.applyForJob(apiJobId, {});
       console.log("Job application submitted successfully:", response);
       return { success: true, data: { letterGenerated: true } };
     } catch (error) {
@@ -407,8 +270,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Decline a job
   declineJob = async (jobId: string) => {
     try {
+      // Find the job in our state to get the original ID if available
+      const job = this.state.jobs.find(j => j.id === jobId);
+      const apiJobId = job?.original_id || jobId;
+      
       // This would be replaced with a real API call in the future
-      console.log(`Declined job ${jobId}`);
+      console.log(`Declined job ${apiJobId}`);
       return { success: true, data: {} };
     } catch (error) {
       console.error("Error declining job:", error);
@@ -504,7 +371,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       const jobToRestore = {
         ...lastRemovedJob.job, 
         viewed: false,
-        id: `${lastRemovedJob.job.id}-${Date.now()}`
+        id: `${lastRemovedJob.job.id}-${Date.now()}`,
+        // Preserve the original ID for API calls
+        original_id: lastRemovedJob.job.original_id || lastRemovedJob.job.id
       };
       // Add the job back to the stack
       newJobs.splice(prevState.currentIndex + 1, 0, jobToRestore);
@@ -740,7 +609,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
 
                     {/* View Details Button */}
                     <div className="mt-auto pt-2">
-                      <Link to={`/opportunities/${job.id}`} className="block w-full">
+                      <Link to={`/opportunities/${job.original_id}`} className="block w-full">
                         <Button variant="outline" className="w-full flex items-center justify-center text-sm">
                           View Full Details
                           <ChevronRight className="ml-1 h-4 w-4" />

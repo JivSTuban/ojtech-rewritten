@@ -10,6 +10,7 @@ import { Loader2, Github } from 'lucide-react';
 import { AuthLayout } from '../components/layouts/AuthLayout';
 import { toast } from '../components/ui/toast-utils';
 import { GoogleLogin } from '@react-oauth/google';
+import emailjs from '@emailjs/browser';
 
 interface RegisterPageState {
   fullName: string;
@@ -34,6 +35,10 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
   
   // API base URL
   private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  // EmailJS credentials
+  private EMAIL_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_gzgua2e';
+  private EMAIL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'yhRZXtxm7JWqyq2ep';
+  private EMAIL_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'yhRZXtxm7JWqyq2ep';
   
   constructor(props: {}) {
     super(props);
@@ -47,6 +52,9 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       isGoogleLoading: false,
       redirectTo: null
     };
+    
+    // Initialize EmailJS
+    emailjs.init(this.EMAIL_PUBLIC_KEY);
   }
   
   componentDidMount() {
@@ -164,18 +172,51 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       
       // Call register function from context with STUDENT role
       // Note: We don't include fullName in the request as the backend doesn't accept it
-      await this.context.register({
+      const response = await this.context.register({
         username,
         email,
         password,
         roles: ["ROLE_STUDENT"]
       });
       
-      // Show success toast
-      toast.success({
-        title: "Registration Successful",
-        description: "Your account has been created successfully."
-      });
+      console.log('Registration and login response:', response);
+      
+      // Send verification email using EmailJS
+      if (response && response.userId) {
+        try {
+          await emailjs.send(
+            this.EMAIL_SERVICE_ID,
+            this.EMAIL_TEMPLATE_ID,
+            {
+              userID: response.userId,
+              to_email: email,
+            },
+            this.EMAIL_PUBLIC_KEY
+          );
+          
+          console.log('Verification email sent successfully');
+          
+          // Show success toast with email verification info
+          toast.success({
+            title: "Registration Successful",
+            description: "Your account has been created successfully. Please check your email to verify your account."
+          });
+        } catch (emailError) {
+          console.error('Error sending verification email:', emailError);
+          
+          // Still show success for registration but mention email issue
+          toast.success({
+            title: "Registration Successful",
+            description: "Your account has been created, but we couldn't send a verification email. Please contact support."
+          });
+        }
+      } else {
+        // Show regular success toast if no userId in response
+        toast.success({
+          title: "Registration Successful",
+          description: "Your account has been created successfully."
+        });
+      }
       
       // The user is now logged in, and the AuthProvider will handle redirection
       // based on the user's role and onboarding status
