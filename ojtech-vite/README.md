@@ -1,6 +1,66 @@
-# OJTech - React Vite Frontend
+# OJTech React Frontend
 
-This is the React Vite frontend for the OJTech job matching application. It's a migration from the original Next.js application to React Vite, using class components and integrating with the Spring Boot API.
+This is the React frontend for the OJTech platform, built with Vite, React, and TypeScript.
+
+## Setup
+
+1. Clone the repository
+2. Navigate to the project directory:
+   ```
+   cd ojtech-vite
+   ```
+3. Install dependencies:
+   ```
+   npm install
+   ```
+4. Create a `.env.local` file in the root directory with the following content:
+   ```
+   # API Base URL
+   VITE_API_BASE_URL=http://localhost:8080/api
+
+   # Gemini AI API Configuration
+   VITE_GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta
+   VITE_GEMINI_API_KEY=your-gemini-api-key-here
+   ```
+
+   > **Note:** You need to obtain a Gemini API key from Google AI Studio (https://makersuite.google.com/app/apikey) and replace `your-gemini-api-key-here` with your actual API key.
+
+5. Start the development server:
+   ```
+   npm run dev
+   ```
+
+## Features
+
+### Resume Generation
+The application includes an AI-powered resume generator that creates ATS-optimized resumes based on your profile information. This feature:
+
+- Uses Google's Gemini AI API directly from the frontend
+- Generates professionally formatted resume content optimized for ATS systems
+- Follows best practices from the Tech Interview Handbook
+- Allows downloading as PDF
+
+#### Resume Generation Flow
+1. User completes their profile with education, experience, skills, etc.
+2. User clicks "Generate Resume" button on the Resume Management page
+3. Frontend calls Gemini API directly with optimized prompt
+4. Resume JSON is saved to the backend database
+5. Resume is displayed to the user in a clean, formatted layout
+6. User can download as PDF or view the raw JSON
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| VITE_API_BASE_URL | The base URL for the backend API (default: http://localhost:8080/api) |
+| VITE_GEMINI_API_URL | The URL for the Gemini API (default: https://generativelanguage.googleapis.com/v1beta) |
+| VITE_GEMINI_API_KEY | Your Gemini API key (required for resume generation) |
+
+## Development Notes
+
+- The project uses class components for all React components
+- The frontend now handles the AI integration directly, communicating with Gemini API
+- The backend only stores and retrieves the resume data
 
 ## Technology Stack
 

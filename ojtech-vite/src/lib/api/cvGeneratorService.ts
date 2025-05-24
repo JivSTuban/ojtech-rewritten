@@ -431,7 +431,7 @@ function generateHTMLFromJSON(jsonData: ResumeData | any): string {
 }
 
 /**
- * Creates a prompt for the AI to format resume content
+ * Creates a prompt for the AI to format resume content based on Tech Interview Handbook best practices
  */
 function createCVPrompt(profileData: any): string {
   // Extract data from profileData
@@ -499,8 +499,8 @@ function createCVPrompt(profileData: any): string {
   
   // Create the prompt
   return `
-    Format the following resume information into optimized content. DO NOT create any HTML - just return a JSON object with the formatted content.
-    Focus on creating impactful bullet points and quantifying achievements.
+    Format the following resume information into an optimized, ATS-friendly resume in JSON format. DO NOT create any HTML - just return a JSON object with the formatted content.
+    The resume should be optimized to pass Applicant Tracking Systems (ATS) and appeal to hiring managers in tech companies.
     
     STUDENT INFORMATION:
     -------------------
@@ -534,24 +534,33 @@ function createCVPrompt(profileData: any): string {
     LinkedIn: ${linkedinUrl || 'Not provided'}
     Portfolio: ${portfolioUrl || 'Not provided'}
     
-    REQUIREMENTS:
-    ------------
-    1. Return a JSON object with the following structure:
+    ATS-OPTIMIZATION REQUIREMENTS:
+    ----------------------------
+    1. Return a JSON object with the following standard resume sections in this order:
        {
+         "contactInfo": {
+           "name": "Full Name",
+           "email": "Email",
+           "phone": "Phone",
+           "location": "Location",
+           "linkedin": "LinkedIn URL",
+           "github": "GitHub URL",
+           "portfolio": "Portfolio URL"
+         },
          "professionalSummary": {
-           "summaryPoints": ["point1", "point2", "point3"]  // 3-4 bullet points
+           "summaryPoints": ["point1", "point2", "point3"]  // 3-4 concise, impactful bullet points
          },
          "skills": {
-           "skillsList": ["skill1", "skill2", ...]  // Categorized and organized skills
+           "skillsList": ["skill1", "skill2", ...]  // Organized by relevance and categorized if possible
          },
          "experience": {
            "experiences": [
              {
-               "title": "Job Title",
+               "title": "Exact Job Title",
                "company": "Company Name",
                "location": "Location",
-               "dateRange": "Date Range",
-               "achievements": ["achievement1", "achievement2", ...]  // 3-4 bullet points per role
+               "dateRange": "MMM YYYY - MMM YYYY", // Consistent date format
+               "achievements": ["achievement1", "achievement2", ...]  // 3-5 bullet points per role
              }
            ]
          },
@@ -559,274 +568,339 @@ function createCVPrompt(profileData: any): string {
            "projectsList": [
              {
                "name": "Project Name",
-               "technologies": "Tech Stack",
+               "technologies": "Tech Stack used",
                "highlights": ["highlight1", "highlight2", ...]  // 2-3 bullet points per project
              }
            ]
          },
          "education": {
            "university": "University Name",
-           "major": "Major",
+           "major": "Degree and Major",
            "graduationYear": "Year",
            "location": "Location"
          },
          "certifications": {
            "certificationsList": [
              {
-               "name": "Cert Name",
-               "issuer": "Issuer",
-               "dateReceived": "Date"
+               "name": "Certification Name",
+               "issuer": "Issuing Organization",
+               "dateReceived": "MMM YYYY"
              }
            ]
-         },
-         "contactInfo": {
-           "name": "Full Name",
-           "email": "Email",
-           "phone": "Phone",
-           "location": "Location",
-           "address": "Full Address",
-           "linkedin": "LinkedIn URL",
-           "github": "GitHub URL",
-           "portfolio": "Portfolio URL"
          }
        }
     
-    2. For each bullet point:
-       - Start with a strong action verb
-       - Include specific metrics and numbers
-       - Focus on achievements and impact
-       - Use the X-Y-Z formula: "Accomplished X, as measured by Y, by doing Z"
+    2. ATS-FRIENDLY CONTENT GUIDELINES:
+       a. Professional Summary: Create a powerful, concise summary that directly answers why they are a good fit for tech roles.
+          - Start with the person's current job role/title or aspiration
+          - Include years of experience in relevant areas
+          - Highlight top 2-3 skills that make them stand out
+          - Match keywords that are common in job descriptions for their target role
+       
+       b. Skills Section: Group skills logically and prioritize technical skills first
+          - List programming languages and technical skills first
+          - Follow with frameworks, tools, and technologies
+          - Include soft skills only if particularly relevant
+          - Ensure ALL skills mentioned in experience/projects also appear here
+       
+       c. Experience Bullet Points:
+          - Start each with a STRONG ACTION VERB (implemented, developed, designed, etc.)
+          - Follow the X-Y-Z formula: "Accomplished X, as measured by Y, by doing Z"
+          - Include SPECIFIC METRICS and QUANTIFIABLE RESULTS (percentages, numbers, time saved)
+          - Use technical terminology relevant to the field
+          - Keep each bullet point under 2 lines
+          - Include tech stack used for each project/experience
+       
+       d. Projects:
+          - Prioritize projects that demonstrate technical skills relevant to the target job
+          - Include GitHub links if available
+          - Clearly explain the problem solved, technology used, and outcome
+          - Keep descriptions technically precise but understandable
+       
+       e. Education:
+          - List degree, major, university, and graduation year
+          - Include GPA only if above 3.5
+          - List relevant coursework only if it directly relates to target jobs
     
-    3. Professional Summary points should:
-       - Highlight key skills and achievements
-       - Include relevant industry keywords
-       - Focus on value proposition
-       - Be concise but impactful
-       - Include location information when relevant
+    3. OPTIMIZATION TECHNIQUES:
+       - Use STANDARD, ATS-FRIENDLY SECTION HEADINGS exactly as provided in the JSON structure
+       - Include KEYWORDS from the student's field but avoid keyword stuffing
+       - Keep formatting clean and simple
+       - Ensure consistency in date formats, punctuation, and capitalization
+       - Use industry-standard terminology for job titles and technologies
+       - Make sure the resume information aligns with LinkedIn profile data if available
     
-    4. Format all dates consistently as "MMM YYYY" (e.g., "Jan 2024")
-    
-    5. Include the location in the contact information section and in the professional summary if relevant
+    4. CONTENT DO'S AND DON'TS:
+       DO:
+       - Quantify achievements wherever possible (e.g., "Increased server response time by 40%")
+       - Use present tense for current positions and past tense for previous positions
+       - Include specific technologies, languages, and frameworks in each experience
+       - Focus on achievements rather than responsibilities
+       
+       DON'T:
+       - Use personal pronouns (I, me, my)
+       - Include irrelevant experiences or skills
+       - Use flowery language or clichés
+       - Include personal information like age, marital status, etc.
+
+    5. QUANTIFICATION REQUIREMENTS (ESSENTIAL):
+       a. For EVERY achievement in experience and projects, you MUST quantify impact using at least one of these methods:
+          - WHOLE NUMBERS: Use specific metrics like "$50,000 in revenue," "20 new clients," "5 critical bugs fixed"
+          - PERCENTAGES: Show growth or reduction like "increased efficiency by 25%," "reduced errors by 40%"
+          - TIME METRICS: Quantify time saved like "reduced processing time from 5 minutes to 30 seconds"
+          - SCALE: Indicate project size with metrics like "managed database of 500,000 records"
+          - FREQUENCY: Show consistency with metrics like "delivered 15 weekly reports" or "maintained 99.9% uptime"
+          - COMPARISONS: Use "exceeded target by 20%" or "performed 30% better than previous system"
+       
+       b. Quantification Techniques for Technical Roles:
+          - CODE EFFICIENCY: "Optimized algorithm reducing runtime by 65%"
+          - DATABASE: "Improved query performance by 45% by implementing indexing strategies"
+          - USER EXPERIENCE: "Increased user engagement 30% through UI/UX improvements"
+          - AUTOMATION: "Automated processes saving team 15 hours weekly"
+          - TESTING: "Implemented test suite achieving 95% code coverage"
+          - DEPLOYMENT: "Reduced deployment time from 2 hours to 10 minutes"
+          - STABILITY: "Decreased system crashes by 80%"
+       
+       c. Project Impact Quantification:
+          - Show BUSINESS IMPACT of technical work
+          - Connect technical changes to user metrics (e.g., "Redesigned checkout process, increasing conversion rate by 25%")
+          - Quantify scale (e.g., "Built API handling 10,000 requests per minute")
+          - Measure before/after scenarios (e.g., "Reduced page load time from 5s to 1.2s")
+          - Show adoption metrics (e.g., "Feature used by 80% of users within first month")
+       
+       d. If exact numbers aren't available, make reasonable estimates:
+          - Use ranges: "Improved efficiency by 15-20%"
+          - Use "approximately" or "over" with conservative estimates: "saved approximately 10 hours per week"
+          - Compare to benchmarks: "performed 3x faster than industry standard"
     
     RESPONSE FORMAT:
     --------------
-    Return ONLY the JSON object with the formatted content. Do not include any other text or explanation.
-    The JSON will be used to populate a pre-defined template, so stick strictly to the specified structure.
+    EXTREMELY IMPORTANT: Return ONLY the raw JSON object with the formatted content. 
+    
+    - DO NOT wrap the JSON in markdown code blocks (no triple backticks)
+    - DO NOT include any explanatory text before or after the JSON
+    - DO NOT use markdown formatting of any kind
+    - ENSURE the JSON is properly formatted and valid
+    - The response should begin with { and end with } with nothing else before or after
+    
+    The JSON will be directly parsed with JSON.parse() so it must be syntactically correct JSON.
   `;
 }
 
 /**
- * Generates a professional CV in HTML format based on student profile data and saves it to the backend
+ * Calls the Gemini API directly to generate resume JSON
  */
-export const generateCV = async (profileData: any): Promise<any> => {
-  const token = authService.getCurrentUser()?.accessToken;
-  if (!token) {
-    throw new Error('Authentication token is required');
+export async function callGeminiAPI(profileData: any): Promise<any> {
+  try {
+    console.log('Calling Gemini API directly');
+    
+    if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not set');
+      throw new Error('Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in your environment variables.');
+    }
+    
+    // Build the prompt
+    const prompt = createCVPrompt(profileData);
+    console.log('Gemini prompt created, length:', prompt.length);
+    
+    // Create the API request body
+    const requestBody = {
+      model: MODEL,
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.6,
+        topK: 40,
+        topP: 0.9,
+        maxOutputTokens: 65535
+      }
+    };
+    
+    // Make the API call
+    const apiUrl = `${GEMINI_API_URL}/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('Making Gemini API call to:', `${GEMINI_API_URL}/models/${MODEL}:generateContent`);
+    
+    const response = await axios.post(apiUrl, requestBody, {
+        headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Gemini API response status:', response.status);
+    
+    // Extract the generated text from the response
+    if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const generatedText = response.data.candidates[0].content.parts[0].text;
+      console.log('Generated text length:', generatedText.length);
+      
+      try {
+        // Extract JSON from markdown code blocks if present
+        let jsonString = generatedText;
+        
+        // Check if the response is wrapped in a markdown code block (```json ... ```)
+        const markdownJsonRegex = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/;
+        const markdownMatch = generatedText.match(markdownJsonRegex);
+        
+        if (markdownMatch && markdownMatch[1]) {
+          console.log('Found JSON in markdown code block, extracting...');
+          jsonString = markdownMatch[1];
+        }
+        
+        // Also check for JSON that might not be in code blocks but has extra text before/after
+        const jsonRegex = /(\{[\s\S]*\})/;
+        const jsonMatch = jsonString.match(jsonRegex);
+        
+        if (jsonMatch && jsonMatch[1]) {
+          console.log('Extracted JSON object from response');
+          jsonString = jsonMatch[1];
+        }
+        
+        console.log('Attempting to parse JSON string:', jsonString.substring(0, 100) + '...');
+        
+        // Parse the extracted JSON
+        const jsonData = JSON.parse(jsonString);
+        return jsonData;
+      } catch (e) {
+        console.error('Error parsing Gemini response as JSON:', e);
+        console.error('Raw response:', generatedText);
+        throw new Error('Invalid JSON response from Gemini API');
+      }
+    } else {
+      console.error('Unexpected Gemini API response structure:', response.data);
+      throw new Error('Unexpected response from Gemini API');
+    }
+  } catch (error: any) {
+    console.error('Error calling Gemini API:', error);
+    
+    if (error.response) {
+      console.error('API response error:', error.response.status, error.response.data);
+    }
+    
+    throw error;
   }
+}
 
-  console.log('Making CV generation request with token:', token.substring(0, 15) + '...');
-  console.log('Profile data keys:', Object.keys(profileData));
-  console.log('API URL:', `${API_BASE_URL}/cvs/cv/generate`);
-  
-  // Log some key profile data for debugging
-  console.log('First name:', profileData.firstName);
-  console.log('Last name:', profileData.lastName);
-  console.log('Email:', profileData.email);
-  
-  if (profileData.skills) {
-    console.log('Skills count:', profileData.skills.length);
-  }
+/**
+ * Saves HTML content to the CV record
+ */
+export const saveResumeHtml = async (cvId: string, htmlContent: string): Promise<boolean> => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
   
   try {
-    // First create a CV record
-    console.log('API_BASE_URL:', API_BASE_URL);
+    console.log(`Saving HTML content for CV ID: ${cvId}, content length: ${htmlContent.length}`);
     
-    // Create CV record first
+    const response = await axios.put(
+      `${apiUrl}/cvs/${cvId}/html`,
+      htmlContent,
+      {
+        headers: {
+          'Authorization': `Bearer ${authService.getCurrentUser()?.accessToken}`,
+          'Content-Type': 'text/html'
+        }
+      }
+    );
+    
+    console.log(`HTML content saved successfully, status: ${response.status}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error saving HTML content:', error);
+    
+    if (error.response) {
+      console.error('API response error:', error.response.status, error.response.data);
+    }
+    
+    return false;
+  }
+};
+
+/**
+ * Generates a CV using the student's profile data
+ */
+export const generateCV = async (profileData: any): Promise<any> => {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  
+  try {
+    console.log('Generating CV with profile data:', profileData);
+    
+    // Step 1: Create a placeholder CV entity
+    console.log('Creating placeholder CV entity');
     const createResponse = await axios.post(
-      `${API_BASE_URL}/cvs/generate`,
+      `${apiUrl}/cvs/generate`,
       {},
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authService.getCurrentUser()?.accessToken}`,
           'Content-Type': 'application/json'
         }
       }
     );
     
-    console.log('CV record created:', createResponse.status, createResponse.data);
-    
     if (!createResponse.data || !createResponse.data.id) {
-      throw new Error('Failed to create CV record');
+      console.error('No ID in create CV response:', createResponse);
+      throw new Error('Failed to create CV');
     }
     
     const cvId = createResponse.data.id;
-    console.log('Generated CV ID:', cvId);
+    console.log('Created placeholder CV with ID:', cvId);
     
-    // Then generate the CV content
-    console.log('Generating CV content with endpoint:', `${API_BASE_URL}/cvs/cv/generate`);
+    // Step 2: Generate the CV content using Gemini API directly
+    console.log('Calling Gemini API directly from frontend');
+    const jsonContent = await callGeminiAPI(profileData);
     
+    // Convert the JSON to a string
+    const jsonContentStr = JSON.stringify(jsonContent);
+    console.log('Generated CV content length:', jsonContentStr.length);
+    
+    // Step 3: Update the CV entity with the generated content
+    console.log('Updating CV entity with generated content');
+    await axios.put(
+      `${apiUrl}/cvs/${cvId}/content`,
+      jsonContentStr,
+      {
+        headers: {
+          'Authorization': `Bearer ${authService.getCurrentUser()?.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    // Step 4: Generate HTML and save it as well
     try {
-      const contentResponse = await axios.post(
-        `${API_BASE_URL}/cvs/cv/generate`,
-        profileData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Import the HTML generator directly to avoid circular dependencies
+      const { default: resumeHtmlGenerator } = await import('./resumeHtmlGenerator');
       
-      console.log('Content response received:', contentResponse.status);
-      console.log('Content response headers:', contentResponse.headers);
-      console.log('Content response type:', typeof contentResponse.data);
-      if (typeof contentResponse.data === 'string') {
-        console.log('Content response preview:', contentResponse.data.substring(0, 100) + '...');
-      } else if (contentResponse.data) {
-        console.log('Content response keys:', Object.keys(contentResponse.data));
-      }
+      // Generate HTML from the JSON content
+      const htmlContent = resumeHtmlGenerator.generateResumeHtml(jsonContent);
+      console.log('Generated HTML content length:', htmlContent.length);
       
-      // Parse response data
-      let data;
-      try {
-        if (typeof contentResponse.data === 'string') {
-          console.log('Content response is a string, length:', contentResponse.data.length);
-          try {
-            data = JSON.parse(contentResponse.data);
-            console.log('Successfully parsed string to JSON:', Object.keys(data));
-          } catch (parseError) {
-            console.error('Error parsing string as JSON, treating as raw string:', parseError);
-            // If failed to parse as JSON, use the raw HTML if it seems valid
-            if (contentResponse.data.includes('<!DOCTYPE html>') || contentResponse.data.includes('<html>')) {
-              console.log('String appears to be HTML, using as direct output');
-              return {
-                htmlContent: contentResponse.data,
-                id: cvId
-              };
-            }
-            data = { raw: contentResponse.data };
-          }
-        } else {
-          console.log('Content response is an object:', typeof contentResponse.data);
-          data = contentResponse.data;
-          console.log('Object data keys:', Object.keys(data));
-        }
-        console.log('Successfully processed response data');
-      } catch (e) {
-        console.error('Error processing response data:', e);
-        // Even if we can't parse it, let's use the raw response
-        data = contentResponse.data;
-        
-        // Log the structure to help debug
-        console.log('Using raw data, type:', typeof data);
-        if (typeof data === 'string') {
-          console.log('Raw data preview:', data.substring(0, 100) + '...');
-        } else if (data !== null && typeof data === 'object') {
-          console.log('Raw data keys:', Object.keys(data));
-        }
-      }
-      
-      // Generate HTML based on the received data
-      const htmlContent = generateHTMLFromJSON(data);
-      console.log('HTML content generated, length:', htmlContent.length);
-      
-      // Update the CV record with the generated HTML
-      await axios.put(
-        `${API_BASE_URL}/cvs/${cvId}/content`,
-        htmlContent,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'text/html'
-          }
-        }
-      );
-      
-      console.log('CV content updated successfully');
-      
-      // Return the generated HTML and the CV ID
-      return {
-        htmlContent,
-        id: cvId
-      };
-    } catch (cvGenerationError: any) {
-      console.error('Error in CV content generation step:', cvGenerationError);
-      // If we have a response
-      if (cvGenerationError.response) {
-        console.error(`CV generation failed with status ${cvGenerationError.response.status}:`, 
-                     cvGenerationError.response.data);
-        
-        // For 404 errors on the endpoint, show a special error message
-        if (cvGenerationError.response.status === 404) {
-          throw new Error('CV generation endpoint not found. Please check API configuration.');
-        }
-      }
-      
-      // Rethrow the error to be caught by the outer catch
-      throw cvGenerationError;
+      // Save the HTML content
+      await saveResumeHtml(cvId, htmlContent);
+    } catch (htmlError) {
+      console.error('Error generating/saving HTML content:', htmlError);
+      // Continue even if HTML generation fails, we still have the JSON
     }
+    
+    console.log('CV updated with content');
+    
+    return {
+      jsonContent,
+      id: cvId
+    };
   } catch (error: any) {
     console.error('Error generating CV:', error);
     
-    // Format error message for better user experience
-    let errorMessage = 'Failed to generate resume. Please try again later.';
-    
     if (error.response) {
-      console.error('Error response status:', error.response.status);
-      console.error('Error response data:', error.response.data);
-      
-      // Log all error response details for debugging
-      if (error.response.data) {
-        if (typeof error.response.data === 'string') {
-          console.error('Error response text:', error.response.data.substring(0, 500) + '...');
-        } else if (error.response.data.message) {
-          console.error('Error message:', error.response.data.message);
-        } else {
-          console.error('Error data structure:', JSON.stringify(error.response.data));
-        }
-      }
-      
-      // Try to extract error message from response
-      if (error.response.data) {
-        if (typeof error.response.data === 'string') {
-          // If it's a string, use it directly
-          errorMessage = error.response.data.length > 100 
-            ? error.response.data.substring(0, 100) + '...' 
-            : error.response.data;
-        } else if (error.response.data.message) {
-          // If it has a message property
-          errorMessage = error.response.data.message;
-        } else if (error.response.data.error) {
-          // If it has an error property
-          errorMessage = error.response.data.error;
-        }
-      }
-      
-      // Handle specific error codes
-      if (error.response.status === 401 || error.response.status === 403) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (error.response.status === 400) {
-        errorMessage = error.response.data.message || 'Invalid profile data provided.';
-      } else if (error.response.status === 429) {
-        errorMessage = 'Too many resume generation requests. Please try again later.';
-      } else if (error.response.status === 500) {
-        console.error('Server error:', error.response.data);
-        errorMessage = 'Server error occurred while generating resume. Please try again later.';
-        
-        // If we have more detailed error information, include it
-        if (error.response.data && error.response.data.message) {
-          errorMessage += ` Details: ${error.response.data.message}`;
-        }
-      }
-    } else if (error.request) {
-      console.error('No response received from server');
-      errorMessage = 'No response received from server. Please check your internet connection.';
-    } else {
-      console.error('Error message:', error.message);
-      errorMessage = `Failed to generate resume data: ${error.message}`;
+      console.error('API response error:', error.response.status, error.response.data);
     }
     
-    throw new Error(errorMessage);
+    throw error;
   }
 };
 
@@ -842,134 +916,87 @@ function formatDate(dateString: string): string {
  * Gets CV content by ID with retries
  */
 export async function getCVContent(cvId: string, token: string, retries = 3): Promise<string> {
-  if (!token) {
-    // Try to get token from authService if not provided
-    const userToken = authService.getCurrentUser()?.accessToken;
-    if (!userToken) {
-      throw new Error('Authentication token is required');
-    }
-    token = userToken;
-  }
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
   try {
     console.log(`Getting CV content for ID: ${cvId}`);
-    const response = await axios.get(
-      `${API_BASE_URL}/cvs/${cvId}/content`,
-      {
+    const response = await axios.get(`${apiUrl}/cvs/${cvId}/content`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Accept': 'text/html, application/json',  // Accept either format
-          'Content-Type': 'application/json'
-        },
-        validateStatus: (status) => status < 500 // Don't throw for non-5xx status codes
-      }
-    );
+        'Accept': 'application/json, text/html'
+      },
+      responseType: 'text',
+      validateStatus: status => status < 500 // Accept any status < 500 to handle 404s ourselves
+    });
     
-    // Log response details for debugging
-    console.log(`CV content response status: ${response.status}`);
-    console.log(`CV content response type: ${typeof response.data}`);
+    console.log(`Received CV content response, status: ${response.status}`);
     
-    // If we got a successful response
-    if (response.status === 200) {
-      if (typeof response.data === 'string') {
-        console.log('CV content is a string, length:', response.data.length);
-        
-        // If it's already HTML, return it directly
-        if (response.data.includes('<!DOCTYPE html>') || response.data.includes('<html>')) {
-          return response.data;
-        }
-        
-        // Try to parse nested JSON strings
-        try {
-          // Helper function to recursively parse JSON strings
-          const recursivelyParse = (jsonString: string, depth = 0): any => {
-            if (depth > 5) return jsonString; // Prevent infinite recursion
-            
-            try {
-              const parsed = JSON.parse(jsonString);
-              
-              // If the result is another string that might be JSON, try parsing again
-              if (typeof parsed === 'string') {
-                if ((parsed.startsWith('"') && parsed.endsWith('"')) || 
-                    (parsed.startsWith('{') && parsed.endsWith('}')) || 
-                    (parsed.startsWith('[') && parsed.endsWith(']'))) {
-                  return recursivelyParse(parsed, depth + 1);
-                }
-                
-                // If it has HTML tags after parsing, we're done
-                if (parsed.includes('<!DOCTYPE html>') || parsed.includes('<html>')) {
-                  return parsed;
-                }
-              }
-              
-              return parsed;
-            } catch (e) {
-              // If parsing fails, return the input
-              return jsonString;
-            }
-          };
-          
-          // Start the recursive parsing
-          const parsedContent = recursivelyParse(response.data);
-          
-          // If parsing produced HTML or the original was HTML, return it
-          if (typeof parsedContent === 'string' && 
-              (parsedContent.includes('<!DOCTYPE html>') || parsedContent.includes('<html>'))) {
-            return parsedContent;
-          }
-          
-          // If we have a JSON object, convert it to HTML
-          if (typeof parsedContent === 'object' && parsedContent !== null) {
-            console.log('Parsed CV content to JSON object:', Object.keys(parsedContent));
-            return generateHTMLFromJSON(parsedContent);
-          }
-          
-          // Otherwise, return the string result of parsing
-          return String(parsedContent);
-        } catch (e) {
-          console.error('Error parsing CV content:', e);
-          return response.data; // Return original if parsing fails
-        }
-      } else if (response.data && typeof response.data === 'object') {
-        // If it's a JSON object already, generate HTML from it
-        console.log('CV content is an object, keys:', Object.keys(response.data));
-        return generateHTMLFromJSON(response.data);
-      } else {
-        // For any other type, convert to string
-        console.log('CV content is neither string nor object:', typeof response.data);
-        return String(response.data);
-      }
-    } else {
-      // For error responses, check if we should retry
-      console.error(`Error getting CV content, status: ${response.status}`);
-      
-      if (retries > 0 && response.status >= 400 && response.status < 500) {
-        console.log(`Retrying CV content retrieval, ${retries} attempts left`);
-        // Wait a second before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    // Handle 404 (not found) separately - the CV might not be ready yet
+    if (response.status === 404) {
+      console.log('CV content not found (404), it might not be ready yet');
+      if (retries > 0) {
+        console.log(`Will retry in ${(4 - retries) * 500}ms... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, (4 - retries) * 500));
         return getCVContent(cvId, token, retries - 1);
       }
+      throw new Error('CV content not found after multiple attempts');
+    }
+    
+    // Handle other non-200 responses
+    if (response.status !== 200) {
+      console.error(`Unexpected response status: ${response.status}`);
+      throw new Error(`API returned status ${response.status}`);
+    }
+    
+    // Response should be a string (either JSON or HTML)
+    if (typeof response.data === 'string') {
+      const contentLength = response.data.length;
+      console.log('Response data is a string of length:', contentLength);
       
-      throw new Error(`Failed to get CV content: ${response.status} ${
-        typeof response.data === 'string' ? response.data : JSON.stringify(response.data)
-      }`);
+      if (contentLength === 0) {
+        console.warn('Received empty content from API');
+        if (retries > 0) {
+          console.log(`Empty content, will retry in ${(4 - retries) * 1000}ms... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, (4 - retries) * 1000));
+          return getCVContent(cvId, token, retries - 1);
+        }
+        throw new Error('Received empty content after multiple attempts');
+      }
+      
+      return response.data;
     }
+    
+    // Handle unexpected response
+    console.error('Unexpected response type:', typeof response.data);
+    throw new Error(`Unexpected response type: ${typeof response.data}`);
   } catch (error: any) {
-    console.error('Error in getCVContent:', error);
+    console.error('Error getting CV content:', error);
     
+    // Extract more specific error information
+    let errorMessage = 'Unknown error getting CV content';
     if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
+      errorMessage = `Server responded with status ${error.response.status}: ${
+        error.response.data?.message || error.response.statusText || 'Unknown error'
+      }`;
+      console.error(errorMessage, error.response.data);
+    } else if (error.request) {
+      errorMessage = 'No response received from server';
+      console.error('No response received:', error.request);
+    } else {
+      errorMessage = error.message || errorMessage;
     }
     
+    // Retry logic
     if (retries > 0) {
-      console.log(`Retrying due to error, ${retries} attempts left`);
-      // Wait a second before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Retrying... (${retries} attempts left)`);
+      // Exponential backoff: wait longer between each retry
+      const delay = 1000 * (4 - retries);
+      await new Promise(resolve => setTimeout(resolve, delay));
       return getCVContent(cvId, token, retries - 1);
     }
     
-    throw error;
+    // After all retries, throw a detailed error
+    throw new Error(`Failed to get CV content after multiple attempts: ${errorMessage}`);
   }
 }
 
@@ -977,113 +1004,31 @@ export async function getCVContent(cvId: string, token: string, retries = 3): Pr
  * Gets current user's CV content
  */
 export async function getCurrentUserCVContent(token: string): Promise<string> {
+  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  
   try {
     console.log('Getting current user CV content');
-    const response = await axios.get(
-      `${API_BASE_URL}/cvs/me/content`,
-      {
+    const response = await axios.get(`${apiUrl}/cvs/me/content`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'text/html, application/json'
-        }
-      }
-    );
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'text/html'
+      },
+      responseType: 'text'
+    });
     
-    // Log response details for debugging
-    console.log(`Current user CV content response status: ${response.status}`);
-    console.log(`Current user CV content response type: ${typeof response.data}`);
+    console.log(`Received current user CV content, response status: ${response.status}`);
     
-    // If we got a successful response
-    if (response.status === 200) {
-      // Handle string response
-      if (typeof response.data === 'string') {
-        console.log('Current user CV content is a string, length:', response.data.length);
-        
-        // If it's already HTML, return it directly
-        if (response.data.includes('<!DOCTYPE html>') || response.data.includes('<html>')) {
-          return response.data;
-        }
-        
-        // Try to parse nested JSON strings
-        try {
-          // Helper function to recursively parse JSON strings
-          const recursivelyParse = (jsonString: string, depth = 0): any => {
-            if (depth > 5) return jsonString; // Prevent infinite recursion
-            
-            try {
-              const parsed = JSON.parse(jsonString);
-              
-              // If the result is another string that might be JSON, try parsing again
-              if (typeof parsed === 'string') {
-                if ((parsed.startsWith('"') && parsed.endsWith('"')) || 
-                    (parsed.startsWith('{') && parsed.endsWith('}')) || 
-                    (parsed.startsWith('[') && parsed.endsWith(']'))) {
-                  return recursivelyParse(parsed, depth + 1);
-                }
-                
-                // If it has HTML tags after parsing, we're done
-                if (parsed.includes('<!DOCTYPE html>') || parsed.includes('<html>')) {
-                  return parsed;
-                }
-              }
-              
-              return parsed;
-            } catch (e) {
-              // If parsing fails, return the input
-              return jsonString;
-            }
-          };
-          
-          // Start the recursive parsing
-          const parsedContent = recursivelyParse(response.data);
-          
-          // If parsing produced HTML or the original was HTML, return it
-          if (typeof parsedContent === 'string' && 
-              (parsedContent.includes('<!DOCTYPE html>') || parsedContent.includes('<html>'))) {
-            return parsedContent;
-          }
-          
-          // If we have a JSON object, convert it to HTML
-          if (typeof parsedContent === 'object' && parsedContent !== null) {
-            console.log('Parsed current user CV content to JSON object:', Object.keys(parsedContent));
-            return generateHTMLFromJSON(parsedContent);
-          }
-          
-          // Otherwise, return the string result of parsing
-          return String(parsedContent);
-        } catch (e) {
-          console.error('Error parsing current user CV content:', e);
-          return response.data; // Return original if parsing fails
-        }
-      } else if (response.data && typeof response.data === 'object') {
-        // If it's a JSON object already, generate HTML from it
-        console.log('Current user CV content is an object, keys:', Object.keys(response.data));
-        
-        // If it has a content field, use that
-        if (response.data.content) {
-          return typeof response.data.content === 'string' 
-            ? response.data.content 
-            : JSON.stringify(response.data.content);
-        } else {
-          // Otherwise generate HTML from the object
-          return generateHTMLFromJSON(response.data);
-        }
-      } else {
-        // For any other type, convert to string
-        console.log('Current user CV content is neither string nor object:', typeof response.data);
-        return String(response.data);
-      }
-    } else {
-      throw new Error(`Failed to get CV content: ${response.status}`);
+    // Response should be HTML text
+    if (typeof response.data === 'string') {
+      console.log('Response data is a string of length:', response.data.length);
+      return response.data;
     }
-  } catch (error: any) {
+    
+    // Handle unexpected response
+    console.error('Unexpected response type:', typeof response.data);
+    throw new Error(`Unexpected response type: ${typeof response.data}`);
+  } catch (error) {
     console.error('Error getting current user CV content:', error);
-    
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
-    }
-    
     throw error;
   }
 }
@@ -1233,5 +1178,6 @@ export default {
   getCVContent,
   getCurrentUserCVContent,
   convertCVToPDF,
-  logResumeStructure
+  logResumeStructure,
+  saveResumeHtml
 }; 

@@ -16,6 +16,9 @@ public class CV extends BaseEntity {
 
     @Column(name = "parsed_resume", columnDefinition = "jsonb")
     private String parsedResume;
+    
+    @Column(name = "html_content", columnDefinition = "text")
+    private String htmlContent;
 
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
@@ -58,6 +61,14 @@ public class CV extends BaseEntity {
     public void setParsedResume(String parsedResume) {
         this.parsedResume = parsedResume;
     }
+    
+    public String getHtmlContent() {
+        return htmlContent;
+    }
+    
+    public void setHtmlContent(String htmlContent) {
+        this.htmlContent = htmlContent;
+    }
 
     public LocalDateTime getLastUpdated() {
         return lastUpdated;
@@ -78,7 +89,7 @@ public class CV extends BaseEntity {
     public boolean isGenerated() {
         return generated;
     }
-
+    
     public void setGenerated(boolean generated) {
         this.generated = generated;
     }

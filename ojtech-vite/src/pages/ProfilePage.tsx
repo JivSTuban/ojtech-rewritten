@@ -390,8 +390,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             const refreshedUser = this.context?.user;
             if (!refreshedUser) {
               console.log("Still not authenticated after refresh, redirecting to login");
-              window.location.href = '/login';
-              return;
+        window.location.href = '/login';
+        return;
             }
           } else {
             window.location.href = '/login';
@@ -418,7 +418,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       
       if (isStudent) {
         try {
-          await this.loadStudentProfile(token);
+        await this.loadStudentProfile(token);
         } catch (profileError) {
           console.error('Error loading student profile:', profileError);
           // Don't log out immediately for profile errors
@@ -426,7 +426,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         }
       } else if (isEmployer) {
         try {
-          await this.loadEmployerProfile(token);
+        await this.loadEmployerProfile(token);
         } catch (profileError) {
           console.error('Error loading employer profile:', profileError);
           // Don't log out immediately for profile errors
@@ -784,7 +784,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     const isEmployer = Array.isArray(user.roles) && user.roles.includes('ROLE_EMPLOYER');
     
     if (!studentProfile) {
-      return (
+    return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h2 className="text-2xl font-semibold mb-2">Loading Profile...</h2>
@@ -803,252 +803,252 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             {/* Left column for tabs */}
             <div className="md:col-span-12">
               <Card className="overflow-hidden bg-gray-900/60 border-gray-800/50">
-                <div className="p-6">
-                  <div className="space-y-8">
-                    {/* Profile header with name and contact */}
-                    <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-6 rounded-lg border border-gray-800/50 shadow-lg">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="space-y-4">
-                          <div>
-                            <h2 className="text-2xl font-bold text-white">{studentProfile.firstName} {studentProfile.lastName}</h2>
-                            <p className="text-gray-400">@{user?.username}</p>
-                          </div>
-
-                          {/* Contact Information */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-gray-400">
-                              <Mail className="h-4 w-4" />
-                              <span>{user?.email}</span>
-                            </div>
-                            {studentProfile.phoneNumber && (
-                              <div className="flex items-center gap-2 text-sm text-gray-400">
-                                <Phone className="h-4 w-4" />
-                                <span>{studentProfile.phoneNumber}</span>
-                              </div>
-                            )}
-                            {studentProfile.location && (
-                              <div className="flex items-center gap-2 text-sm text-gray-400">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span>{studentProfile.location}</span>
-                              </div>
-                            )}
-                            {studentProfile.address && (
-                              <div className="flex items-center gap-2 text-sm text-gray-400">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                </svg>
-                                <span>{studentProfile.address}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Professional Links */}
-                        <div className="flex flex-wrap gap-3">
-                          {studentProfile.githubUrl && (
-                            <a 
-                              href={studentProfile.githubUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
-                            >
-                              <Github className="h-4 w-4" />
-                              <span className="text-sm">GitHub</span>
-                            </a>
-                          )}
-                          {studentProfile.linkedinUrl && (
-                            <a 
-                              href={studentProfile.linkedinUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
-                            >
-                              <Linkedin className="h-4 w-4" />
-                              <span className="text-sm">LinkedIn</span>
-                            </a>
-                          )}
-                          {studentProfile.portfolioUrl && (
-                            <a 
-                              href={studentProfile.portfolioUrl} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
-                            >
-                              <Globe className="h-4 w-4" />
-                              <span className="text-sm">Portfolio</span>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Education section */}
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="text-xl font-semibold text-white">Education</h3>
-                        </div>
-                        {studentProfile.university && studentProfile.university.trim() !== '' ? (
-                          <div>
-                            <p className="text-lg font-medium text-white">{studentProfile.university}</p>
-                            {studentProfile.major && studentProfile.major.trim() !== '' && (
-                              <p className="text-gray-400">{studentProfile.major}</p>
-                            )}
-                            {studentProfile.graduationYear && (
-                              <p className="text-gray-500 text-sm mt-1">Graduation: {studentProfile.graduationYear}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <div>
-                            <p className="text-gray-500 italic">No education information provided</p>
-                            <Button
-                              variant="link"
-                              className="text-indigo-400 hover:text-indigo-300 p-0 h-auto mt-2"
-                              onClick={this.handleOpenEducationModal}
-                            >
-                              <span className="mr-1">Add your education details</span> →
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Bio section */}
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                        <h3 className="text-xl font-semibold text-white mb-4">About Me</h3>
-                        {studentProfile.bio && studentProfile.bio.trim() !== '' ? (
-                          <p className="text-gray-400">{studentProfile.bio}</p>
-                        ) : (
-                          <p className="text-gray-500 italic">No bio provided</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Skills section */}
-                    <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                      <h3 className="text-xl font-semibold text-white mb-4">Skills</h3>
-                      {studentProfile.skills && studentProfile.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {studentProfile.skills.map((skill: string, index: number) => (
-                            <span 
-                              key={index}
-                              className="bg-black/80 text-gray-300 border border-gray-700/30 px-3 py-1 rounded-full text-sm"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 italic">No skills provided</p>
-                      )}
-                    </div>
-                    
-                    {/* Work Experience section */}
-                    {studentProfile.experiences && studentProfile.experiences.length > 0 && (
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                        <h3 className="text-xl font-semibold text-white mb-4">Work Experience</h3>
-                        <div className="space-y-6">
-                          {studentProfile.experiences.map((exp: WorkExperience, index: number) => (
-                            <div key={index} className="border-l-2 border-gray-700 pl-4 pb-2">
-                              <div className="flex justify-between items-start">
+                  <div className="p-6">
+                        <div className="space-y-8">
+                          {/* Profile header with name and contact */}
+                          <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-6 rounded-lg border border-gray-800/50 shadow-lg">
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                              <div className="space-y-4">
                                 <div>
-                                  <h4 className="font-bold text-white">{exp.title}</h4>
-                                  <p className="text-gray-400">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
+                                  <h2 className="text-2xl font-bold text-white">{studentProfile.firstName} {studentProfile.lastName}</h2>
+                                  <p className="text-gray-400">@{user?.username}</p>
                                 </div>
-                                <div className="text-sm text-gray-500 bg-black/40 px-3 py-1 rounded-full">
-                                  {exp.startDate && (
-                                    <span>
-                                      {new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-                                      {' - '}
-                                      {exp.current 
-                                        ? 'Present'
-                                        : exp.endDate 
-                                          ? new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
-                                          : ''
-                                      }
-                                    </span>
+
+                                {/* Contact Information */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                                    <Mail className="h-4 w-4" />
+                                    <span>{user?.email}</span>
+                                  </div>
+                                  {studentProfile.phoneNumber && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                                      <Phone className="h-4 w-4" />
+                                      <span>{studentProfile.phoneNumber}</span>
+                                    </div>
+                                  )}
+                                  {studentProfile.location && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      </svg>
+                                      <span>{studentProfile.location}</span>
+                                    </div>
+                                  )}
+                                  {studentProfile.address && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                      </svg>
+                                      <span>{studentProfile.address}</span>
+                                    </div>
                                   )}
                                 </div>
                               </div>
-                              {exp.description && <p className="mt-2 text-gray-400">{exp.description}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* GitHub Projects section */}
-                    {studentProfile.githubProjects && studentProfile.githubProjects.length > 0 && (
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                        <h3 className="text-xl font-semibold text-white mb-4">Projects</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {studentProfile.githubProjects.map((project: GitHubProject, index: number) => (
-                            <div key={index} className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
-                              <h4 className="font-bold text-white">{project.name}</h4>
-                              {project.description && (
-                                <p className="text-gray-400 text-sm mt-1">{project.description}</p>
-                              )}
-                              {project.technologies && project.technologies.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {project.technologies.map((tech: string, techIndex: number) => (
-                                    <span key={techIndex} className="bg-gray-800 text-gray-300 px-2 py-0.5 rounded text-xs">
-                                      {tech}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              {project.url && (
-                                <a 
-                                  href={project.url} 
-                                  target="_blank" 
-                                  rel="noreferrer"
-                                  className="mt-3 inline-flex items-center text-gray-400 hover:text-white text-sm"
-                                >
-                                  <Github className="h-3.5 w-3.5 mr-1" /> View Project
-                                </a>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Certification section */}
-                    {studentProfile.certifications && studentProfile.certifications.length > 0 && (
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                        <h3 className="text-xl font-semibold text-white mb-4">Certifications</h3>
-                        <div className="space-y-4">
-                          {studentProfile.certifications.map((cert: Certification, index: number) => (
-                            <div key={index} className="border-l-2 border-gray-700 pl-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h4 className="font-bold text-white">{cert.name}</h4>
-                                  <p className="text-gray-400">{cert.issuer}</p>
-                                </div>
-                                {cert.dateReceived && (
-                                  <span className="text-sm text-gray-500 bg-black/40 px-3 py-1 rounded-full">
-                                    {new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-                                  </span>
+                              
+                              {/* Professional Links */}
+                              <div className="flex flex-wrap gap-3">
+                                {studentProfile.githubUrl && (
+                                  <a 
+                                    href={studentProfile.githubUrl} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
+                                  >
+                                    <Github className="h-4 w-4" />
+                                    <span className="text-sm">GitHub</span>
+                                  </a>
+                                )}
+                                {studentProfile.linkedinUrl && (
+                                  <a 
+                                    href={studentProfile.linkedinUrl} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
+                                  >
+                                    <Linkedin className="h-4 w-4" />
+                                    <span className="text-sm">LinkedIn</span>
+                                  </a>
+                                )}
+                                {studentProfile.portfolioUrl && (
+                                  <a 
+                                    href={studentProfile.portfolioUrl} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="flex items-center gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-3 py-2 transition-colors"
+                                  >
+                                    <Globe className="h-4 w-4" />
+                                    <span className="text-sm">Portfolio</span>
+                                  </a>
                                 )}
                               </div>
                             </div>
-                          ))}
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-6">
+                            {/* Education section */}
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-xl font-semibold text-white">Education</h3>
+                              </div>
+                              {studentProfile.university && studentProfile.university.trim() !== '' ? (
+                                <div>
+                                  <p className="text-lg font-medium text-white">{studentProfile.university}</p>
+                                  {studentProfile.major && studentProfile.major.trim() !== '' && (
+                                    <p className="text-gray-400">{studentProfile.major}</p>
+                                  )}
+                                  {studentProfile.graduationYear && (
+                                    <p className="text-gray-500 text-sm mt-1">Graduation: {studentProfile.graduationYear}</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="text-gray-500 italic">No education information provided</p>
+                                  <Button
+                                    variant="link"
+                                    className="text-indigo-400 hover:text-indigo-300 p-0 h-auto mt-2"
+                                    onClick={this.handleOpenEducationModal}
+                                  >
+                                    <span className="mr-1">Add your education details</span> →
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Bio section */}
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4">About Me</h3>
+                              {studentProfile.bio && studentProfile.bio.trim() !== '' ? (
+                                <p className="text-gray-400">{studentProfile.bio}</p>
+                              ) : (
+                                <p className="text-gray-500 italic">No bio provided</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Skills section */}
+                          <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                            <h3 className="text-xl font-semibold text-white mb-4">Skills</h3>
+                            {studentProfile.skills && studentProfile.skills.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {studentProfile.skills.map((skill: string, index: number) => (
+                                  <span 
+                                    key={index}
+                                    className="bg-black/80 text-gray-300 border border-gray-700/30 px-3 py-1 rounded-full text-sm"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 italic">No skills provided</p>
+                            )}
+                          </div>
+                          
+                          {/* Work Experience section */}
+                          {studentProfile.experiences && studentProfile.experiences.length > 0 && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4">Work Experience</h3>
+                              <div className="space-y-6">
+                                {studentProfile.experiences.map((exp: WorkExperience, index: number) => (
+                                  <div key={index} className="border-l-2 border-gray-700 pl-4 pb-2">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-bold text-white">{exp.title}</h4>
+                                        <p className="text-gray-400">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
+                                      </div>
+                                      <div className="text-sm text-gray-500 bg-black/40 px-3 py-1 rounded-full">
+                                        {exp.startDate && (
+                                          <span>
+                                            {new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                                            {' - '}
+                                            {exp.current 
+                                              ? 'Present'
+                                              : exp.endDate 
+                                                ? new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+                                                : ''
+                                            }
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {exp.description && <p className="mt-2 text-gray-400">{exp.description}</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* GitHub Projects section */}
+                          {studentProfile.githubProjects && studentProfile.githubProjects.length > 0 && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4">Projects</h3>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                {studentProfile.githubProjects.map((project: GitHubProject, index: number) => (
+                                  <div key={index} className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
+                                    <h4 className="font-bold text-white">{project.name}</h4>
+                                    {project.description && (
+                                      <p className="text-gray-400 text-sm mt-1">{project.description}</p>
+                                    )}
+                                    {project.technologies && project.technologies.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {project.technologies.map((tech: string, techIndex: number) => (
+                                          <span key={techIndex} className="bg-gray-800 text-gray-300 px-2 py-0.5 rounded text-xs">
+                                            {tech}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {project.url && (
+                                      <a 
+                                        href={project.url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="mt-3 inline-flex items-center text-gray-400 hover:text-white text-sm"
+                                      >
+                                        <Github className="h-3.5 w-3.5 mr-1" /> View Project
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Certification section */}
+                          {studentProfile.certifications && studentProfile.certifications.length > 0 && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4">Certifications</h3>
+                              <div className="space-y-4">
+                                {studentProfile.certifications.map((cert: Certification, index: number) => (
+                                  <div key={index} className="border-l-2 border-gray-700 pl-4">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <h4 className="font-bold text-white">{cert.name}</h4>
+                                        <p className="text-gray-400">{cert.issuer}</p>
+                                      </div>
+                                      {cert.dateReceived && (
+                                        <span className="text-sm text-gray-500 bg-black/40 px-3 py-1 rounded-full">
+                                          {new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex justify-center mt-6">
+                            <Link to="/profile/edit">
+                              <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
+                                Edit Skills & Profile Information
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex justify-center mt-6">
-                      <Link to="/profile/edit">
-                        <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
-                          Edit Skills & Profile Information
-                        </Button>
-                      </Link>
-                    </div>
                   </div>
-                </div>
-              </Card>
+          </Card>
             </div>
           </div>
         )}
@@ -1103,6 +1103,6 @@ export function ProfilePageWrapper() {
       )}
     </ToastContext.Consumer>
   );
-}
+} 
 
 export default ProfilePageWrapper; 
