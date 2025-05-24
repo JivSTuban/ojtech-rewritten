@@ -829,7 +829,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
       filters: {
         status: 'ALL',
         searchTerm: '',
-        sortBy: 'date',
+        sortBy: 'matchScore',
         sortDirection: 'desc'
       }
     };
@@ -1082,8 +1082,8 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                           value={this.state.filters.sortBy}
                           onChange={(e) => this.handleSortChange(e.target.value as 'date' | 'matchScore' | 'name')}
                         >
-                          <option value="date">Sort by Date</option>
                           <option value="matchScore">Sort by Match</option>
+                          <option value="date">Sort by Date</option>
                           <option value="name">Sort by Name</option>
                         </select>
                         <svg 
@@ -1169,7 +1169,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                     
                     {(this.state.filters.status !== 'ALL' || 
                       this.state.filters.searchTerm !== '' || 
-                      this.state.filters.sortBy !== 'date' || 
+                      this.state.filters.sortBy !== 'matchScore' || 
                       this.state.filters.sortDirection !== 'desc') && (
                       <Button
                         variant="ghost"
@@ -1455,7 +1455,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
       filters: {
         status: 'ALL',
         searchTerm: '',
-        sortBy: 'date',
+        sortBy: 'matchScore',
         sortDirection: 'desc'
       }
     });
