@@ -1,5 +1,6 @@
 package com.melardev.spring.jwtoauth.controller;
 
+import com.melardev.spring.jwtoauth.dtos.responses.JobApplicationResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.*;
 import com.melardev.spring.jwtoauth.exceptions.BadRequestException;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -40,7 +42,7 @@ public class JobApplicationController {
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<List<JobApplication>> getStudentApplications() {
+    public ResponseEntity<List<JobApplicationResponseDTO>> getStudentApplications() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
@@ -52,12 +54,15 @@ public class JobApplicationController {
 
         StudentProfile studentProfile = studentProfileOpt.get();
         List<JobApplication> applications = jobApplicationRepository.findByStudent(studentProfile);
-        return ResponseEntity.ok(applications);
+        List<JobApplicationResponseDTO> responseDTOs = applications.stream()
+            .map(JobApplicationResponseDTO::new)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responseDTOs);
     }
 
     @GetMapping("/job/{jobId}")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<List<JobApplication>> getJobApplications(@PathVariable UUID jobId) {
+    public ResponseEntity<List<JobApplicationResponseDTO>> getJobApplications(@PathVariable UUID jobId) {
         Optional<Job> jobOpt = jobRepository.findById(jobId);
         if (jobOpt.isEmpty()) {
             throw new ResourceNotFoundException("Job not found");
@@ -75,7 +80,10 @@ public class JobApplicationController {
         }
 
         List<JobApplication> applications = jobApplicationRepository.findByJob(job);
-        return ResponseEntity.ok(applications);
+        List<JobApplicationResponseDTO> responseDTOs = applications.stream()
+            .map(JobApplicationResponseDTO::new)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responseDTOs);
     }
 
     @PostMapping("/apply/{jobId}")
@@ -134,7 +142,7 @@ public class JobApplicationController {
 
         application = jobApplicationRepository.save(application);
 
-        return ResponseEntity.ok(application);
+        return ResponseEntity.ok(new JobApplicationResponseDTO(application));
     }
 
     @PutMapping("/{applicationId}/status")
@@ -175,7 +183,7 @@ public class JobApplicationController {
             application.setLastUpdatedAt(LocalDateTime.now());
             application = jobApplicationRepository.save(application);
             
-            return ResponseEntity.ok(application);
+            return ResponseEntity.ok(new JobApplicationResponseDTO(application));
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Invalid status value");
         }
@@ -183,7 +191,7 @@ public class JobApplicationController {
 
     @GetMapping("/{applicationId}")
     @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER')")
-    public ResponseEntity<JobApplication> getApplicationById(@PathVariable UUID applicationId) {
+    public ResponseEntity<JobApplicationResponseDTO> getApplicationById(@PathVariable UUID applicationId) {
         Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
         if (applicationOpt.isEmpty()) {
             throw new ResourceNotFoundException("Application not found");
@@ -211,7 +219,7 @@ public class JobApplicationController {
             }
         }
 
-        return ResponseEntity.ok(application);
+        return ResponseEntity.ok(new JobApplicationResponseDTO(application));
     }
 
     @DeleteMapping("/{applicationId}")
