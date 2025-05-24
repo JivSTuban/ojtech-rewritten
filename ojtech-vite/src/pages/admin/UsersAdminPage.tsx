@@ -3,22 +3,48 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../..
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../components/ui/Table";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { UserCheck, UserX, Search, Briefcase, UserCircle } from "lucide-react";
+import { UserCheck, UserX, Search, Briefcase, UserCircle, Plus } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
 import adminService from "../../lib/api/adminService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/Dialog";
+import { Label } from "../../components/ui/Label";
+import { Input } from "../../components/ui/Input";
+
+interface Role {
+  id: string;
+  name: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Profile {
+  id: string;
+  fullName: string;
+  role: string;
+  hasCompletedOnboarding: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Other profile fields may be present
+}
 
 interface User {
   id: string;
   username: string;
   email: string;
-  roles: string[];
+  roles: Role[];
   enabled: boolean;
-  createdAt?: string;
+  emailVerified: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  profile?: Profile;
 }
 
-interface PaginatedResponse<T> {
-  content: T[];
+interface ApiResponse {
+  users: User[];
   currentPage: number;
   totalItems: number;
   totalPages: number;
@@ -34,6 +60,14 @@ interface UsersAdminPageState {
   searchQuery: string;
   filterRole: string;
   pageSize: number;
+  isCreateUserDialogOpen: boolean;
+  newUser: {
+    username: string;
+    email: string;
+    password: string;
+    role: string;
+  };
+  createUserError: string | null;
 }
 
 export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
@@ -51,7 +85,15 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       error: null,
       searchQuery: "",
       filterRole: "all",
-      pageSize: 10
+      pageSize: 10,
+      isCreateUserDialogOpen: false,
+      newUser: {
+        username: "",
+        email: "",
+        password: "",
+        role: "ROLE_STUDENT"
+      },
+      createUserError: null
     };
   }
   
@@ -62,7 +104,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   async fetchUsers() {
     try {
       const { currentPage, pageSize, searchQuery } = this.state;
-      let response: PaginatedResponse<User>;
+      let response: ApiResponse;
       
       if (searchQuery) {
         response = await adminService.searchUsers(searchQuery, currentPage, pageSize);
@@ -71,7 +113,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       }
       
       this.setState({
-        users: response.content,
+        users: response.users || [],
         currentPage: response.currentPage,
         totalItems: response.totalItems,
         totalPages: response.totalPages,
@@ -130,12 +172,64 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       this.fetchUsers();
     });
   }
+  
   handleUserDelete = async (userId: string) => {
     try {
       await adminService.deleteUser(userId);
       await this.fetchUsers(); // Refresh the list
     } catch (error) {
       console.error("Error deleting user:", error);
+    }
+  }
+
+  handleCreateUserDialogOpen = () => {
+    this.setState({ 
+      isCreateUserDialogOpen: true,
+      newUser: {
+        username: "",
+        email: "",
+        password: "",
+        role: "ROLE_STUDENT"
+      },
+      createUserError: null
+    });
+  }
+
+  handleCreateUserDialogClose = () => {
+    this.setState({ isCreateUserDialogOpen: false });
+  }
+
+  handleNewUserInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    this.setState(prevState => ({
+      newUser: {
+        ...prevState.newUser,
+        [name]: value
+      }
+    }));
+  }
+
+  handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      this.setState({ createUserError: null });
+      const { newUser } = this.state;
+      
+      await adminService.createUser({
+        username: newUser.username,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role
+      });
+      
+      this.setState({ isCreateUserDialogOpen: false });
+      await this.fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error("Error creating user:", error);
+      this.setState({ 
+        createUserError: typeof error === 'string' ? error : "Failed to create user" 
+      });
     }
   }
 
@@ -147,13 +241,21 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     }
     
     return users.filter(user => 
-      user.roles.includes(filterRole)
+      user.roles && user.roles.some(role => role.name === filterRole)
     );
   }
   
   render() {
     const { user } = this.context || {};
-    const { loading, error, searchQuery, filterRole } = this.state;
+    const { 
+      loading, 
+      error, 
+      searchQuery, 
+      filterRole, 
+      isCreateUserDialogOpen, 
+      newUser, 
+      createUserError 
+    } = this.state;
     
     // Redirect if not logged in or not admin
     if (!user) {
@@ -164,7 +266,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       return <Navigate to="/" />;
     }
     
-    const filteredUsers = this.getFilteredUsers();
+    const filteredUsers = this.getFilteredUsers() || [];
     
     return (
       <div className="container mx-auto py-6 space-y-6 min-h-screen">
@@ -175,12 +277,97 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
               Manage platform users and control account access.
             </p>
           </div>
-          <div>
+          <div className="flex gap-2">
+            <Button onClick={this.handleCreateUserDialogOpen} variant="default">
+              <Plus className="h-4 w-4 mr-1" />
+              Create User
+            </Button>
             <Button onClick={() => this.fetchUsers()}>
               Refresh
             </Button>
           </div>
         </div>
+        
+        {/* Create User Dialog */}
+        <Dialog open={isCreateUserDialogOpen} onOpenChange={this.handleCreateUserDialogClose}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={this.handleCreateUser}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="username" className="text-right">
+                    Username
+                  </Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    value={newUser.username}
+                    onChange={this.handleNewUserInputChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={newUser.email}
+                    onChange={this.handleNewUserInputChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={newUser.password}
+                    onChange={this.handleNewUserInputChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="role" className="text-right">
+                    Role
+                  </Label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={newUser.role}
+                    onChange={this.handleNewUserInputChange}
+                    className="col-span-3 w-full pl-3 pr-8 py-2 text-sm rounded-md border border-input bg-background"
+                  >
+                    <option value="ROLE_STUDENT">Student</option>
+                    <option value="ROLE_EMPLOYER">Employer</option>
+                    <option value="ROLE_ADMIN">Admin</option>
+                  </select>
+                </div>
+                {createUserError && (
+                  <div className="text-red-500 text-sm mt-2">
+                    {createUserError}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={this.handleCreateUserDialogClose}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create User</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
         
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="relative w-full md:w-64">
@@ -232,7 +419,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                       <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Onboarding</TableHead>
+                      <TableHead>Email Verified</TableHead>
                       <TableHead>Joined</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -240,7 +427,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell className="text-center py-6 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                           No users found
                         </TableCell>
                       </TableRow>
@@ -255,19 +442,26 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              {this.getRoleIcon(user.roles[0])}
+                              {user.roles && user.roles.length > 0 ? this.getRoleIcon(user.roles[0].name) : this.getRoleIcon('')}
                               <span className="ml-2">
-                                {user.roles.map((role: string) => 
-                                  role.replace('ROLE_', '')
-                                ).join(', ')}
+                                {user.roles && user.roles.length > 0 ? user.roles.map((role) => 
+                                  role.name.replace('ROLE_', '')
+                                ).join(', ') : 'No Role'}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.enabled ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'
+                              user.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                             }`}>
                               {user.enabled ? 'Active' : 'Inactive'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.emailVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {user.emailVerified ? 'Verified' : 'Unverified'}
                             </span>
                           </TableCell>
                           <TableCell>

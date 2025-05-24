@@ -70,6 +70,12 @@ interface EmployerJobsPageState {
   redirectTo: string | null;
   showDeleteAlert: boolean;
   jobToDelete: string | null;
+  filters: {
+    status: 'ALL' | 'ACTIVE' | 'INACTIVE';
+    searchTerm: string;
+    sortBy: 'postedAt' | 'title' | 'applications';
+    sortDirection: 'asc' | 'desc';
+  };
 }
 
 
@@ -113,7 +119,13 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
       currentPage: 0,
       redirectTo: null,
       showDeleteAlert: false,
-      jobToDelete: null
+      jobToDelete: null,
+      filters: {
+        status: 'ACTIVE',
+        searchTerm: '',
+        sortBy: 'postedAt',
+        sortDirection: 'desc'
+      }
     };
   }
 
@@ -223,6 +235,101 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
     });
   };
 
+  handleFilterChange = (filterType: keyof EmployerJobsPageState['filters'], value: any) => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        [filterType]: value
+      }
+    }));
+  };
+
+  handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.handleFilterChange('searchTerm', e.target.value);
+  };
+
+  handleStatusFilterChange = (status: 'ALL' | 'ACTIVE' | 'INACTIVE') => {
+    this.handleFilterChange('status', status);
+  };
+
+  handleSortChange = (sortBy: 'postedAt' | 'title' | 'applications') => {
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        sortBy,
+        sortDirection: prevState.filters.sortBy === sortBy && prevState.filters.sortDirection === 'desc' ? 'asc' : 'desc'
+      }
+    }));
+  };
+
+  handleResetFilters = () => {
+    this.setState({
+      filters: {
+        status: 'ACTIVE',
+        searchTerm: '',
+        sortBy: 'postedAt',
+        sortDirection: 'desc'
+      }
+    });
+  };
+
+  getFilteredJobs = () => {
+    const { jobsPage } = this.state;
+    if (!jobsPage || !jobsPage.content) return [];
+    
+    const { status, searchTerm, sortBy, sortDirection } = this.state.filters;
+
+    // First filter by status and search term
+    let filtered = jobsPage.content.filter(job => {
+      // Filter by status
+      if (status !== 'ALL') {
+        const isActive = status === 'ACTIVE';
+        if (job.active !== isActive) {
+          return false;
+        }
+      }
+
+      // Filter by search term
+      if (searchTerm && !this.matchesSearchTerm(job, searchTerm)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Then sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'postedAt':
+          comparison = new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime();
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'applications':
+          comparison = (a.applications?.length || 0) - (b.applications?.length || 0);
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  };
+
+  matchesSearchTerm = (job: Job, searchTerm: string) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(term) ||
+      job.description?.toLowerCase().includes(term) ||
+      job.location?.toLowerCase().includes(term) ||
+      job.requiredSkills?.toLowerCase().includes(term) ||
+      job.employmentType?.toLowerCase().includes(term)
+    );
+  };
+
   render() {
     const { jobsPage, isLoading, error, currentPage, redirectTo } = this.state;
     const { user } = this.context || {};
@@ -258,6 +365,141 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
         </Link>
       </div>
 
+      <div className="mb-6 space-y-4">
+        {/* Search and filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by title, description, skills..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              value={this.state.filters.searchTerm}
+              onChange={this.handleSearchChange}
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <div className="relative">
+              <select 
+                className="appearance-none bg-background border rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                value={this.state.filters.status}
+                onChange={(e) => this.handleStatusFilterChange(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
+              >
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            
+            <div className="relative">
+              <select 
+                className="appearance-none bg-background border rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-primary"
+                value={this.state.filters.sortBy}
+                onChange={(e) => this.handleSortChange(e.target.value as 'postedAt' | 'title' | 'applications')}
+              >
+                <option value="postedAt">Sort by Date</option>
+                <option value="title">Sort by Title</option>
+                <option value="applications">Sort by Applications</option>
+              </select>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => this.handleSortChange(this.state.filters.sortBy)}
+              title={`Sort ${this.state.filters.sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
+            >
+              {this.state.filters.sortDirection === 'asc' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
+              )}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Status filter pills */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={this.state.filters.status === 'ALL' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-full"
+            onClick={() => this.handleStatusFilterChange('ALL')}
+          >
+            All
+          </Button>
+          <Button
+            variant={this.state.filters.status === 'ACTIVE' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-full"
+            onClick={() => this.handleStatusFilterChange('ACTIVE')}
+          >
+            Active
+          </Button>
+          <Button
+            variant={this.state.filters.status === 'INACTIVE' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-full"
+            onClick={() => this.handleStatusFilterChange('INACTIVE')}
+          >
+            Inactive
+          </Button>
+          
+          {(this.state.filters.status !== 'ACTIVE' || 
+            this.state.filters.searchTerm !== '' || 
+            this.state.filters.sortBy !== 'postedAt' || 
+            this.state.filters.sortDirection !== 'desc') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full ml-auto"
+              onClick={this.handleResetFilters}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Reset Filters
+            </Button>
+          )}
+        </div>
+        
+        {/* Results count */}
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Showing {this.getFilteredJobs().length} of {jobsPage?.content?.length || 0} job postings
+        </div>
+      </div>
+
       {isLoading && <p className="text-center text-gray-600 dark:text-gray-400">Loading jobs...</p>}
       {error && <p className="text-center text-red-500">Error: {error}</p>}
 
@@ -265,9 +507,13 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
         <p className="text-center text-gray-600 dark:text-gray-400">You haven't posted any jobs yet.</p>
       )}
 
-      {jobsPage && jobsPage.content?.length > 0 && (
+      {jobsPage && jobsPage.content?.length > 0 && this.getFilteredJobs().length === 0 && (
+        <p className="text-center text-gray-600 dark:text-gray-400">No jobs match your current filters.</p>
+      )}
+
+      {jobsPage && jobsPage.content?.length > 0 && this.getFilteredJobs().length > 0 && (
         <div className="space-y-4">
-          {jobsPage?.content?.map((job) => (
+          {this.getFilteredJobs().map((job) => (
             <Card key={job.id} className="dark:bg-gray-800 border-0 shadow-md overflow-hidden">
               <div className="border-b border-gray-200 dark:border-gray-700">
                 <CardHeader className="pb-2">

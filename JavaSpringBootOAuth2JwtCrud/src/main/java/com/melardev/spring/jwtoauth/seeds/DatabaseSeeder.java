@@ -97,6 +97,18 @@ public class DatabaseSeeder implements CommandLineRunner {
                 }
             });
             
+            transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                @Override
+                protected void doInTransactionWithoutResult(TransactionStatus status) {
+                    try {
+                        seedJobMatches();
+                    } catch (Exception e) {
+                        logger.error("Error seeding job matches: {}", e.getMessage());
+                        status.setRollbackOnly();
+                    }
+                }
+            });
+            
             logger.info("Database seeding completed successfully");
         } catch (Exception e) {
             logger.error("Error during database seeding: {}", e.getMessage());
@@ -127,16 +139,35 @@ public class DatabaseSeeder implements CommandLineRunner {
                 User adminUser = new User("admin", "admin@ojtech.com", passwordEncoder.encode("password"));
                 Role adminRole = getOrCreateRole(ERole.ROLE_ADMIN);
                 adminUser.getRoles().add(adminRole);
+                adminUser.setEmailVerified(true);
                 userRepository.save(adminUser);
 
-                // Create student user
-                User studentUser = new User("student", "student@ojtech.com", passwordEncoder.encode("password"));
+                // Create student users
                 Role studentRole = getOrCreateRole(ERole.ROLE_STUDENT);
-                studentUser.getRoles().add(studentRole);
-                userRepository.save(studentUser);
+                
+                User student1 = new User("student", "student@ojtech.com", passwordEncoder.encode("password"));
+                student1.setEmailVerified(true);
+                student1.getRoles().add(studentRole);
+                userRepository.save(student1);
+                
+                User student2 = new User("jane.doe", "jane.doe@ojtech.com", passwordEncoder.encode("password"));
+                student2.setEmailVerified(true);
+                student2.getRoles().add(studentRole);
+                userRepository.save(student2);
+                
+                User student3 = new User("michael.smith", "michael.smith@ojtech.com", passwordEncoder.encode("password"));
+                student3.setEmailVerified(true);
+                student3.getRoles().add(studentRole);
+                userRepository.save(student3);
+                
+                User student4 = new User("sarah.johnson", "sarah.johnson@ojtech.com", passwordEncoder.encode("password"));
+                student4.setEmailVerified(true);
+                student4.getRoles().add(studentRole);
+                userRepository.save(student4);
 
                 // Create employer user
                 User employerUser = new User("employer", "employer@ojtech.com", passwordEncoder.encode("password"));
+                employerUser.setEmailVerified(true);
                 Role employerRole = getOrCreateRole(ERole.ROLE_EMPLOYER);
                 employerUser.getRoles().add(employerRole);
                 userRepository.save(employerUser);
@@ -167,56 +198,68 @@ public class DatabaseSeeder implements CommandLineRunner {
             
             if (studentProfileRepository.count() == 0 && employerProfileRepository.count() == 0) {
                 logger.info("Seeding profiles");
-                // Create student profile
-                User studentUser = userRepository.findByUsername("student")
-                        .orElseThrow(() -> new RuntimeException("User not found"));
-
-                StudentProfile studentProfile = new StudentProfile();
-                studentProfile.setUser(studentUser);
-                studentProfile.setFullName("John Doe");
-                studentProfile.setFirstName("John");
-                studentProfile.setLastName("Doe");
-                studentProfile.setUniversity("Example University");
-                studentProfile.setMajor("Computer Science");
-                studentProfile.setGraduationYear(2024);
-                studentProfile.setPhoneNumber("123-456-7890");
-                studentProfile.setBio("A passionate student looking for opportunities");
-                studentProfile.setGithubUrl("https://github.com/johndoe");
-                studentProfile.setLinkedinUrl("https://linkedin.com/in/johndoe");
-                studentProfile.setPortfolioUrl("https://johndoe.com");
-                studentProfile.setSkills("Java,Spring Boot,React");
-                studentProfile.setAvatarUrl("https://example.com/avatar.jpg");
-                studentProfileRepository.save(studentProfile);
-
-                // Only attempt to create CV if we could access the table
-                try {
-                    cvRepository.count(); // Check if table exists
-                    
-                    // Create CV for student without using repository querying first
-                    CV cv = new CV();
-                    cv.setStudent(studentProfile);
-                    cv.setActive(true);
-                    cv.setGenerated(true);
-                    cv.setLastUpdated(LocalDateTime.now());
-                    cv.setParsedResume("{\"seedData\": true, \"message\": \"This is a sample AI-generated resume\"}");
-                    
-                    CV savedCV = cvRepository.save(cv);
-                    
-                    // Only update the student profile if we successfully saved the CV
-                    if (savedCV != null && savedCV.getId() != null) {
-                        studentProfile.setActiveCvId(savedCV.getId());
-                        studentProfileRepository.save(studentProfile);
-                        logger.info("Successfully created CV with ID: {}", savedCV.getId());
-                    }
-                } catch (Exception e) {
-                    logger.warn("Could not create CV: {}", e.getMessage());
-                    // Continue despite CV creation failure
-                }
+                
+                // Create student profiles
+                createStudentProfile(
+                    "student",
+                    "John", "Doe",
+                    "Example University",
+                    "Computer Science",
+                    2024,
+                    "123-456-7890",
+                    "A passionate student looking for opportunities in software development",
+                    "Java,Spring Boot,React",
+                    "https://github.com/johndoe",
+                    "https://linkedin.com/in/johndoe",
+                    "https://johndoe.com"
+                );
+                
+                createStudentProfile(
+                    "jane.doe",
+                    "Jane", "Doe",
+                    "Tech University",
+                    "Data Science",
+                    2023,
+                    "123-456-7891",
+                    "Data scientist with experience in machine learning and data visualization",
+                    "Python,R,TensorFlow,SQL,Tableau",
+                    "https://github.com/janedoe",
+                    "https://linkedin.com/in/janedoe",
+                    "https://janedoe.com"
+                );
+                
+                createStudentProfile(
+                    "michael.smith",
+                    "Michael", "Smith",
+                    "State University",
+                    "Information Technology",
+                    2025,
+                    "123-456-7892",
+                    "IT specialist with focus on cybersecurity and network administration",
+                    "Network Security,Linux,AWS,Docker,Kubernetes",
+                    "https://github.com/michaelsmith",
+                    "https://linkedin.com/in/michaelsmith",
+                    "https://michaelsmith.com"
+                );
+                
+                createStudentProfile(
+                    "sarah.johnson",
+                    "Sarah", "Johnson",
+                    "National University",
+                    "Software Engineering",
+                    2024,
+                    "123-456-7893",
+                    "Frontend developer with passion for creating beautiful user experiences",
+                    "HTML,CSS,JavaScript,React,Vue.js,UI/UX Design",
+                    "https://github.com/sarahjohnson",
+                    "https://linkedin.com/in/sarahjohnson",
+                    "https://sarahjohnson.com"
+                );
 
                 // Create employer profile
                 User employerUser = userRepository.findByUsername("employer")
                         .orElseThrow(() -> new RuntimeException("User not found"));
-
+                
                 EmployerProfile employerProfile = new EmployerProfile();
                 employerProfile.setUser(employerUser);
                 employerProfile.setFullName("Tech Company Inc.");
@@ -227,10 +270,66 @@ public class DatabaseSeeder implements CommandLineRunner {
                 employerProfile.setCompanyDescription("A leading technology company");
                 employerProfile.setWebsiteUrl("https://techcompany.com");
                 employerProfile.setLogoUrl("https://example.com/logo.png");
+                employerProfile.setHasCompletedOnboarding(true);
                 employerProfileRepository.save(employerProfile);
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed profiles: {}", e.getMessage());
+        }
+    }
+    
+    private StudentProfile createStudentProfile(String username, String firstName, String lastName, 
+                                             String university, String major, int graduationYear,
+                                             String phoneNumber, String bio, String skills,
+                                             String githubUrl, String linkedinUrl, String portfolioUrl) {
+        try {
+            User studentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+            StudentProfile studentProfile = new StudentProfile();
+            studentProfile.setUser(studentUser);
+            studentProfile.setFullName(firstName + " " + lastName);
+            studentProfile.setFirstName(firstName);
+            studentProfile.setLastName(lastName);
+            studentProfile.setUniversity(university);
+            studentProfile.setMajor(major);
+            studentProfile.setGraduationYear(graduationYear);
+            studentProfile.setPhoneNumber(phoneNumber);
+            studentProfile.setBio(bio);
+            studentProfile.setGithubUrl(githubUrl);
+            studentProfile.setLinkedinUrl(linkedinUrl);
+            studentProfile.setPortfolioUrl(portfolioUrl);
+            studentProfile.setSkills(skills);
+            studentProfile.setAvatarUrl("https://example.com/avatar-" + username + ".jpg");
+            studentProfile.setHasCompletedOnboarding(true);
+            studentProfileRepository.save(studentProfile);
+            
+            // Create CV for student
+            try {
+                CV cv = new CV();
+                cv.setStudent(studentProfile);
+                cv.setActive(true);
+                cv.setGenerated(true);
+                cv.setLastUpdated(LocalDateTime.now());
+                cv.setParsedResume("{\"seedData\": true, \"name\": \"" + firstName + " " + lastName + 
+                                  "\", \"skills\": \"" + skills + "\", \"education\": \"" + university + 
+                                  "\", \"major\": \"" + major + "\", \"graduationYear\": " + graduationYear + "}");
+                
+                CV savedCV = cvRepository.save(cv);
+                
+                if (savedCV != null && savedCV.getId() != null) {
+                    studentProfile.setActiveCvId(savedCV.getId());
+                    studentProfileRepository.save(studentProfile);
+                    logger.info("Successfully created CV for {}", username);
+                }
+            } catch (Exception e) {
+                logger.warn("Could not create CV for {}: {}", username, e.getMessage());
+            }
+            
+            return studentProfile;
+        } catch (Exception e) {
+            logger.warn("Could not create student profile for {}: {}", username, e.getMessage());
+            return null;
         }
     }
 
@@ -256,7 +355,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                 Job job1 = new Job();
                 job1.setEmployer(employer);
                 job1.setTitle("Software Engineer");
-                job1.setDescription("We are looking for a skilled software engineer to join our team.");
+                job1.setDescription("We are looking for a skilled software engineer to join our team. " +
+                                   "The ideal candidate will have experience with Java, Spring Boot, and React. " +
+                                   "Responsibilities include developing new features, maintaining existing code, " +
+                                   "and collaborating with the product team.");
                 job1.setLocation("San Francisco, CA");
                 job1.setRequiredSkills("Java,Spring Boot,React");
                 job1.setEmploymentType("Full-time");
@@ -270,7 +372,9 @@ public class DatabaseSeeder implements CommandLineRunner {
                 Job job2 = new Job();
                 job2.setEmployer(employer);
                 job2.setTitle("Frontend Developer");
-                job2.setDescription("Join our team as a frontend developer working with React.");
+                job2.setDescription("Join our team as a frontend developer working with React. " +
+                                   "You will be responsible for implementing visual elements and user interactions " +
+                                   "that users see and interact with in a web application.");
                 job2.setLocation("Remote");
                 job2.setRequiredSkills("HTML,CSS,JavaScript,React");
                 job2.setEmploymentType("Full-time");
@@ -280,6 +384,37 @@ public class DatabaseSeeder implements CommandLineRunner {
                 job2.setPostedAt(LocalDateTime.now().minusDays(5));
                 job2.setActive(true);
                 jobRepository.save(job2);
+                
+                Job job3 = new Job();
+                job3.setEmployer(employer);
+                job3.setTitle("Data Scientist");
+                job3.setDescription("We're seeking a data scientist to help us make data-driven decisions. " +
+                                   "You'll work with large datasets, build machine learning models, and " +
+                                   "communicate insights to stakeholders.");
+                job3.setLocation("New York, NY");
+                job3.setRequiredSkills("Python,R,SQL,Machine Learning,Statistics");
+                job3.setEmploymentType("Full-time");
+                job3.setMinSalary(90000.0);
+                job3.setMaxSalary(130000.0);
+                job3.setCurrency("USD");
+                job3.setPostedAt(LocalDateTime.now().minusDays(3));
+                job3.setActive(true);
+                jobRepository.save(job3);
+                
+                Job job4 = new Job();
+                job4.setEmployer(employer);
+                job4.setTitle("DevOps Engineer");
+                job4.setDescription("Looking for a DevOps engineer to help us build and maintain our " +
+                                   "cloud infrastructure. Experience with AWS, Docker, and Kubernetes required.");
+                job4.setLocation("Remote");
+                job4.setRequiredSkills("AWS,Docker,Kubernetes,CI/CD,Linux");
+                job4.setEmploymentType("Full-time");
+                job4.setMinSalary(85000.0);
+                job4.setMaxSalary(125000.0);
+                job4.setCurrency("USD");
+                job4.setPostedAt(LocalDateTime.now().minusDays(7));
+                job4.setActive(true);
+                jobRepository.save(job4);
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed jobs: {}", e.getMessage());
@@ -307,59 +442,255 @@ public class DatabaseSeeder implements CommandLineRunner {
                     return; // Skip if no students or jobs exist
                 }
                 
-                StudentProfile student = students.get(0);
-                
-                // Find CV differently - by using the activeCvId from the student profile
-                CV cv = null;
-                if (student.getActiveCvId() != null) {
-                    try {
-                        cv = cvRepository.findById(student.getActiveCvId()).orElse(null);
-                        if (cv != null) {
-                            logger.info("Found existing CV with ID: {}", cv.getId());
-                        }
-                    } catch (Exception e) {
-                        logger.warn("Could not find CV by ID: {}", e.getMessage());
-                    }
+                // Create applications for each student
+                if (students.size() >= 1 && jobs.size() >= 1) {
+                    createJobApplication(students.get(0), jobs.get(0), ApplicationStatus.PENDING,
+                        "I am very interested in this Software Engineer position and believe my skills in Java and Spring Boot make me a great match. " +
+                        "I have completed several projects using these technologies during my time at Example University.");
                 }
                 
-                // If we couldn't find the CV by ID, try to create a new one
-                if (cv == null) {
-                    try {
-                        logger.info("Creating new CV for application seeding");
-                        cv = new CV();
-                        cv.setStudent(student);
-                        cv.setActive(true);
-                        cv.setGenerated(true);
-                        cv.setLastUpdated(LocalDateTime.now());
-                        cv.setParsedResume("{\"seedData\": true, \"message\": \"This is a sample AI-generated resume\"}");
-                        cv = cvRepository.save(cv);
-                        
-                        student.setActiveCvId(cv.getId());
-                        studentProfileRepository.save(student);
-                        logger.info("Created new CV with ID: {}", cv.getId());
-                    } catch (Exception e) {
-                        logger.warn("Could not create CV for application: {}", e.getMessage());
-                        return; // Skip if we can't create a CV
-                    }
+                if (students.size() >= 2 && jobs.size() >= 2) {
+                    createJobApplication(students.get(1), jobs.get(2), ApplicationStatus.PENDING,
+                        "As a Data Science major with experience in Python and machine learning, I am excited about the opportunity to join your team. " +
+                        "My research projects at Tech University have prepared me well for this role.");
                 }
-
-                try {
-                    JobApplication application = new JobApplication();
-                    application.setStudent(student);
-                    application.setJob(jobs.get(0));
-                    application.setCv(cv);
-                    application.setCoverLetter("I am very interested in this position and believe my skills are a great match.");
-                    application.setStatus(ApplicationStatus.PENDING);
-                    application.setAppliedAt(LocalDateTime.now().minusDays(2));
-                    application.setLastUpdatedAt(LocalDateTime.now().minusDays(2));
-                    jobApplicationRepository.save(application);
-                    logger.info("Successfully created job application");
-                } catch (Exception e) {
-                    logger.warn("Could not create job application: {}", e.getMessage());
+                
+                if (students.size() >= 3 && jobs.size() >= 3) {
+                    createJobApplication(students.get(2), jobs.get(3), ApplicationStatus.INTERVIEW,
+                        "I am applying for the DevOps Engineer position. With my background in IT and focus on cloud technologies, " +
+                        "I believe I can contribute significantly to your infrastructure needs. I have hands-on experience with AWS and Docker.");
+                }
+                
+                if (students.size() >= 4 && jobs.size() >= 1) {
+                    createJobApplication(students.get(3), jobs.get(1), ApplicationStatus.PENDING,
+                        "I'm excited to apply for the Frontend Developer position. My portfolio showcases my skills in creating " +
+                        "responsive and user-friendly interfaces using React and other modern frontend technologies.");
+                }
+                
+                // Cross applications - students applying to multiple jobs
+                if (students.size() >= 1 && jobs.size() >= 2) {
+                    createJobApplication(students.get(0), jobs.get(1), ApplicationStatus.REJECTED,
+                        "I would like to apply for the Frontend Developer position. While my primary experience is in backend development, " +
+                        "I have been working on improving my frontend skills with React and would welcome the opportunity to grow in this area.");
+                }
+                
+                if (students.size() >= 2 && jobs.size() >= 1) {
+                    createJobApplication(students.get(1), jobs.get(0), ApplicationStatus.INTERVIEW,
+                        "I am interested in the Software Engineer position at your company. Although my background is in Data Science, " +
+                        "I have strong programming skills in Java and have completed several full-stack projects.");
                 }
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed applications: {}", e.getMessage());
         }
+    }
+    
+    private void createJobApplication(StudentProfile student, Job job, ApplicationStatus status, String coverLetter) {
+        try {
+            // Find CV by student's activeCvId
+            CV cv = null;
+            if (student.getActiveCvId() != null) {
+                try {
+                    cv = cvRepository.findById(student.getActiveCvId()).orElse(null);
+                } catch (Exception e) {
+                    logger.warn("Could not find CV by ID for {}: {}", student.getFullName(), e.getMessage());
+                }
+            }
+            
+            // If CV not found, create a new one
+            if (cv == null) {
+                try {
+                    cv = new CV();
+                    cv.setStudent(student);
+                    cv.setActive(true);
+                    cv.setGenerated(true);
+                    cv.setLastUpdated(LocalDateTime.now());
+                    cv.setParsedResume("{\"seedData\": true, \"name\": \"" + student.getFullName() + 
+                                      "\", \"skills\": \"" + student.getSkills() + 
+                                      "\", \"education\": \"" + student.getUniversity() + 
+                                      "\", \"major\": \"" + student.getMajor() + 
+                                      "\", \"graduationYear\": " + student.getGraduationYear() + "}");
+                    cv = cvRepository.save(cv);
+                    
+                    student.setActiveCvId(cv.getId());
+                    studentProfileRepository.save(student);
+                } catch (Exception e) {
+                    logger.warn("Could not create CV for application: {}", e.getMessage());
+                    return;
+                }
+            }
+            
+            // Create the job application
+            JobApplication application = new JobApplication();
+            application.setStudent(student);
+            application.setJob(job);
+            application.setCv(cv);
+            application.setCoverLetter(coverLetter);
+            application.setStatus(status);
+            
+            // Set different dates based on status
+            LocalDateTime now = LocalDateTime.now();
+            application.setAppliedAt(now.minusDays(7));
+            
+            if (status == ApplicationStatus.INTERVIEW) {
+                application.setLastUpdatedAt(now.minusDays(2));
+            } else if (status == ApplicationStatus.REJECTED) {
+                application.setLastUpdatedAt(now.minusDays(1));
+            } else {
+                application.setLastUpdatedAt(now.minusDays(7));
+            }
+            
+            jobApplicationRepository.save(application);
+            logger.info("Created job application for {} to {}", student.getFullName(), job.getTitle());
+        } catch (Exception e) {
+            logger.warn("Could not create job application: {}", e.getMessage());
+        }
+    }
+
+    private void seedJobMatches() {
+        try {
+            List<StudentProfile> students = studentProfileRepository.findAll();
+            List<Job> jobs = jobRepository.findAll();
+            
+            if (students.isEmpty() || jobs.isEmpty()) {
+                logger.warn("No students or jobs found, skipping job match seeding.");
+                return;
+            }
+            
+            // Create job matches for existing applications
+            List<JobApplication> applications = jobApplicationRepository.findAll();
+            for (JobApplication application : applications) {
+                // Calculate match score based on skills
+                double matchScore = calculateMatchScore(application.getStudent(), application.getJob());
+                
+                // Create job match
+                JobMatch jobMatch = new JobMatch();
+                jobMatch.setStudent(application.getStudent());
+                jobMatch.setJob(application.getJob());
+                jobMatch.setMatchScore(matchScore);
+                jobMatch.setMatchedAt(LocalDateTime.now().minusDays(8)); // Before applications
+                jobMatch.setMatchDetails("AI-generated match based on skills analysis");
+                jobMatch.setDetailedAnalysis(generateDetailedAnalysis(application.getStudent(), application.getJob(), matchScore));
+                
+                // Save the job match
+                application.getStudent().addJobMatch(jobMatch);
+                application.getJob().addJobMatch(jobMatch);
+                
+                // No need to explicitly save the job match as it will be saved through the cascade
+                studentProfileRepository.save(application.getStudent());
+                
+                logger.info("Created job match for {} with job {}: Score {}", 
+                    application.getStudent().getFullName(), 
+                    application.getJob().getTitle(), 
+                    String.format("%.1f", matchScore));
+            }
+        } catch (Exception e) {
+            logger.warn("Could not seed job matches: {}", e.getMessage());
+        }
+    }
+    
+    private double calculateMatchScore(StudentProfile student, Job job) {
+        if (student == null || job == null) {
+            return 0.0;
+        }
+        
+        String studentSkills = student.getSkills();
+        String jobSkills = job.getRequiredSkills();
+        
+        if (studentSkills == null || jobSkills == null) {
+            return 0.0;
+        }
+        
+        // Simple skill matching algorithm
+        String[] studentSkillsArray = studentSkills.split(",");
+        String[] jobSkillsArray = jobSkills.split(",");
+        
+        int matchCount = 0;
+        for (String studentSkill : studentSkillsArray) {
+            for (String jobSkill : jobSkillsArray) {
+                if (studentSkill.trim().equalsIgnoreCase(jobSkill.trim())) {
+                    matchCount++;
+                    break;
+                }
+            }
+        }
+        
+        // Calculate score as percentage of matched skills out of required skills
+        double matchPercentage = jobSkillsArray.length > 0 ? 
+            (double) matchCount / jobSkillsArray.length * 100.0 : 0.0;
+            
+        // Add some randomness to make it more realistic (±10%)
+        double randomFactor = 0.9 + Math.random() * 0.2; // Between 0.9 and 1.1
+        matchPercentage *= randomFactor;
+        
+        // Cap at 100%
+        return Math.min(matchPercentage, 100.0);
+    }
+    
+    private String generateDetailedAnalysis(StudentProfile student, Job job, double matchScore) {
+        StringBuilder analysis = new StringBuilder();
+        analysis.append("Match Analysis for ").append(student.getFullName()).append(" and ").append(job.getTitle()).append(":\n\n");
+        
+        // Skills comparison
+        analysis.append("Skills Analysis:\n");
+        if (student.getSkills() != null && job.getRequiredSkills() != null) {
+            String[] studentSkills = student.getSkills().split(",");
+            String[] jobSkills = job.getRequiredSkills().split(",");
+            
+            analysis.append("- Student skills: ").append(student.getSkills()).append("\n");
+            analysis.append("- Required job skills: ").append(job.getRequiredSkills()).append("\n\n");
+            
+            analysis.append("Matched Skills:\n");
+            for (String studentSkill : studentSkills) {
+                String trimmedStudentSkill = studentSkill.trim();
+                boolean matched = false;
+                for (String jobSkill : jobSkills) {
+                    if (trimmedStudentSkill.equalsIgnoreCase(jobSkill.trim())) {
+                        analysis.append("- ").append(trimmedStudentSkill).append(" ✓\n");
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    analysis.append("- ").append(trimmedStudentSkill).append(" (additional skill)\n");
+                }
+            }
+            
+            analysis.append("\nMissing Skills:\n");
+            for (String jobSkill : jobSkills) {
+                String trimmedJobSkill = jobSkill.trim();
+                boolean found = false;
+                for (String studentSkill : studentSkills) {
+                    if (trimmedJobSkill.equalsIgnoreCase(studentSkill.trim())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    analysis.append("- ").append(trimmedJobSkill).append(" ✗\n");
+                }
+            }
+        }
+        
+        // Education analysis
+        analysis.append("\nEducation Analysis:\n");
+        analysis.append("- University: ").append(student.getUniversity()).append("\n");
+        analysis.append("- Major: ").append(student.getMajor()).append("\n");
+        analysis.append("- Graduation Year: ").append(student.getGraduationYear()).append("\n");
+        
+        // Overall match score
+        analysis.append("\nOverall Match Score: ").append(String.format("%.1f", matchScore)).append("%\n");
+        analysis.append("Recommendation: ");
+        if (matchScore >= 80) {
+            analysis.append("Strong match! Consider for immediate interview.");
+        } else if (matchScore >= 60) {
+            analysis.append("Good match. Worth considering for an interview.");
+        } else if (matchScore >= 40) {
+            analysis.append("Moderate match. May need additional skills or experience.");
+        } else {
+            analysis.append("Low match. Candidate may not meet the core requirements for this position.");
+        }
+        
+        return analysis.toString();
     }
 } 

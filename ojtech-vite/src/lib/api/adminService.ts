@@ -1,12 +1,36 @@
 import apiClient from './apiClient';
 
 // Types
+interface Role {
+  id: string;
+  name: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Profile {
+  id: string;
+  fullName: string;
+  role: string;
+  hasCompletedOnboarding: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Other profile fields may be present
+}
+
 interface User {
   id: string;
   username: string;
   email: string;
-  roles: string[];
+  roles: Role[];
   enabled: boolean;
+  emailVerified: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  profile?: Profile;
 }
 
 interface Stats {
@@ -26,8 +50,8 @@ interface DetailedStats {
   totalApplications: number;
 }
 
-interface PaginatedResponse<T> {
-  content: T[];
+interface ApiResponse {
+  users: User[];
   currentPage: number;
   totalItems: number;
   totalPages: number;
@@ -55,7 +79,7 @@ const getPaginatedUsers = async (
   size = 10,
   sortBy = 'username',
   direction = 'asc'
-): Promise<PaginatedResponse<User>> => {
+): Promise<ApiResponse> => {
   const response = await apiClient.get('/api/admin/users/paginated', {
     params: { page, size, sortBy, direction }
   });
@@ -66,7 +90,7 @@ const searchUsers = async (
   query?: string,
   page = 0,
   size = 10
-): Promise<PaginatedResponse<User>> => {
+): Promise<ApiResponse> => {
   const response = await apiClient.get('/api/admin/users/search', {
     params: { query, page, size }
   });
@@ -78,7 +102,7 @@ const createUser = async (userData: {
   email: string;
   password: string;
   role?: string;
-}): Promise<void> => {
+}): Promise<User> => {
   const response = await apiClient.post('/api/admin/users', userData);
   return response.data;
 };
@@ -92,7 +116,7 @@ const updateUser = async (id: string, userData: {
   username?: string;
   email?: string;
   password?: string;
-}): Promise<void> => {
+}): Promise<User> => {
   const response = await apiClient.put(`/api/admin/users/${id}`, userData);
   return response.data;
 };
@@ -102,12 +126,12 @@ const deleteUser = async (id: string): Promise<void> => {
   return response.data;
 };
 
-const updateUserRoles = async (id: string, roles: string[]): Promise<void> => {
+const updateUserRoles = async (id: string, roles: string[]): Promise<User> => {
   const response = await apiClient.put(`/api/admin/users/${id}/roles`, roles);
   return response.data;
 };
 
-const toggleUserStatus = async (id: string): Promise<void> => {
+const toggleUserStatus = async (id: string): Promise<User> => {
   const response = await apiClient.put(`/api/admin/users/${id}/toggle-status`);
   return response.data;
 };
@@ -116,7 +140,7 @@ const toggleUserStatus = async (id: string): Promise<void> => {
 const getPaginatedJobs = async (
   page = 0, 
   size = 10
-): Promise<PaginatedResponse<any>> => {
+): Promise<any> => {
   const response = await apiClient.get('/api/admin/jobs', {
     params: { page, size }
   });
@@ -132,7 +156,7 @@ const deleteJob = async (id: string): Promise<void> => {
 const getPaginatedApplications = async (
   page = 0,
   size = 10
-): Promise<PaginatedResponse<any>> => {
+): Promise<any> => {
   const response = await apiClient.get('/api/admin/applications', {
     params: { page, size }
   });

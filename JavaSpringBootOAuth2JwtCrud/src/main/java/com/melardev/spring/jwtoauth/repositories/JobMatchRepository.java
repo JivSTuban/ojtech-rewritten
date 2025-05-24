@@ -17,5 +17,7 @@ public interface JobMatchRepository extends JpaRepository<JobMatch, UUID> {
     
     List<JobMatch> findByStudentIdAndMatchScoreGreaterThanEqual(UUID studentId, Double minScore);
     
+    List<JobMatch> findByStudentIdAndJobId(UUID studentId, UUID jobId);
+    
     void deleteByStudentIdAndJobId(UUID studentId, UUID jobId);
 } 

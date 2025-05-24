@@ -1,5 +1,6 @@
 package com.melardev.spring.jwtoauth.controller;
 
+import com.melardev.spring.jwtoauth.dtos.responses.JobResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.EmployerProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -61,7 +63,7 @@ public class JobController {
     
     @GetMapping("/employer")
     @PreAuthorize("hasRole('EMPLOYER')")
-    public ResponseEntity<List<Job>> getEmployerJobs() {
+    public ResponseEntity<List<JobResponseDTO>> getEmployerJobs() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
@@ -74,7 +76,11 @@ public class JobController {
         EmployerProfile employerProfile = employerProfileOpt.get();
         List<Job> jobs = jobRepository.findByEmployer(employerProfile);
         
-        return ResponseEntity.ok(jobs);
+        List<JobResponseDTO> jobResponseDTOs = jobs.stream()
+            .map(JobResponseDTO::new)
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(jobResponseDTOs);
     }
     
     @GetMapping("/employer/{id}")
@@ -104,7 +110,7 @@ public class JobController {
                     .body(new MessageResponse("You are not authorized to view this job"));
         }
         
-        return ResponseEntity.ok(job);
+        return ResponseEntity.ok(new JobResponseDTO(job));
     }
     
     @GetMapping("/search")

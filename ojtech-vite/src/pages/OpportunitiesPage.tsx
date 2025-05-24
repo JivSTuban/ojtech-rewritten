@@ -4,7 +4,7 @@ import { Loader2, Check, X, Briefcase, MapPin, Calendar, Undo2, DollarSign, Info
 import { Link } from "react-router-dom";
 import { JobCard } from "../components/jobs/JobCard";
 import { Button } from "../components/ui/Button";
-import axios from 'axios';
+import jobApplicationService from "../lib/api/jobApplicationService";
 
 // Job types
 interface Job {
@@ -31,7 +31,7 @@ interface JobWithMatchScore extends Job {
   company_logo_url: string | null;
 }
 
-// Mock data for jobs
+// Mock data for jobs - will be used as fallback if API fails
 const MOCK_JOBS: JobWithMatchScore[] = [
   {
     id: "1",
@@ -170,9 +170,6 @@ interface OpportunitiesPageState {
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
-  // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  
   // Refs for controlling cards programmatically
   private childRefs: RefObject<any>[] = [];
   
@@ -206,97 +203,52 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Check if CV is currently being processed
   checkCVProcessingStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        return;
-      }
-      
-      // Using mock data, so we'll just set isProcessing to false
+      // For now we'll just set isProcessing to false
+      // This would be replaced with a real API call in the future
       this.setState({ isProcessingCV: false });
-      
-      // Uncomment the following code when you want to use the real API again
-      /*
-      const response = await axios.get(`${this.API_BASE_URL}/cvs/me/status`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (response.data && response.data.isProcessing) {
-        this.setState({ isProcessingCV: true });
-        // Check again after a short delay if still processing
-        setTimeout(this.checkCVProcessingStatus, 10000); // Check again in 10 seconds
-      } else {
-        this.setState({ isProcessingCV: false });
-      }
-      */
     } catch (error) {
       console.error("Error checking CV processing status:", error);
       this.setState({ isProcessingCV: false });
     }
   };
   
-  // Fetch jobs for the current user (now using mock data)
+  // Fetch jobs for the current user using the API
   fetchJobs = async () => {
     this.setState({ loading: true, error: null });
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Use mock data instead of API call
-      const matchedJobs = MOCK_JOBS;
-      
-      // Set jobs and update current index
-      this.setState({
-        jobs: matchedJobs,
-        currentIndex: matchedJobs.length - 1,
-        loading: false
-      });
-      
-      // Initialize refs
-      this.childRefs = Array(matchedJobs.length)
-        .fill(0)
-        .map(() => createRef<any>());
-      
-      // Uncomment the following code when you want to use the real API again
-      /*
-      const token = localStorage.getItem('token');
-      if (!token) {
-        this.setState({ 
-          error: "You must be logged in to view job opportunities.", 
-          loading: false 
-        });
-        return;
-      }
-      
       // Call the job matching API to get matched jobs
-      const response = await axios.get(`${this.API_BASE_URL}/job-matching/matches`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const matchedJobsData = await jobApplicationService.getStudentJobMatches();
       
-      if (response.data) {
-        const matchedJobs: JobWithMatchScore[] = response.data.map((job: any) => ({
-          id: job.id,
-          employer_id: job.employerId,
-          title: job.title,
-          description: job.description,
-          company_name: job.companyName,
-          company_logo_url: job.companyLogoUrl,
-          location: job.location,
-          job_type: job.jobType,
-          salary_range: job.salaryRange,
-          required_skills: Array.isArray(job.requiredSkills) ? job.requiredSkills : [],
-          preferred_skills: job.preferredSkills,
-          application_deadline: job.applicationDeadline,
-          created_at: job.createdAt,
-          updated_at: job.updatedAt,
-          status: job.status,
-          is_active: job.isActive,
-          match_score: job.matchScore
-        }));
+      if (matchedJobsData && Array.isArray(matchedJobsData)) {
+        // Map API response to our JobWithMatchScore interface
+        const matchedJobs: JobWithMatchScore[] = matchedJobsData.map((match: any) => {
+          // Handle the nested structure from the API response
+          const job = match.job || {};
+          const employer = job.employer || {};
+          
+          return {
+            id: job.id,
+            employer_id: employer.id,
+            title: job.title,
+            description: job.description,
+            company_name: employer.companyName,
+            company_logo_url: employer.logoUrl,
+            location: job.location,
+            job_type: job.employmentType,
+            salary_range: job.minSalary && job.maxSalary ? 
+              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+              null,
+            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+            preferred_skills: null,
+            application_deadline: null,
+            created_at: job.postedAt || new Date().toISOString(),
+            updated_at: null,
+            status: "active",
+            is_active: true,
+            match_score: match.matchScore
+          };
+        });
         
         // Set jobs and update current index
         this.setState({
@@ -310,79 +262,53 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           .fill(0)
           .map(() => createRef<any>());
       } else {
+        // Fallback to mock data if API response is not as expected
+        console.warn("API response format unexpected, using mock data");
         this.setState({
-          error: "No matched jobs found",
+          jobs: MOCK_JOBS,
+          currentIndex: MOCK_JOBS.length - 1,
           loading: false
         });
+        
+        // Initialize refs for mock data
+        this.childRefs = Array(MOCK_JOBS.length)
+          .fill(0)
+          .map(() => createRef<any>());
       }
-      */
     } catch (err) {
       console.error("Fetch jobs error:", err);
+      // Fallback to mock data on error
+      console.warn("Error fetching jobs, using mock data");
       this.setState({
-        error: "An unexpected error occurred while fetching jobs.",
+        jobs: MOCK_JOBS,
+        currentIndex: MOCK_JOBS.length - 1,
         loading: false
       });
+      
+      // Initialize refs for mock data
+      this.childRefs = Array(MOCK_JOBS.length)
+        .fill(0)
+        .map(() => createRef<any>());
     }
   };
   
-  // Apply for a job using the Spring Boot API
+  // Apply for a job using the API
   applyForJob = async (jobId: string) => {
     try {
-      // Using mock data, just return success
-      console.log(`Mock API: Applied for job ${jobId}`);
+      await jobApplicationService.applyForJob(jobId, {});
       return { success: true, data: { letterGenerated: true } };
-      
-      // Uncomment the following code when you want to use the real API again
-      /*
-      const token = localStorage.getItem('token');
-      if (!token) {
-        return { success: false, error: "Authentication required" };
-      }
-      
-      const response = await axios.post(`${this.API_BASE_URL}/job-applications/apply`, 
-        { jobId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      return { success: true, data: response.data };
-      */
     } catch (error) {
       console.error("Error applying for job:", error);
       return { success: false, error: "Failed to apply for job" };
     }
   };
   
-  // Decline a job using the Spring Boot API
+  // Decline a job
   declineJob = async (jobId: string) => {
     try {
-      // Using mock data, just return success
-      console.log(`Mock API: Declined job ${jobId}`);
+      // This would be replaced with a real API call in the future
+      console.log(`Declined job ${jobId}`);
       return { success: true, data: {} };
-      
-      // Uncomment the following code when you want to use the real API again
-      /*
-      const token = localStorage.getItem('token');
-      if (!token) {
-        return { success: false, error: "Authentication required" };
-      }
-      
-      const response = await axios.post(`${this.API_BASE_URL}/job-matching/decline`, 
-        { jobId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      return { success: true, data: response.data };
-      */
     } catch (error) {
       console.error("Error declining job:", error);
       return { success: false, error: "Failed to decline job" };
@@ -614,7 +540,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                       </div>
                       <div className="ml-auto">
                         <div className={`${this.getScoreColor(job.match_score)} px-2 py-0.5 rounded-full text-xs font-medium bg-opacity-10 bg-current`}>
-                          {job.match_score != null && <span className="text-white">{job.match_score}% </span>}
+                          {job.match_score != null && <span className="text-white">{job.match_score.toFixed(2)}% </span>}
                         </div>
                       </div>
                     </div>
@@ -686,8 +612,6 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                       </div>
                     )}
 
-                  
-
                     {/* View Details Button */}
                     <div className="mt-auto pt-2">
                       <Link to={`/opportunities/${job.id}`} className="block w-full">
@@ -703,36 +627,6 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             ))}
           </div>
         )}
-        
-        {/* Swipe controls */}
-        {/* {jobs.length > 0 && (
-          <div className="flex justify-center gap-4 mt-8">
-            <Button
-              onClick={() => this.swipe("left")}
-              className="h-14 w-14 rounded-full bg-white text-red-500 border border-red-200 shadow-md hover:bg-red-50"
-              variant="outline"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-            
-            <Button
-              onClick={this.undoSwipe}
-              className="h-14 w-14 rounded-full bg-white text-gray-500 border border-gray-200 shadow-md hover:bg-gray-50"
-              variant="outline"
-              disabled={!lastRemovedJob}
-            >
-              <Undo2 className="h-6 w-6" />
-            </Button>
-            
-            <Button
-              onClick={() => this.swipe("right")}
-              className="h-14 w-14 rounded-full bg-white text-green-500 border border-green-200 shadow-md hover:bg-green-50"
-              variant="outline"
-            >
-              <Check className="h-6 w-6" />
-            </Button>
-          </div>
-        )} */}
       </main>
     );
   }
