@@ -9,7 +9,7 @@ const getAuthHeaders = () => {
   // First, try to get the token from the user object
   const user = authService.getCurrentUser();
   if (user && user.accessToken) {
-    console.log('Found token in user object');
+    
     return { Authorization: 'Bearer ' + user.accessToken };
   }
   
@@ -192,7 +192,7 @@ const uploadStudentCv = async (cvFile: File) => {
 const getCurrentStudentProfile = async () => {
   try {
     const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
-    console.log('Successfully retrieved profile:', response.data);
+  
     return response.data;
   } catch (error: any) {
     console.error("Error fetching student profile:", error.message);

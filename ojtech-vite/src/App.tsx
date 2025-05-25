@@ -47,7 +47,7 @@ const MainLayout: React.FC = () => {
   React.useEffect(() => {
     if (!initialLoadRef.current && !isLoading && user) {
       initialLoadRef.current = true;
-      console.log('Initial auth context refresh on mount');
+     
       stableFetchUserProfile();
     }
   }, [isLoading, user, stableFetchUserProfile]);
@@ -57,7 +57,7 @@ const MainLayout: React.FC = () => {
     // Only refresh on actual path changes, not just re-renders
     if (lastPathRef.current !== location.pathname && !isLoading && user) {
       lastPathRef.current = location.pathname;
-      console.log('Auth context refreshed due to path change:', location.pathname);
+      
       
       // Skip profile refresh on certain paths
       const skipRefreshPaths = ['/onboarding/student', '/onboarding/employer'];
@@ -71,11 +71,7 @@ const MainLayout: React.FC = () => {
   React.useEffect(() => {
     if (!isLoading && user) {
       // Debug log onboarding status
-      console.log('User onboarding status check:', {
-        username: user.username,
-        hasCompletedOnboarding: user.hasCompletedOnboarding,
-        currentPath: location.pathname
-      });
+  
 
       // Safe paths that should be accessible regardless of onboarding status
       const safePaths = [

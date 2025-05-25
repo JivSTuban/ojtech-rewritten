@@ -118,7 +118,7 @@ const getCurrentUser = (): UserData | null => {
   if (userStr) {
     try {
       const userData = JSON.parse(userStr) as UserData;
-      console.log('Current user retrieved from localStorage:', userData.username);
+     
       return userData;
     } catch (error) {
       console.error('Error parsing user data from localStorage:', error);

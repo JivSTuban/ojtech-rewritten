@@ -35,6 +35,7 @@ interface CVModalState {
   zoomLevel: number;
   currentPage: number;
   totalPages: number;
+  iframeLoaded: boolean;
 }
 
 class CVModal extends Component<CVModalProps, CVModalState> {
@@ -49,97 +50,13 @@ class CVModal extends Component<CVModalProps, CVModalState> {
       showRawData: false,
       zoomLevel: 100,
       currentPage: 1,
-      totalPages: 1
+      totalPages: 1,
+      iframeLoaded: false
     };
   }
 
   componentDidMount() {
-    if (this.props.isOpen) {
-      this.fetchCVData();
-    }
-    
-    // Add print styles
-    this.addPrintStyles();
-  }
-
-  componentDidUpdate(prevProps: CVModalProps) {
-    // Load CV data when the modal opens
-    if (!prevProps.isOpen && this.props.isOpen) {
-      this.fetchCVData();
-    }
-  }
-
-  componentWillUnmount() {
-    // Remove print styles
-    this.removePrintStyles();
-  }
-
-  addPrintStyles() {
-    const styleId = 'cv-print-styles';
-    
-    // Check if styles already exist
-    if (document.getElementById(styleId)) return;
-    
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.innerHTML = `
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        
-        .resume-container, .resume-container * {
-          visibility: visible;
-          color: black !important;
-        }
-        
-        .resume-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          background-color: white !important;
-          padding: 20mm !important;
-          box-shadow: none !important;
-        }
-        
-        .resume-container h1, .resume-container h2 {
-          color: black !important;
-        }
-        
-        .resume-container pre {
-          background-color: #f8f8f8 !important;
-          border: 1px solid #dddddd !important;
-        }
-        
-        .resume-container .flex.flex-wrap.gap-2 span {
-          background-color: #f0f0f0 !important;
-          color: #333333 !important;
-        }
-        
-        .dark\\:bg-gray-800, .dark\\:bg-gray-700, .dark\\:bg-gray-900 {
-          background-color: white !important;
-        }
-        
-        .dark\\:text-gray-100, .dark\\:text-gray-200, .dark\\:text-gray-300, .dark\\:text-gray-400 {
-          color: black !important;
-        }
-        
-        .dark\\:border-gray-700, .dark\\:border-gray-800 {
-          border-color: #dddddd !important;
-        }
-      }
-    `;
-    
-    document.head.appendChild(style);
-  }
-  
-  removePrintStyles() {
-    const styleId = 'cv-print-styles';
-    const style = document.getElementById(styleId);
-    if (style) {
-      document.head.removeChild(style);
-    }
+    this.fetchCVData();
   }
 
   fetchCVData = async () => {
@@ -194,46 +111,204 @@ class CVModal extends Component<CVModalProps, CVModalState> {
     }
   };
 
-  // Helper function to format complex data for display
-  formatComplexData(value: any): React.ReactNode {
-    if (value === null || value === undefined) {
-      return 'N/A';
-    }
+  handleZoomIn = () => {
+    this.setState(prevState => ({
+      zoomLevel: Math.min(prevState.zoomLevel + 10, 200)
+    }));
+  };
+
+  handleZoomOut = () => {
+    this.setState(prevState => ({
+      zoomLevel: Math.max(prevState.zoomLevel - 10, 50)
+    }));
+  };
+
+  handleZoomReset = () => {
+    this.setState({ zoomLevel: 100 });
+  };
+
+  // Helper method to prepare HTML content for PDF generation
+  prepareHtmlForPdf(htmlContent: string): string {
+    // Add PDF-specific styles to ensure proper page breaks and formatting
+    const pdfStyles = `
+      <style>
+        @page {
+          margin: 10mm;
+          size: A4;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          color: black !important;
+          background-color: white !important;
+        }
+        .page-break {
+          page-break-before: always;
+          break-before: page;
+        }
+        /* Ensure dark mode elements are visible in PDF */
+        .dark\\:bg-gray-800, .dark\\:bg-gray-700, .dark\\:bg-gray-900, .dark\\:bg-gray-600 {
+          background-color: white !important;
+        }
+        .dark\\:text-gray-100, .dark\\:text-gray-200, .dark\\:text-gray-300, .dark\\:text-gray-400 {
+          color: black !important;
+        }
+        .dark\\:border-gray-700, .dark\\:border-gray-800 {
+          border-color: #dddddd !important;
+        }
+        /* Ensure all content is visible */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      </style>
+    `;
     
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
+    // Insert styles into the HTML content
+    if (htmlContent.includes('<head>')) {
+      return htmlContent.replace('<head>', `<head>${pdfStyles}`);
+    } else if (htmlContent.includes('<html>')) {
+      return htmlContent.replace('<html>', `<html><head>${pdfStyles}</head>`);
+    } else {
+      return `<!DOCTYPE html><html><head>${pdfStyles}</head><body>${htmlContent}</body></html>`;
     }
-    
-    if (Array.isArray(value)) {
-      if (value.length === 0) return 'None';
-      
-      return (
-        <ul className="list-disc pl-5 space-y-1">
-          {value.map((item, index) => (
-            <li key={index}>
-              {typeof item === 'object' ? this.formatComplexData(item) : String(item)}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-    
-    if (typeof value === 'object') {
-      return (
-        <div className="pl-2 border-l-2 border-gray-200 mt-1 space-y-1">
-          {Object.entries(value).map(([key, val]) => (
-            <div key={key} className="text-sm">
-              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}: </span>
-              {this.formatComplexData(val)}
-            </div>
-          ))}
-        </div>
-      );
-    }
-    
-    return JSON.stringify(value);
   }
 
+  handleDownloadPdf = async () => {
+    try {
+      const { cv } = this.state;
+      
+      // If we're using the iframe display
+      if (cv && cv.htmlContent) {
+        // Prepare the HTML content for PDF generation
+        const enhancedHtml = this.prepareHtmlForPdf(cv.htmlContent);
+        
+        // Create a temporary element with the enhanced HTML content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = enhancedHtml;
+        document.body.appendChild(tempDiv);
+        
+        // Generate PDF from the temporary element
+        await html2pdf()
+          .from(tempDiv)
+          .set({
+            margin: 10,
+            filename: `${this.props.studentName.replace(/\s+/g, '_')}_Resume.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+              scale: 2,
+              useCORS: true,
+              logging: true
+            },
+            jsPDF: { 
+              unit: 'mm', 
+              format: 'a4', 
+              orientation: 'portrait',
+              compress: true,
+              hotfixes: ['px_scaling']
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          })
+          .save();
+        
+        // Remove the temporary element
+        document.body.removeChild(tempDiv);
+      } 
+      // If we're using the regular resume display
+      else if (this.resumeRef.current) {
+        const element = this.resumeRef.current;
+        
+        // Enhanced configuration for better multi-page support
+        await html2pdf()
+          .from(element)
+          .set({
+            margin: 10,
+            filename: `${this.props.studentName.replace(/\s+/g, '_')}_Resume.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+              scale: 2,
+              useCORS: true,
+              logging: true
+            },
+            jsPDF: { 
+              unit: 'mm', 
+              format: 'a4', 
+              orientation: 'portrait',
+              compress: true,
+              hotfixes: ['px_scaling']
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          })
+          .save();
+      }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    }
+  };
+
+  // New method to render HTML content in an iframe
+  renderHtmlContent() {
+    const { cv, iframeLoaded } = this.state;
+    
+    if (!cv || !cv.htmlContent) {
+      return null;
+    }
+
+    return (
+      <div className="relative w-full h-full">
+        {!iframeLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+            <div className="text-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-primary mx-auto mb-4"></div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading resume...</p>
+            </div>
+          </div>
+        )}
+        <iframe
+          title="Resume Preview"
+          className="w-full h-full border-0 bg-white"
+          sandbox="allow-same-origin allow-scripts"
+          srcDoc={cv.htmlContent}
+          style={{ 
+            height: 'calc(90vh - 88px)',
+            overflow: 'auto'
+          }}
+          onLoad={() => {
+            this.setState({ iframeLoaded: true });
+            // Try to adjust iframe height based on content
+            try {
+              const iframe = document.querySelector('iframe');
+              if (iframe && iframe.contentWindow) {
+                const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDocument && iframeDocument.body) {
+                  // Add print-friendly styles to the iframe content
+                  const styleElement = iframeDocument.createElement('style');
+                  styleElement.textContent = `
+                    @media print {
+                      body {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                      }
+                      @page {
+                        size: A4;
+                        margin: 0;
+                      }
+                    }
+                  `;
+                  iframeDocument.head.appendChild(styleElement);
+                }
+              }
+            } catch (e) {
+              console.error('Error adjusting iframe:', e);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Keep existing methods for backward compatibility or fallback
   renderParsedResume() {
     const { cv } = this.state;
     if (!cv) {
@@ -375,6 +450,45 @@ class CVModal extends Component<CVModalProps, CVModalState> {
     }
   }
 
+  formatComplexData(value: any): React.ReactNode {
+    if (value === null || value === undefined) {
+      return 'N/A';
+    }
+    
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    
+    if (Array.isArray(value)) {
+      if (value.length === 0) return 'None';
+      
+      return (
+        <ul className="list-disc pl-5 space-y-1">
+          {value.map((item, index) => (
+            <li key={index}>
+              {typeof item === 'object' ? this.formatComplexData(item) : String(item)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    
+    if (typeof value === 'object') {
+      return (
+        <div className="pl-2 border-l-2 border-gray-200 mt-1 space-y-1">
+          {Object.entries(value).map(([key, val]) => (
+            <div key={key} className="text-sm">
+              <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}: </span>
+              {this.formatComplexData(val)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    return JSON.stringify(value);
+  }
+
   renderExperiences() {
     const { cv } = this.state;
     if (!cv) return null;
@@ -494,136 +608,9 @@ class CVModal extends Component<CVModalProps, CVModalState> {
     }
   }
 
-  handleDownloadPdf = () => {
-    if (!this.resumeRef.current || !this.state.cv) return;
-    
-    const { studentName } = this.props;
-    
-    // Create a clone of the resume content for PDF generation
-    const resumeContent = this.resumeRef.current.cloneNode(true) as HTMLElement;
-    
-    // Apply specific PDF styles
-    const pdfStyles = `
-      .resume-container {
-        font-family: 'Arial', sans-serif;
-        color: black;
-        background-color: white;
-        padding: 20px;
-      }
-      .resume-container h1 {
-        color: black;
-        font-size: 24px;
-        margin-bottom: 8px;
-      }
-      .resume-container h2 {
-        color: black;
-        font-size: 18px;
-        margin-top: 16px;
-        margin-bottom: 8px;
-        border-bottom: 1px solid #dddddd;
-        padding-bottom: 4px;
-      }
-      .resume-container p {
-        margin: 4px 0;
-        color: black;
-      }
-      .resume-container .text-gray-500, 
-      .resume-container .text-gray-400, 
-      .resume-container .text-gray-600,
-      .resume-container .text-gray-700 {
-        color: #666666;
-      }
-      .resume-container pre {
-        background-color: #f8f8f8;
-        border: 1px solid #dddddd;
-        padding: 8px;
-        font-size: 11px;
-        overflow-x: auto;
-      }
-      .resume-container .flex.flex-wrap.gap-2 span {
-        display: inline-block;
-        background-color: #f0f0f0;
-        color: #333333;
-        padding: 2px 8px;
-        margin: 2px;
-        border-radius: 4px;
-      }
-    `;
-    
-    // Create style element
-    const styleElement = document.createElement('style');
-    styleElement.textContent = pdfStyles;
-    resumeContent.prepend(styleElement);
-    
-    // Ensure white background and black text for PDF
-    resumeContent.style.backgroundColor = 'white';
-    resumeContent.style.color = 'black';
-    
-    // Find all elements and ensure they have appropriate print colors
-    const allElements = resumeContent.querySelectorAll('*');
-    allElements.forEach(el => {
-      if ((el as HTMLElement).style) {
-        // Remove dark mode classes
-        (el as HTMLElement).classList.remove(
-          'dark:bg-gray-800', 'dark:bg-gray-700', 'dark:bg-gray-900',
-          'dark:text-gray-100', 'dark:text-gray-200', 'dark:text-gray-300', 'dark:text-gray-400',
-          'dark:border-gray-700', 'dark:border-gray-800'
-        );
-      }
-    });
-    
-    const options = {
-      margin: [15, 15, 15, 15] as [number, number, number, number],
-      filename: `${studentName}_Resume.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        backgroundColor: '#FFFFFF',
-        logging: false
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' as 'portrait',
-        compress: true
-      }
-    };
-    
-    // Use the clone for PDF generation
-    html2pdf().from(resumeContent).set(options).save();
-  }
-
-  handleZoomIn = () => {
-    this.setState(prevState => ({
-      zoomLevel: Math.min(prevState.zoomLevel + 10, 200)
-    }));
-  };
-
-  handleZoomOut = () => {
-    this.setState(prevState => ({
-      zoomLevel: Math.max(prevState.zoomLevel - 10, 50)
-    }));
-  };
-
-  handleNextPage = () => {
-    this.setState(prevState => ({
-      currentPage: Math.min(prevState.currentPage + 1, prevState.totalPages)
-    }));
-  };
-
-  handlePrevPage = () => {
-    this.setState(prevState => ({
-      currentPage: Math.max(prevState.currentPage - 1, 1)
-    }));
-  };
-
-  handlePrint = () => {
-    window.print();
-  }
-
   render() {
     const { studentName, isOpen, onOpenChange } = this.props;
-    const { cv, loading, error, showRawData, zoomLevel, currentPage, totalPages } = this.state;
+    const { cv, loading, error, showRawData, zoomLevel } = this.state;
 
     console.log("CVModal render - cv data:", cv);
     console.log("CVModal render - loading:", loading);
@@ -640,7 +627,6 @@ class CVModal extends Component<CVModalProps, CVModalState> {
             </div>
             
             <div className="flex items-center gap-2">
-              
               <Button 
                 variant="default" 
                 size="sm"
@@ -663,69 +649,9 @@ class CVModal extends Component<CVModalProps, CVModalState> {
             </div>
           </div>
           
-          {/* PDF Viewer-like Toolbar */}
-          <div className="bg-gray-50 dark:bg-gray-800 border-b flex items-center justify-between px-4 py-1 sticky top-[40px] z-10">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={this.handlePrevPage}
-                disabled={currentPage <= 1}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m15 18-6-6 6-6"></path></svg>
-                <span className="sr-only">Previous page</span>
-              </Button>
-              
-              <span className="text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={this.handleNextPage}
-                disabled={currentPage >= totalPages}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m9 18 6-6-6-6"></path></svg>
-                <span className="sr-only">Next page</span>
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={this.handleZoomOut}
-                disabled={zoomLevel <= 50}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M5 12h14"></path></svg>
-                <span className="sr-only">Zoom out</span>
-              </Button>
-              
-              <span className="text-sm w-16 text-center">
-                {zoomLevel}%
-              </span>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={this.handleZoomIn}
-                disabled={zoomLevel >= 200}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                <span className="sr-only">Zoom in</span>
-              </Button>
-            </div>
-          </div>
-          
-          {/* PDF Viewer-like Content */}
+          {/* Main Content Area */}
           <div className="flex h-[calc(90vh-88px)]">
-            {/* Main Content Area with Shadow */}
-            <div className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-900 p-6">
+            <div className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-900">
               {loading ? (
                 <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg max-w-4xl mx-auto p-8 space-y-4">
                   <Skeleton className="h-8 w-full" />
@@ -746,7 +672,11 @@ class CVModal extends Component<CVModalProps, CVModalState> {
                     <p>No resume data available.</p>
                   </div>
                 </div>
+              ) : cv.htmlContent ? (
+                // If we have HTML content, use the iframe
+                this.renderHtmlContent()
               ) : (
+                // Otherwise fall back to the old rendering method
                 <div 
                   ref={this.resumeRef} 
                   className="bg-white dark:bg-gray-800 shadow-lg rounded-lg max-w-5xl mx-auto p-8 transition-transform duration-200"
@@ -1060,7 +990,6 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                         >
                           <option value="ALL">All Status</option>
                           <option value="PENDING">Pending</option>
-                          <option value="REVIEWED">Reviewed</option>
                           <option value="INTERVIEW">Interview</option>
                           <option value="ACCEPTED">Accepted</option>
                           <option value="REJECTED">Rejected</option>
@@ -1134,14 +1063,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                     >
                       Pending
                     </Button>
-                    <Button
-                      variant={this.state.filters.status === 'REVIEWED' ? 'default' : 'outline'}
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => this.handleStatusFilterChange('REVIEWED')}
-                    >
-                      Reviewed
-                    </Button>
+                   
                     <Button
                       variant={this.state.filters.status === 'INTERVIEW' ? 'default' : 'outline'}
                       size="sm"
@@ -1292,18 +1214,7 @@ class JobApplicationsPageClass extends Component<JobApplicationsPageProps, Appli
                           </div>
                           
                           <div className="flex flex-wrap gap-2 mt-3">
-                            {application.status === 'PENDING' && (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                title="Mark as Reviewed"
-                                onClick={() => this.handleUpdateStatus(application.id, 'REVIEWED')}
-                                className="rounded-full"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Review
-                              </Button>
-                            )}
+                            
                             
                             {(application.status === 'PENDING' || application.status === 'REVIEWED') && (
                               <Button

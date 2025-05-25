@@ -253,7 +253,7 @@ export class ToastHelper extends Component {
   // Update the context reference when the component mounts
   componentDidMount() {
     ToastHelper.currentContext = this.context;
-    console.log('ToastHelper mounted, context available:', !!ToastHelper.currentContext);
+   
   }
   
   // Update the context reference when the context changes

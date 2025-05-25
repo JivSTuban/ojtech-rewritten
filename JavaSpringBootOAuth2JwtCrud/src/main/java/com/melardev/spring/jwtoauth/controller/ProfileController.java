@@ -104,6 +104,12 @@ public class ProfileController {
             responseMap.put("linkedinUrl", profile.getLinkedinUrl());
             responseMap.put("portfolioUrl", profile.getPortfolioUrl());
             responseMap.put("bio", profile.getBio());
+            if (profile.getBio() != null && !profile.getBio().isEmpty()) {
+                responseMap.put("bio", profile.getBio());
+            }
+            else {
+                responseMap.put("bio", Collections.emptyList());
+            }
             responseMap.put("phoneNumber", profile.getPhoneNumber());
             responseMap.put("hasCompletedOnboarding", profile.isHasCompletedOnboarding());
             responseMap.put("activeCvId", profile.getActiveCvId());

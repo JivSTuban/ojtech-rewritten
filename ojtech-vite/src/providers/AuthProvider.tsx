@@ -82,7 +82,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       const now = Date.now();
       if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) {
         // 5 second throttle
-        console.log('Profile fetch throttled, using existing data');
+        
         if (this.state.user) {
           return this.state.user;
         }
@@ -91,11 +91,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       // Update the fetch timestamp
       this._lastFetchTimestamp = now;
 
-      console.log('Fetching current student profile...');
+      
       let profile = null;
       try {
         profile = await profileService.getCurrentStudentProfile();
-        console.log('Profile data received:', profile);
+       
       } catch (profileError) {
         console.error('Error fetching profile:', profileError);
         // Don't throw, continue with null profile
@@ -104,7 +104,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       // Check if hasCompletedOnboarding explicitly exists in profile
       // Strictly check for boolean true to avoid type coercion issues
       const hasCompletedOnboarding = profile && profile.hasCompletedOnboarding === true;
-      console.log('Has completed onboarding?', hasCompletedOnboarding, 'Type:', typeof profile?.hasCompletedOnboarding);
+      
 
       const user: AppUser = {
         ...userData,
@@ -153,13 +153,12 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
     try {
       const currentUser = authService.getCurrentUser();
       if (currentUser) {
-        console.log('User found in localStorage, fetching full profile');
+       
         const fullUser = await this.fetchUserProfileData(currentUser);
 
         // Explicitly check if onboarding is completed (ensure it's boolean true)
         const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
-        console.log('Initial auth complete. Onboarding status:', hasCompletedOnboarding);
-
+      
         this.setState({
           user: fullUser,
           isLoading: false,
@@ -317,7 +316,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       const now = Date.now();
       if (this._lastFetchTimestamp && now - this._lastFetchTimestamp < 5000) {
         // 5 second throttle
-        console.log('fetchUserProfile throttled, using existing data');
+        
         return; // Skip the fetch
       }
 
@@ -325,12 +324,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       this.setState({ isLoading: true });
 
       try {
-        console.log('Refreshing user profile data...');
+       
         const fullUser = await this.fetchUserProfileData(user);
 
         // Additional check to ensure onboarding status is correctly set
-        console.log('Profile refresh completed. Onboarding status:', fullUser.hasCompletedOnboarding);
-
+        
         this.setState({
           user: fullUser,
           isLoading: false,

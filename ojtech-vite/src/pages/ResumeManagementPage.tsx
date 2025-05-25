@@ -135,6 +135,7 @@ interface ResumeManagementPageState {
 // Student profile data structure
 interface StudentProfileData {
   id?: number;
+  activeCvId?: string;
   firstName: string;
   lastName: string;
   phoneNumber?: string;
@@ -1849,15 +1850,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                 )}
               </Button>
               
-              <Button 
-                onClick={this.handleViewRawJSON}
-                variant="outline"
-                disabled={generatingCV}
-                className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2"
-              >
-                <Code className="h-4 w-4" />
-                <span>View Raw JSON</span>
-              </Button>
+             
               
               {resumeHtml && (
                 <>
@@ -1891,15 +1884,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
             <div className="flex justify-between items-center p-4 border-b border-gray-800/50">
               <h4 className="font-medium text-white">Resume Preview</h4>
               <div className="flex space-x-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={this.handleLogResumeData}
-                  className="text-gray-400 hover:text-white hover:bg-gray-800 flex items-center"
-                >
-                  <Code className="h-4 w-4 mr-1" />
-                  View Raw Data
-                </Button>
+               
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -1971,4 +1956,4 @@ export function ResumeManagementPageWrapper() {
   );
 }
 
-export default ResumeManagementPageWrapper; 
+export default ResumeManagementPageWrapper;

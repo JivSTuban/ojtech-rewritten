@@ -480,7 +480,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
     }
-
+   
     @GetMapping("/verifyEmail/{userId}")
     public Object verifyEmail(@PathVariable String userId) {
         try {

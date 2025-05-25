@@ -19,33 +19,53 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    @Value("${backend.base-url}")
-    private String baseURL;
+    @Value("${app.base-url}")
+    private String baseUrl;
+
     public void sendVerificationEmail(String toEmail, String userId) throws MessagingException {
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail, "OJTech Team");
+            helper.setFrom(fromEmail, "OJTech");
             helper.setTo(toEmail);
-            helper.setSubject("Verify Your Email Address");
-           
+            helper.setSubject("Welcome to OJTech!");
 
-         
-
-            String verificationUrl =  baseURL+"/api/auth/verifyEmail/" + userId;
+            String verificationUrl = baseUrl + "/api/auth/verifyEmail/" + userId;
             String emailContent = String.format("""
                 <html>
-                    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px;">
-                        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                            <h2 style="color: #333333; margin-bottom: 20px;">Welcome to OJTech!</h2>
-                            <p style="color: #666666; margin-bottom: 20px;">Please click the button below to verify your email address:</p>
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <a href="%s" style="background-color:rgb(0, 0, 0); color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Verify Email</a>
+                    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                        <div style="max-width: 400px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <!-- Email Icon -->
+                            <div style="background-color:rgb(0, 0, 0); width: 64px; height: 64px; border-radius: 50%%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                                <img src="https://res.cloudinary.com/df7wrezta/image/upload/v1748160270/dbe6m8ajpudgn6veyopz.png" style="width: 64px; height: 64px;"/>
                             </div>
-                            <p style="color: #666666; font-size: 12px;">If you did not create an account, please ignore this email.</p>
-                            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-                            <p style="color: #999999; font-size: 12px; text-align: center;">This is an automated message, please do not reply.</p>
+                            
+                            <h2 style="color: #333333; margin: 0 0 10px; font-size: 24px;">Welcome to OJTech!</h2>
+                            <p style="color: #666666; margin: 0 0 5px; font-size: 14px;">🔒 Secure Email Verification</p>
+                            
+                            <p style="color: #666666; margin: 24px 0; font-size: 14px; line-height: 1.5;">
+                              
+                                Please click the button below to verify your account<br/>
+                                and get started.
+                            </p>
+                            
+                            <a href="%s" style="background-color:rgb(0, 0, 0); color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: 500; margin: 20px 0;">
+                                <span style="display: inline-flex; align-items: center;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    Verify Email Address
+                                </span>
+                            </a>
+                            
+                            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #eee;">
+                                <p style="color: #666666; font-size: 13px; margin: 0 0 8px;">Didn't create an account?</p>
+                                <p style="color: #666666; font-size: 13px; margin: 0;">You can safely ignore this email. No account will be created.</p>
+                            </div>
+                            
+                            <div style="margin-top: 32px; color: #999999; font-size: 12px;">
+                                <p style="margin: 0 0 8px;">This is an automated message. Please do not reply to this email.</p>
+                                <p style="margin: 0; color: #999999;">Powered by <span style="color: #666666;">OJTech</span></p>
+                            </div>
                         </div>
                     </body>
                 </html>
