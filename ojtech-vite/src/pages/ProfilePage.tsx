@@ -14,6 +14,7 @@ import { useToast } from '../components/ui/use-toast';
 import { ToastContext } from '../providers/ToastContext';
 import { ToastProps } from '../components/ui/use-toast';
 import { toast } from '../components/ui/toast-utils';
+import ProfileEditModal from '../components/profile/ProfileEditModal';
 
 // Add type definitions at the top of the file
 interface User {
@@ -48,6 +49,7 @@ interface ProfilePageState {
   currentTab: string;
   skills: string[];
   isEducationModalOpen: boolean;
+  isProfileModalOpen: boolean;
 }
 
 // New data structure interfaces
@@ -336,7 +338,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       loading: true,
       currentTab: 'info',
       skills: [],
-      isEducationModalOpen: false
+      isEducationModalOpen: false,
+      isProfileModalOpen: false
     };
   }
   
@@ -749,6 +752,24 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     }
   };
   
+  // Open profile edit modal
+  handleOpenProfileModal = () => {
+    this.setState({ isProfileModalOpen: true });
+  };
+  
+  // Close profile edit modal
+  handleCloseProfileModal = () => {
+    this.setState({ isProfileModalOpen: false });
+  };
+  
+  // Refresh profile after profile update
+  handleProfileSaved = () => {
+    const token = this.getAuthToken();
+    if (token) {
+      this.loadStudentProfile(token);
+    }
+  };
+  
   // Helper method to show toasts
   private showToast = (props: ToastProps) => {
     const toastContext = this.context as unknown as { toast?: (props: ToastProps) => void };
@@ -760,7 +781,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       loading, 
       studentProfile, 
       employerProfile, 
-      isEducationModalOpen
+      isEducationModalOpen,
+      isProfileModalOpen
     } = this.state;
     
     console.log('Render - studentProfile:', studentProfile);
@@ -1040,11 +1062,13 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                           )}
                           
                           <div className="flex justify-center mt-6">
-                            <Link to="/profile/edit">
-                              <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white">
-                                Edit Skills & Profile Information
-                              </Button>
-                            </Link>
+                            <Button 
+                              variant="outline" 
+                              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                              onClick={this.handleOpenProfileModal}
+                            >
+                              Edit Skills & Profile Information
+                            </Button>
                           </div>
                         </div>
                   </div>
@@ -1082,6 +1106,27 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               university: studentProfile.university,
               major: studentProfile.major,
               graduationYear: studentProfile.graduationYear
+            }}
+          />
+        )}
+        
+        {/* Profile Edit Modal */}
+        {studentProfile && (
+          <ProfileEditModal
+            isOpen={isProfileModalOpen}
+            onClose={this.handleCloseProfileModal}
+            onSaved={this.handleProfileSaved}
+            initialData={{
+              firstName: studentProfile.firstName,
+              lastName: studentProfile.lastName,
+              phoneNumber: studentProfile.phoneNumber,
+              location: studentProfile.location,
+              address: studentProfile.address,
+              bio: studentProfile.bio,
+              githubUrl: studentProfile.githubUrl,
+              linkedinUrl: studentProfile.linkedinUrl,
+              portfolioUrl: studentProfile.portfolioUrl,
+              skills: studentProfile.skills,
             }}
           />
         )}

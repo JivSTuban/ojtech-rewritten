@@ -100,10 +100,9 @@ const searchUsers = async (
 const createUser = async (userData: {
   username: string;
   email: string;
-  password: string;
-  role?: string;
+  role: string;
 }): Promise<User> => {
-  const response = await apiClient.post('/api/admin/users', userData);
+  const response = await apiClient.post('/api/auth/admin/create-user', userData);
   return response.data;
 };
 

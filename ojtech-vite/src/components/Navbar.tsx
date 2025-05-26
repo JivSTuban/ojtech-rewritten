@@ -12,6 +12,7 @@ interface NavbarState {
 class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?: string }, NavbarState> {
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
+  private dropdownRef = React.createRef<HTMLDivElement>();
 
   constructor(props: { setTheme: (theme: string) => void; theme?: string }) {
     super(props);
@@ -19,6 +20,20 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
       isDropdownOpen: false
     };
   }
+
+  componentDidMount() {
+    document.addEventListener('mousedown', this.handleClickOutside);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousedown', this.handleClickOutside);
+  }
+
+  handleClickOutside = (event: MouseEvent) => {
+    if (this.dropdownRef.current && !this.dropdownRef.current.contains(event.target as Node)) {
+      this.setState({ isDropdownOpen: false });
+    }
+  };
 
   toggleDropdown = () => {
     this.setState(prevState => ({
@@ -103,7 +118,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </span>
                 )}
                 
-                <div className="relative">
+                <div className="relative z-50 pointer-events-auto" ref={this.dropdownRef}>
                   <button 
                     onClick={this.toggleDropdown}
                     className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center overflow-hidden"
@@ -122,7 +137,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </button>
                   
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 pointer-events-auto">
                       <Link 
                         to="/profile" 
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"

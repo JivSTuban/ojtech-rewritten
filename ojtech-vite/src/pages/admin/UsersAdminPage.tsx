@@ -61,10 +61,10 @@ interface UsersAdminPageState {
   filterRole: string;
   pageSize: number;
   isCreateUserDialogOpen: boolean;
+  isCreating: boolean;
   newUser: {
     username: string;
     email: string;
-    password: string;
     role: string;
   };
   createUserError: string | null;
@@ -87,11 +87,11 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       filterRole: "all",
       pageSize: 10,
       isCreateUserDialogOpen: false,
+      isCreating: false,
       newUser: {
         username: "",
         email: "",
-        password: "",
-        role: "ROLE_STUDENT"
+        role: "employer"
       },
       createUserError: null
     };
@@ -188,7 +188,6 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       newUser: {
         username: "",
         email: "",
-        password: "",
         role: "ROLE_STUDENT"
       },
       createUserError: null
@@ -213,22 +212,22 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     e.preventDefault();
     
     try {
-      this.setState({ createUserError: null });
+      this.setState({ createUserError: null, isCreating: true });
       const { newUser } = this.state;
       
       await adminService.createUser({
         username: newUser.username,
         email: newUser.email,
-        password: newUser.password,
-        role: newUser.role
+        role: "employer"
       });
       
-      this.setState({ isCreateUserDialogOpen: false });
+      this.setState({ isCreateUserDialogOpen: false, isCreating: false });
       await this.fetchUsers(); // Refresh the list
     } catch (error) {
       console.error("Error creating user:", error);
       this.setState({ 
-        createUserError: typeof error === 'string' ? error : "Failed to create user" 
+        createUserError: typeof error === 'string' ? error : "Failed to create user",
+        isCreating: false
       });
     }
   }
@@ -324,34 +323,18 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="password" className="text-right">
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={newUser.password}
-                    onChange={this.handleNewUserInputChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="role" className="text-right">
                     Role
                   </Label>
-                  <select
-                    id="role"
-                    name="role"
-                    value={newUser.role}
-                    onChange={this.handleNewUserInputChange}
-                    className="col-span-3 w-full pl-3 pr-8 py-2 text-sm rounded-md border border-input bg-background"
-                  >
-                    <option value="ROLE_STUDENT">Student</option>
-                    <option value="ROLE_EMPLOYER">Employer</option>
-                    <option value="ROLE_ADMIN">Admin</option>
-                  </select>
+                  <div className="col-span-3 text-sm text-muted-foreground">
+                    Employer
+                    <input
+                      type="hidden"
+                      id="role"
+                      name="role"
+                      value="employer"
+                    />
+                  </div>
                 </div>
                 {createUserError && (
                   <div className="text-red-500 text-sm mt-2">
@@ -360,10 +343,12 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                 )}
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={this.handleCreateUserDialogClose}>
+                <Button type="button" variant="outline" onClick={this.handleCreateUserDialogClose} disabled={this.state.isCreating}>
                   Cancel
                 </Button>
-                <Button type="submit">Create User</Button>
+                <Button type="submit" disabled={this.state.isCreating}>
+                  {this.state.isCreating ? "Creating..." : "Create User"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -427,7 +412,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                   <TableBody>
                     {filteredUsers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        <TableCell className="text-center">
                           No users found
                         </TableCell>
                       </TableRow>

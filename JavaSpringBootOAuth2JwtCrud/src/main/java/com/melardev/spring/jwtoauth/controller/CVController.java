@@ -10,6 +10,7 @@ import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.WorkExperienceRepository;
 import com.melardev.spring.jwtoauth.security.CurrentUser;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.services.JobMatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -31,16 +32,19 @@ public class CVController {
     private final StudentProfileRepository studentProfileRepository;
     private final CertificationRepository certificationRepository;
     private final WorkExperienceRepository workExperienceRepository;
+    private final JobMatchService jobMatchService;
 
     @Autowired
     public CVController(CVRepository cvRepository, 
                         StudentProfileRepository studentProfileRepository,
                         CertificationRepository certificationRepository,
-                        WorkExperienceRepository workExperienceRepository) {
+                        WorkExperienceRepository workExperienceRepository,
+                        JobMatchService jobMatchService) {
         this.cvRepository = cvRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.certificationRepository = certificationRepository;
         this.workExperienceRepository = workExperienceRepository;
+        this.jobMatchService = jobMatchService;
     }
 
     @GetMapping
@@ -196,6 +200,17 @@ public class CVController {
         student.setActiveCvId(savedCV.getId());
         studentProfileRepository.save(student);
         
+        // Trigger job matching for the student
+        try {
+            // Run job matching with no minimum score filter
+            jobMatchService.findMatchesForStudent(student.getId(), null);
+            System.out.println("Job matching completed successfully for student: " + student.getId());
+        } catch (Exception e) {
+            // Log error but don't fail the CV generation
+            System.err.println("Error during job matching: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCV);
     }
     
@@ -230,6 +245,18 @@ public class CVController {
         cv.setLastUpdated(LocalDateTime.now());
         
         CV updatedCV = cvRepository.save(cv);
+        
+        // Trigger job matching for the student after CV content update
+        try {
+            // Run job matching with no minimum score filter
+            jobMatchService.findMatchesForStudent(cv.getStudent().getId(), null);
+            System.out.println("Job matching completed successfully after CV content update for student: " + cv.getStudent().getId());
+        } catch (Exception e) {
+            // Log error but don't fail the CV update
+            System.err.println("Error during job matching after CV content update: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
         return ResponseEntity.ok(updatedCV);
     }
     
@@ -263,6 +290,18 @@ public class CVController {
         cv.setLastUpdated(LocalDateTime.now());
         
         CV updatedCV = cvRepository.save(cv);
+        
+        // Trigger job matching for the student after CV HTML content update
+        try {
+            // Run job matching with no minimum score filter
+            jobMatchService.findMatchesForStudent(cv.getStudent().getId(), null);
+            System.out.println("Job matching completed successfully after CV HTML content update for student: " + cv.getStudent().getId());
+        } catch (Exception e) {
+            // Log error but don't fail the CV update
+            System.err.println("Error during job matching after CV HTML content update: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
         return ResponseEntity.ok(updatedCV);
     }
     
