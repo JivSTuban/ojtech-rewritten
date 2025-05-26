@@ -38,10 +38,41 @@ const getCurrentProfile = async () => {
 // Update profile with basic information
 const updateProfile = async (data: any) => {
   try {
-    const response = await axios.post(`${API_URL}/update`, data, { headers: getAuthHeaders() });
+    // Format the data to match backend expectations
+    const formattedData = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phoneNumber: data.phoneNumber || null,
+      location: data.location || null,
+      address: data.address || null,
+      bio: data.bio || null,
+      githubUrl: data.githubUrl || null,
+      linkedinUrl: data.linkedinUrl || null,
+      portfolioUrl: data.portfolioUrl || null,
+      // Convert skills array to comma-separated string
+      skills: Array.isArray(data.skills) ? data.skills.join(',') : data.skills || ''
+    };
+
+    console.log('Sending formatted data to backend:', formattedData);
+
+    const response = await axios.put(
+      `${API_BASE_URL}/student-profiles/me`,
+      formattedData,
+      { 
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log('Profile update response:', response.data);
     return response.data;
   } catch (error: any) {
     console.error("Error updating profile:", error.message);
+    if (error.response) {
+      console.error("Server error details:", error.response.data);
+    }
     throw error;
   }
 };
@@ -287,7 +318,7 @@ const uploadEmployerLogo = async (logoFile: File) => {
   const formData = new FormData();
   formData.append('logoFile', logoFile);
   try {
-    const response = await axios.post(`${API_URL}/employer/logo`, formData, {
+    const response = await axios.post(`${API_URL}/employer-profiles/logo`, formData, {
       headers: {
         ...getAuthHeaders(),
         'Content-Type': 'multipart/form-data',
@@ -302,7 +333,8 @@ const uploadEmployerLogo = async (logoFile: File) => {
 
 const getCurrentEmployerProfile = async () => {
   try {
-    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+    const response = await axios.get(`${API_URL}/employer-profiles/me`, { headers: getAuthHeaders() });
+    console.log('Employer profile response:', response.data);
     return response.data;
   } catch (error: any) {
     console.error("Error fetching employer profile:", error.message);

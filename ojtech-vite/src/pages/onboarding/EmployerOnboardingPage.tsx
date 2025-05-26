@@ -55,54 +55,120 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
   }
 
   componentDidMount() {
-    this.restoreFromLocalStorage();
     this.fetchProfile();
   }
+
+  restoreFromLocalStorage = () => {
+    const STORAGE_KEY = 'ojtech_employer_onboarding';
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.formData) {
+          this.setState({
+            formData: {
+              ...this.state.formData,
+              ...parsedData.formData
+            }
+          }, () => {
+            console.log('Restored employer onboarding data from localStorage:', this.state.formData);
+            ToastHelper.toast({
+              title: "Progress Restored",
+              description: "We've restored your previous progress. Continue from where you left off.",
+              variant: "success"
+            });
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring from localStorage:', error);
+    }
+  };
 
   fetchProfile = async () => {
     const { user } = this.context || {};
     
-    // if (!user) {
-    //   this.setState({ redirectTo: '/login' });
-    //   return;
-    // }
+    // First check for authentication
+    if (!user) {
+      console.log('No user found in context, redirecting to login');
+      this.setState({ redirectTo: '/login' });
+      return;
+    }
 
-        try {
-      this.setState({ isLoading: true });
-          const profileData = await profileService.getCurrentEmployerProfile();
-      
-          if (profileData) {
-        this.setState({
-          formData: {
-                companyName: profileData.companyName || '',
-                companySize: profileData.companySize || '',
-                industry: profileData.industry || '',
-                companyWebsite: profileData.companyWebsite || '',
-                companyDescription: profileData.companyDescription || '',
-                companyAddress: profileData.companyAddress || '',
-                contactPersonName: profileData.contactPersonName || '',
-                contactPersonPosition: profileData.contactPersonPosition || '',
-                contactPersonEmail: profileData.contactPersonEmail || '',
-                contactPersonPhone: profileData.contactPersonPhone || '',
-                companyLogoUrl: profileData.companyLogoUrl || undefined,
-            hasCompletedOnboarding: profileData.hasCompletedOnboarding
-          }
-            });
-        
-            // if (profileData.hasCompletedOnboarding) {
-        //   this.setState({ redirectTo: '/employer/dashboard' });
-            // }
-          }
-        } catch (err: any) {
-      if (err.response?.status !== 404) { // Ignore 404 if profile doesn't exist yet
-        this.setState({
-          error: err.response?.data?.message || 'Failed to load employer profile data.'
-        });
-            }
-        } finally {
-      this.setState({ isLoading: false });
+    // Check if user has employer role
+    if (!user.roles?.includes('ROLE_EMPLOYER')) {
+      console.log('User is not an employer, redirecting to appropriate onboarding');
+      if (user.roles?.includes('ROLE_STUDENT')) {
+        this.setState({ redirectTo: '/onboarding/student' });
+      } else {
+        this.setState({ redirectTo: '/' });
       }
-    };
+      return;
+    }
+
+    try {
+      this.setState({ isLoading: true, error: null });
+      console.log('Fetching employer profile...');
+      
+      // First try to restore any saved data from localStorage
+      this.restoreFromLocalStorage();
+      
+      const profileData = await profileService.getCurrentEmployerProfile();
+      console.log('Profile data received:', profileData);
+      
+      if (profileData) {
+        // Update form data with profile data
+        const updatedFormData = {
+          companyName: profileData.companyName || '',
+          companySize: profileData.companySize || '',
+          industry: profileData.industry || '',
+          companyWebsite: profileData.companyWebsite || '',
+          companyDescription: profileData.companyDescription || '',
+          companyAddress: profileData.companyAddress || '',
+          contactPersonName: profileData.contactPersonName || '',
+          contactPersonPosition: profileData.contactPersonPosition || '',
+          contactPersonEmail: profileData.contactPersonEmail || '',
+          contactPersonPhone: profileData.contactPersonPhone || '',
+          companyLogoUrl: profileData.companyLogoUrl || undefined,
+          hasCompletedOnboarding: profileData.hasCompletedOnboarding
+        };
+
+        this.setState({
+          formData: updatedFormData,
+          isLoading: false
+        }, () => {
+          console.log('State updated with profile data:', this.state.formData);
+          
+          // If onboarding is completed, redirect to jobs page
+          if (profileData.hasCompletedOnboarding) {
+            console.log('Profile is complete, redirecting to jobs page');
+            this.setState({ redirectTo: '/employer/jobs' });
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('Error fetching profile:', err);
+      
+      // Only set error for non-404 responses
+      if (err.response?.status !== 404) {
+        const errorMessage = err.response?.data?.message || 'Failed to load employer profile data.';
+        console.error('Setting error state:', errorMessage);
+        this.setState({
+          error: errorMessage,
+          isLoading: false
+        });
+        
+        ToastHelper.toast({
+          title: "Error Loading Profile",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } else {
+        console.log('No profile found (404), continuing with empty form');
+        this.setState({ isLoading: false });
+      }
+    }
+  };
 
   handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -111,7 +177,22 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
         ...prevState.formData,
         [name]: value
       }
-    }));
+    }), () => {
+      // Save to localStorage after state update
+      this.saveToLocalStorage();
+    });
+  };
+
+  saveToLocalStorage = () => {
+    const STORAGE_KEY = 'ojtech_employer_onboarding';
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        formData: this.state.formData
+      }));
+      console.log('Saved employer onboarding data to localStorage:', this.state.formData);
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
   };
 
   handleLogoFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +211,9 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       if (this.state.logoFile) {
         await profileService.uploadEmployerLogo(this.state.logoFile);
       }
+      
+      // Clear localStorage data since onboarding is complete
+      this.clearLocalStorage();
       
       this.setState({ redirectTo: '/employer/jobs' });
       
@@ -153,6 +237,16 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
     }
   };
 
+  clearLocalStorage = () => {
+    const STORAGE_KEY = 'ojtech_employer_onboarding';
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('Cleared employer onboarding data from localStorage');
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
+  };
+
   render() {
     const { formData, logoFile, error, isLoading, redirectTo } = this.state;
     const { user } = this.context || {};
@@ -161,15 +255,23 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       return <Navigate to={redirectTo} />;
     }
 
-  if (!user) {
+    if (!user) {
       return <Navigate to="/login" />;
-  }
+    }
 
-  if (isLoading && !formData.companyName) { 
-    return <div className="min-h-screen flex items-center justify-center"><p>Loading profile...</p></div>;
-  }
+    if (isLoading) { 
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <div className="text-center space-y-4">
+            <div className="animate-spin h-12 w-12 mx-auto border-4 border-t-blue-500 border-r-transparent border-b-purple-500 border-l-transparent rounded-full"></div>
+            <h2 className="text-xl font-semibold text-gray-200">Loading Profile</h2>
+            <p className="text-gray-400">Please wait while we fetch your profile data...</p>
+          </div>
+        </div>
+      );
+    }
 
-  return (
+    return (
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-3xl mx-auto bg-black/90 backdrop-blur-sm p-8 rounded-lg shadow-xl border border-gray-800">
         <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 -mx-8 -mt-8 px-8 py-6 mb-8 border-b border-gray-800">

@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.dtos.requests.LoginDto;
@@ -50,6 +51,7 @@ import com.melardev.spring.jwtoauth.service.EmailService;
 
 import java.util.Collections;
 import java.util.UUID;
+import java.util.Random;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -541,5 +543,106 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/admin/create-user")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> adminCreateUser(@Valid @RequestBody Map<String, Object> createUserRequest) {
+        try {
+            // Extract required fields
+            String username = (String) createUserRequest.get("username");
+            String email = (String) createUserRequest.get("email");
+            String role = (String) createUserRequest.get("role");
+            
+            // Validate required fields
+            if (username == null || email == null || role == null) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Username, email, and role are required"));
+            }
+            
+            // Check if username or email already exists
+            if (userRepository.existsByUsername(username)) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Username is already taken!"));
+            }
+
+            if (userRepository.existsByEmail(email)) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Email is already in use!"));
+            }
+            
+            // Generate random password (10 characters)
+            String password = generateRandomPassword(10);
+            
+            // Create new user account
+            User user = new User(username, email, encoder.encode(password));
+            user.setEmailVerified(false);
+            
+            // Set user role
+            Set<Role> userRoles = new HashSet<>();
+            Role userRole;
+            
+            switch (role.toLowerCase()) {
+                case "admin":
+                    userRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                        .orElseThrow(() -> new RuntimeException("Error: Admin role not found."));
+                    userRoles.add(userRole);
+                    break;
+                case "employer":
+                    userRole = roleRepository.findByName(ERole.ROLE_EMPLOYER)
+                        .orElseThrow(() -> new RuntimeException("Error: Employer role not found."));
+                    userRoles.add(userRole);
+                    break;
+                case "student":
+                    userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                        .orElseThrow(() -> new RuntimeException("Error: Student role not found."));
+                    userRoles.add(userRole);
+                    break;
+                default:
+                    return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Error: Invalid role specified. Use 'admin', 'employer', or 'student'"));
+            }
+            
+            user.setRoles(userRoles);
+            User savedUser = userRepository.save(user);
+            
+            // Send email with credentials and verification link
+            try {
+                emailService.sendUserCreationEmail(savedUser.getEmail(), username, password, savedUser.getId().toString());
+            } catch (Exception e) {
+                System.out.println("Failed to send user creation email: " + e.getMessage());
+                // Continue despite email failure
+            }
+            
+            // Create admin profile if role is admin
+            if (role.equalsIgnoreCase("admin")) {
+                AdminProfile adminProfile = new AdminProfile();
+                adminProfile.setUser(savedUser);
+                adminProfile.setHasCompletedOnboarding(true);
+                adminProfileRepository.save(adminProfile);
+            }
+            
+            return ResponseEntity.ok(new MessageResponse(
+                "User created successfully! Credentials have been sent to their email.",
+                savedUser.getId().toString()
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+    
+    // Helper method to generate random password
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(chars.length());
+            sb.append(chars.charAt(index));
+        }
+        
+        return sb.toString();
     }
 }

@@ -4,10 +4,14 @@ import com.melardev.spring.jwtoauth.dtos.responses.JobResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.EmployerProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
+import com.melardev.spring.jwtoauth.entities.JobMatch;
+import com.melardev.spring.jwtoauth.entities.StudentProfile;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
 import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
+import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.services.JobMatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +40,12 @@ public class JobController {
     
     @Autowired
     private EmployerProfileRepository employerProfileRepository;
+    
+    @Autowired
+    private StudentProfileRepository studentProfileRepository;
+    
+    @Autowired
+    private JobMatchService jobMatchService;
     
     @GetMapping
     public ResponseEntity<Page<Job>> getAllJobs(
@@ -192,6 +202,17 @@ public class JobController {
         job.setActive(true);
         
         job = jobRepository.save(job);
+        
+        // Call job matching service for students with CVs
+        List<StudentProfile> studentsWithCVs = studentProfileRepository.findAllWithActiveCVs();
+        for (StudentProfile student : studentsWithCVs) {
+            try {
+                List<JobMatch> matches = jobMatchService.findMatchesForStudent(student.getId(), 0.0);
+                System.out.println("Job matches updated for student: " + student.getId() + ", Matches found: " + matches.size());
+            } catch (Exception e) {
+                System.err.println("Error updating job matches for student " + student.getId() + ": " + e.getMessage());
+            }
+        }
         
         return ResponseEntity.ok(job);
     }
