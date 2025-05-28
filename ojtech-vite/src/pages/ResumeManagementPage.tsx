@@ -498,7 +498,7 @@ const EditableResumeView: React.FC<{
 
       <div className="flex flex-col">
         {/* Header - Full Name and Professional Title */}
-        <div className="mb-6 text-center">
+        <div className="mb-6 text-center bg-background ">
           <Input
             value={editedData.contactInfo.name}
             onChange={(e) => handleChange('contactInfo', 'name', e.target.value)}
@@ -509,6 +509,7 @@ const EditableResumeView: React.FC<{
             placeholder="Professional Title"
             className="text-center"
             value="PROFESSIONAL"
+         
           />
         </div>
         
@@ -523,31 +524,37 @@ const EditableResumeView: React.FC<{
                   value={editedData.contactInfo.email}
                   onChange={(e) => handleChange('contactInfo', 'email', e.target.value)}
                   placeholder="Email"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.phone || ''}
                   onChange={(e) => handleChange('contactInfo', 'phone', e.target.value)}
                   placeholder="Phone"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.location || ''}
                   onChange={(e) => handleChange('contactInfo', 'location', e.target.value)}
                   placeholder="Location"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.github || ''}
                   onChange={(e) => handleChange('contactInfo', 'github', e.target.value)}
                   placeholder="GitHub URL"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.linkedin || ''}
                   onChange={(e) => handleChange('contactInfo', 'linkedin', e.target.value)}
                   placeholder="LinkedIn URL"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.portfolio || ''}
                   onChange={(e) => handleChange('contactInfo', 'portfolio', e.target.value)}
                   placeholder="Portfolio URL"
+                  className='bg-white text-gray-800'
                 />
               </div>
             </section>
@@ -566,7 +573,7 @@ const EditableResumeView: React.FC<{
                         handleChange('skills', 'skillsList', newSkills);
                       }}
                       placeholder={`Skill ${index + 1}`}
-                      className="flex-1"
+                      className="flex-1 bg-white text-gray-800"
                     />
                     <Button
                       variant="outline"
@@ -601,21 +608,25 @@ const EditableResumeView: React.FC<{
                   value={editedData.education.university}
                   onChange={(e) => handleChange('education', 'university', e.target.value)}
                   placeholder="University"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.major}
                   onChange={(e) => handleChange('education', 'major', e.target.value)}
                   placeholder="Major"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.graduationYear || ''}
                   onChange={(e) => handleChange('education', 'graduationYear', e.target.value)}
                   placeholder="Graduation Year"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.location || ''}
                   onChange={(e) => handleChange('education', 'location', e.target.value)}
                   placeholder="Location"
+                  className='bg-white text-gray-800'
                 />
               </div>
             </section>
@@ -637,7 +648,8 @@ const EditableResumeView: React.FC<{
                         handleChange('professionalSummary', 'summaryPoints', newPoints);
                       }}
                       placeholder={`Summary point ${index + 1}`}
-                      className="flex-1 w-full"
+                      className=" w-full bg-white text-gray-800"
+                    
                     />
                     <Button
                       variant="outline"
@@ -802,6 +814,7 @@ const EditableResumeView: React.FC<{
                         }}
                         placeholder="Project Name"
                         label="Name"
+                        className='bg-white text-gray-800'
                       />
                       <Input
                         value={project.technologies || ''}
@@ -812,6 +825,7 @@ const EditableResumeView: React.FC<{
                         }}
                         placeholder="Technologies Used"
                         label="Technologies"
+                        className="bg-white text-gray-800"
                       />
                     </div>
                     
@@ -827,7 +841,7 @@ const EditableResumeView: React.FC<{
                               handleChange('projects', 'projectsList', newProjects);
                             }}
                             placeholder={`Highlight ${hlIndex + 1}`}
-                            className="flex-1"
+                            className="flex-1  bg-white text-gray-800"
                           />
                           <Button
                             variant="outline"
@@ -2338,7 +2352,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h2 className="text-2xl font-semibold mb-2">Student Access Only</h2>
-            <p className="text-gray-600 dark:text-gray-400">Only students can access the resume management page.</p>
+            <p className="text-gray-600 dark:text-gray-400">Only students can access the CV management page.</p>
             <Link to="/profile" className="mt-4 inline-block text-indigo-600 hover:text-indigo-500">
               Return to Profile
             </Link>
@@ -2361,15 +2375,15 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     return (
       <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">Resume Management</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">CV Management</h1>
         </div>
         
         <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-6 rounded-lg border border-gray-800/50 shadow-lg">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
-              <h3 className="text-2xl font-bold text-white">Resume Builder</h3>
+              <h3 className="text-2xl font-bold text-white">CV Builder</h3>
               <p className="text-gray-400 text-sm mt-1">
-                Generate a professional, ATS-optimized resume based on your profile
+                Generate a professional, ATS-optimized CV based on your profile
               </p>
               <p className="text-gray-500 text-xs mt-1">
                 Powered by Google Gemini 2.5 AI to create exceptional resumes that stand out
@@ -2390,7 +2404,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                 ) : (
                   <>
                     <FileText className="h-4 w-4" />
-                    <span>{resumeHtml ? 'Regenerate Resume' : 'Generate Resume'}</span>
+                    <span>{resumeHtml ? 'Regenerate CV' : 'Generate CV'}</span>
                   </>
                 )}
               </Button>
@@ -2403,7 +2417,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                     className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2"
                   >
                     <Edit2 className="h-4 w-4" />
-                    <span>Edit Resume</span>
+                    <span>Edit CV</span>
                   </Button>
                   
                   <Button 
@@ -2435,7 +2449,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
           <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-gray-800/50">
               <h4 className="font-medium text-white">
-                {isEditMode ? 'Edit Resume' : 'Resume Preview'}
+                {isEditMode ? 'Edit CV' : 'CV Preview'}
               </h4>
               {!isEditMode && (
                 <div className="flex space-x-2">
