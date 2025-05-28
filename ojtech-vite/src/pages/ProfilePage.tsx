@@ -15,6 +15,7 @@ import { ToastContext } from '../providers/ToastContext';
 import { ToastProps } from '../components/ui/use-toast';
 import { toast } from '../components/ui/toast-utils';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
+import EmployerProfileEditModal from '../components/profile/EmployerProfileEditModal';
 
 // Add type definitions at the top of the file
 interface User {
@@ -50,6 +51,7 @@ interface ProfilePageState {
   skills: string[];
   isEducationModalOpen: boolean;
   isProfileModalOpen: boolean;
+  isEmployerProfileModalOpen: boolean;
 }
 
 // New data structure interfaces
@@ -113,8 +115,10 @@ interface EmployerProfileData {
   companySize?: string;
   industry?: string;
   companyWebsite?: string;
+  websiteUrl?: string;
   companyDescription?: string;
   companyLogoUrl?: string;
+  logoUrl?: string;
   companyAddress?: string;
   contactPersonName?: string;
   contactPersonPosition?: string;
@@ -279,30 +283,240 @@ const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: stri
 );
 
 // Component to display employer profile
-const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: string, username: string }> = ({ profile, email, username }) => (
-  <div className="space-y-4">
-    <h3 className="text-xl font-semibold">{profile.companyName} ({username})</h3>
-    {profile.companyLogoUrl && <img src={profile.companyLogoUrl} alt={`${profile.companyName} logo`} className="h-24 w-auto rounded my-2" />}
-    <p><strong>Contact Email (User):</strong> {email}</p>
-    {profile.verified && <p className="text-green-600 dark:text-green-400 font-semibold">Verified Employer</p>}
-    {profile.industry && <p><strong>Industry:</strong> {profile.industry}</p>}
-    {profile.companySize && <p><strong>Company Size:</strong> {profile.companySize}</p>}
-    {profile.companyWebsite && (
-      <p>
-        <strong>Website:</strong> 
-        <a href={profile.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline ml-1">
-          {profile.companyWebsite}
-        </a>
-      </p>
-    )}
-    {profile.companyDescription && <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded"><p>{profile.companyDescription}</p></div>}
-    {profile.companyAddress && <p><strong>Address:</strong> {profile.companyAddress}</p>}
-    <h4 className="text-md font-semibold pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">Contact Person</h4>
-    {profile.contactPersonName && <p><strong>Name:</strong> {profile.contactPersonName}</p>}
-    {profile.contactPersonPosition && <p><strong>Position:</strong> {profile.contactPersonPosition}</p>}
-    {profile.contactPersonEmail && <p><strong>Email:</strong> {profile.contactPersonEmail}</p>}
-    {profile.contactPersonPhone && <p><strong>Phone:</strong> {profile.contactPersonPhone}</p>}
-    <Link to="/onboarding/employer" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Company Profile</Link>
+const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: string, username: string, onEditClick: () => void }> = ({ profile, email, username, onEditClick }) => (
+  <div className="space-y-8">
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">Company Profile</h1>
+      <Button 
+        onClick={onEditClick}
+        className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
+      >
+        <Pencil className="h-4 w-4" />
+        Edit Profile
+      </Button>
+    </div>
+
+    {/* Main profile card */}
+    <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 shadow-xl">
+      <div className="flex flex-col md:flex-row items-start gap-8">
+        {/* Logo */}
+        <div className="flex-shrink-0 w-full md:w-auto flex justify-center md:block">
+          {(profile.logoUrl || profile.companyLogoUrl) ? (
+            <div className="w-32 h-32 bg-gray-800/50 rounded-xl border border-gray-700/30 flex items-center justify-center overflow-hidden shadow-lg">
+              <img 
+                src={profile.logoUrl || profile.companyLogoUrl} 
+                alt={`${profile.companyName} logo`} 
+                className="w-full h-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="w-32 h-32 bg-gradient-to-br from-gray-800/50 to-black/50 rounded-xl border border-gray-700/30 flex items-center justify-center shadow-lg">
+              <svg className="w-16 h-16 text-gray-500/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+          )}
+          {profile.verified && (
+            <div className="mt-3 bg-gray-900/50 text-gray-300 px-4 py-1 rounded-full text-xs border border-gray-700/50 flex items-center justify-center mx-auto md:mx-0 w-fit shadow-sm">
+              <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Verified
+            </div>
+          )}
+        </div>
+
+        {/* Company info */}
+        <div className="flex-grow w-full md:w-auto text-center md:text-left mt-4 md:mt-0">
+          <h2 className="text-3xl font-bold text-white mb-2">{profile.companyName}</h2>
+          <p className="text-gray-400 mb-4">@{username}</p>
+          
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+            {profile.industry && (
+              <span className="bg-gray-800 text-gray-300 px-4 py-2 rounded-md text-sm flex items-center shadow-sm hover:bg-gray-750 transition-colors">
+                <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {profile.industry}
+              </span>
+            )}
+            {profile.companySize && (
+              <span className="bg-gray-800 text-gray-300 px-4 py-2 rounded-md text-sm flex items-center shadow-sm hover:bg-gray-750 transition-colors">
+                <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {profile.companySize}
+              </span>
+            )}
+            {(profile.companyWebsite || profile.websiteUrl) && (
+              <a 
+                href={profile.websiteUrl ? (profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`) : 
+                     (profile.companyWebsite && profile.companyWebsite.startsWith('http') ? profile.companyWebsite : `https://${profile.companyWebsite || ''}`)} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="bg-gray-800 text-gray-300 px-4 py-2 rounded-md text-sm flex items-center hover:bg-gray-700 transition-colors shadow-sm"
+              >
+                <Globe className="w-4 h-4 mr-2 text-gray-400" />
+                Website
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-3 gap-6">
+      {/* About Company */}
+      <div className="md:col-span-2">
+        <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 h-full shadow-xl">
+          <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2 border-b border-gray-800 pb-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            About Company
+          </h3>
+          {profile.companyDescription ? (
+            <p className="text-gray-300 whitespace-pre-line leading-relaxed">{profile.companyDescription}</p>
+          ) : (
+            <p className="text-gray-500 italic">No company description provided</p>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            {profile.companyAddress && (
+              <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-3 shadow-sm">
+                <div className="bg-gray-800/50 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Location</p>
+                  <p className="text-gray-300">{profile.companyAddress}</p>
+                </div>
+              </div>
+            )}
+            
+            {profile.websiteUrl && (
+              <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-3 shadow-sm">
+                <div className="bg-gray-800/50 p-2 rounded-lg">
+                  <Globe className="w-5 h-5 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium mb-1">Website</p>
+                  <a 
+                    href={profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-gray-300 hover:text-white hover:underline transition-colors"
+                  >
+                    {profile.websiteUrl}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* User Account */}
+      <div>
+        <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 shadow-xl">
+          <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2 border-b border-gray-800 pb-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            User Account
+          </h3>
+          <div className="space-y-4">
+            <p className="text-gray-400 text-sm">Primary account information</p>
+            <div className="flex items-center gap-4 bg-black/20 p-3 rounded-lg border border-gray-800/30">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white font-medium text-lg shadow-md">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-white font-medium">{username}</p>
+                <p className="text-gray-400 text-sm flex items-center mt-1">
+                  <Mail className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                  {email}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Company Contact */}
+    <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 shadow-xl">
+      <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-2 border-b border-gray-800 pb-3">
+        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        Company Contact
+      </h3>
+      
+      <div className="grid md:grid-cols-2 gap-6">
+        {profile.contactPersonName ? (
+          <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-4 shadow-sm">
+            <div className="w-14 h-14 rounded-full bg-gray-800/50 border border-gray-700/30 flex items-center justify-center shadow-md">
+              <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-white font-medium">{profile.contactPersonName}</p>
+              {profile.contactPersonPosition && (
+                <p className="text-gray-400 text-sm mt-1">{profile.contactPersonPosition}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-center gap-4 shadow-sm">
+            <div className="w-14 h-14 rounded-full bg-gray-800/50 border border-gray-700/30 flex items-center justify-center shadow-md">
+              <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-gray-500 italic">No contact person specified</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-4">
+          {profile.contactPersonEmail && (
+            <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-center gap-3 shadow-sm">
+              <div className="bg-gray-800/50 p-2 rounded-lg">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Email</p>
+                <p className="text-white">{profile.contactPersonEmail}</p>
+              </div>
+            </div>
+          )}
+          
+          {profile.contactPersonPhone && (
+            <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-center gap-3 shadow-sm">
+              <div className="bg-gray-800/50 p-2 rounded-lg">
+                <Phone className="h-5 w-5 text-gray-400" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Phone</p>
+                <p className="text-white">{profile.contactPersonPhone}</p>
+              </div>
+            </div>
+          )}
+          
+          {!profile.contactPersonEmail && !profile.contactPersonPhone && (
+            <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 shadow-sm">
+              <p className="text-gray-500 italic">No contact information provided</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   </div>
 );
 
@@ -339,7 +553,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       currentTab: 'info',
       skills: [],
       isEducationModalOpen: false,
-      isProfileModalOpen: false
+      isProfileModalOpen: false,
+      isEmployerProfileModalOpen: false
     };
   }
   
@@ -519,7 +734,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           const { fetchUserProfile } = this.context || {};
           if (fetchUserProfile) {
             await fetchUserProfile();
-          console.log('Auth context refreshed, retrying profile load');
+            console.log('Auth context refreshed, retrying profile load');
           } else {
             console.log('No fetchUserProfile method available in context');
           }
@@ -673,8 +888,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   // Load employer profile
   loadEmployerProfile = async (token: string) => {
     try {
-      // Use profiles/me endpoint instead of employers/me
-      const response = await axios.get(`${this.API_BASE_URL}/profiles/me`, {
+      console.log('Attempting to load employer profile data');
+      
+      // Try employer-profiles/me endpoint first, which should have the most complete data
+      const response = await axios.get(`${this.API_BASE_URL}/employer-profiles/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -682,48 +899,139 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       
       if (response.data) {
         console.log('Employer profile loaded:', response.data);
-        this.setState({ employerProfile: response.data });
+        
+        // Create a properly formatted employer profile object with safe defaults
+        const profileData: EmployerProfileData = {
+          id: response.data.id || null,
+          companyName: response.data.companyName || '',
+          companySize: response.data.companySize || '',
+          industry: response.data.industry || '',
+          companyWebsite: response.data.companyWebsite || '',
+          websiteUrl: response.data.websiteUrl || response.data.companyWebsite || '',
+          companyDescription: response.data.companyDescription || '',
+          companyLogoUrl: response.data.companyLogoUrl || '',
+          logoUrl: response.data.logoUrl || '',
+          companyAddress: response.data.companyAddress || '',
+          contactPersonName: response.data.contactPersonName || '',
+          contactPersonPosition: response.data.contactPersonPosition || '',
+          contactPersonEmail: response.data.contactPersonEmail || '',
+          contactPersonPhone: response.data.contactPersonPhone || '',
+          verified: response.data.verified || false,
+          hasCompletedOnboarding: response.data.hasCompletedOnboarding || false
+        };
+        
+        console.log('Processed employer profile data:', profileData);
+        
+        this.setState({ employerProfile: profileData }, () => {
+          console.log('State updated with employer profile:', this.state.employerProfile);
+        });
       }
     } catch (error: any) {
-      console.error('Error loading employer profile:', error);
+      console.error('Error loading employer profile (primary):', error);
       
-      // If unauthorized (401/403), try to refresh the token through context
+      // If unauthorized (401/403), try to refresh the token and retry
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         try {
           const { fetchUserProfile } = this.context || {};
-          // Attempt to refresh the profile using the context
           if (fetchUserProfile) {
             await fetchUserProfile();
-            console.log('Auth context refreshed, retrying profile load');
-            
-            // Get the new token and retry
-            const newToken = this.getAuthToken();
-            if (newToken) {
-              const retryResponse = await axios.get(`${this.API_BASE_URL}/profiles/me`, {
-                headers: {
-                  'Authorization': `Bearer ${newToken}`
-                }
-              });
-              
-              if (retryResponse.data) {
-                this.setState({ employerProfile: retryResponse.data });
-                return;
+            console.log('Auth context refreshed, retrying employer profile load');
+          } else {
+            console.log('No fetchUserProfile method available in context');
+          }
+          
+          // Get the new token and retry
+          const newToken = this.getAuthToken();
+          if (newToken) {
+            const retryResponse = await axios.get(`${this.API_BASE_URL}/employer-profiles/me`, {
+              headers: {
+                'Authorization': `Bearer ${newToken}`
               }
+            });
+            
+            if (retryResponse.data) {
+              console.log('Retry employer profile response:', retryResponse.data);
+              
+              const profileData: EmployerProfileData = {
+                id: retryResponse.data.id || null,
+                companyName: retryResponse.data.companyName || '',
+                companySize: retryResponse.data.companySize || '',
+                industry: retryResponse.data.industry || '',
+                companyWebsite: retryResponse.data.companyWebsite || '',
+                websiteUrl: retryResponse.data.websiteUrl || retryResponse.data.companyWebsite || '',
+                companyDescription: retryResponse.data.companyDescription || '',
+                companyLogoUrl: retryResponse.data.companyLogoUrl || '',
+                logoUrl: retryResponse.data.logoUrl || '',
+                companyAddress: retryResponse.data.companyAddress || '',
+                contactPersonName: retryResponse.data.contactPersonName || '',
+                contactPersonPosition: retryResponse.data.contactPersonPosition || '',
+                contactPersonEmail: retryResponse.data.contactPersonEmail || '',
+                contactPersonPhone: retryResponse.data.contactPersonPhone || '',
+                verified: retryResponse.data.verified || false,
+                hasCompletedOnboarding: retryResponse.data.hasCompletedOnboarding || false
+              };
+              
+              console.log('Processed retry employer profile data:', profileData);
+              
+              this.setState({ employerProfile: profileData }, () => {
+                console.log('State updated with retry employer profile:', this.state.employerProfile);
+              });
+              return;
             }
           }
         } catch (retryError) {
-          console.error('Failed to refresh token and retry:', retryError);
+          console.error('Failed to refresh token and retry employer profile:', retryError);
         }
       }
       
-      // For 404 errors, the profile may not exist yet - show empty state
-      if (error.response && error.response.status === 404) {
-        console.log('Employer profile not found, showing empty state');
+      // If 404 errors or other issues, try a fallback to the profiles/me endpoint
+      try {
+        console.log('Employer profile not found, trying fallback endpoint');
+        const fallbackResponse = await axios.get(`${this.API_BASE_URL}/profiles/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (fallbackResponse.data) {
+          console.log('Fallback employer profile loaded:', fallbackResponse.data);
+          
+          // Convert the generic profile data to employer profile format with safe defaults
+          const profileData: EmployerProfileData = {
+            id: fallbackResponse.data.id || null,
+            companyName: fallbackResponse.data.companyName || '',
+            companySize: fallbackResponse.data.companySize || '',
+            industry: fallbackResponse.data.industry || '',
+            companyWebsite: fallbackResponse.data.companyWebsite || '',
+            websiteUrl: fallbackResponse.data.websiteUrl || fallbackResponse.data.companyWebsite || '',
+            companyDescription: fallbackResponse.data.companyDescription || '',
+            companyLogoUrl: fallbackResponse.data.companyLogoUrl || '',
+            logoUrl: fallbackResponse.data.logoUrl || '',
+            companyAddress: fallbackResponse.data.companyAddress || '',
+            contactPersonName: fallbackResponse.data.contactPersonName || '',
+            contactPersonPosition: fallbackResponse.data.contactPersonPosition || '',
+            contactPersonEmail: fallbackResponse.data.contactPersonEmail || '',
+            contactPersonPhone: fallbackResponse.data.contactPersonPhone || '',
+            verified: fallbackResponse.data.verified || false,
+            hasCompletedOnboarding: fallbackResponse.data.hasCompletedOnboarding || false
+          };
+          
+          console.log('Processed fallback employer profile data:', profileData);
+          
+          this.setState({ employerProfile: profileData }, () => {
+            console.log('State updated with fallback employer profile:', this.state.employerProfile);
+          });
+          return;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback employer profile load also failed:', fallbackError);
         // Set empty profile state
         this.setState({ 
           employerProfile: {
             companyName: ''
           } 
+        }, () => {
+          console.log('Set empty employer profile state:', this.state.employerProfile);
         });
       }
     }
@@ -770,6 +1078,24 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     }
   };
   
+  // Open employer profile edit modal
+  handleOpenEmployerProfileModal = () => {
+    this.setState({ isEmployerProfileModalOpen: true });
+  };
+  
+  // Close employer profile edit modal
+  handleCloseEmployerProfileModal = () => {
+    this.setState({ isEmployerProfileModalOpen: false });
+  };
+  
+  // Refresh employer profile after update
+  handleEmployerProfileSaved = () => {
+    const token = this.getAuthToken();
+    if (token) {
+      this.loadEmployerProfile(token);
+    }
+  };
+  
   // Helper method to show toasts
   private showToast = (props: ToastProps) => {
     const toastContext = this.context as unknown as { toast?: (props: ToastProps) => void };
@@ -782,7 +1108,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       studentProfile, 
       employerProfile, 
       isEducationModalOpen,
-      isProfileModalOpen
+      isProfileModalOpen,
+      isEmployerProfileModalOpen
     } = this.state;
     
     console.log('Render - studentProfile:', studentProfile);
@@ -805,12 +1132,25 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     const isStudent = Array.isArray(user.roles) && user.roles.includes('ROLE_STUDENT');
     const isEmployer = Array.isArray(user.roles) && user.roles.includes('ROLE_EMPLOYER');
     
-    if (!studentProfile) {
-    return (
+    // For students, wait until student profile is loaded
+    if (isStudent && !studentProfile) {
+      return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-2">Loading Profile...</h2>
+            <h2 className="text-2xl font-semibold mb-2">Loading Student Profile...</h2>
             <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your profile data.</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // For employers, wait until employer profile is loaded
+    if (isEmployer && !employerProfile) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-2">Loading Employer Profile...</h2>
+            <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your company data.</p>
           </div>
         </div>
       );
@@ -1077,23 +1417,29 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           </div>
         )}
         
+
+        
         {isEmployer && (
-          <Card className="p-6">
-            {employerProfile ? (
-              <EmployerProfileDisplay 
-                profile={employerProfile} 
-                email={user?.email || ''} 
-                username={user?.username || ''}
-              />
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-gray-500 mb-4">Employer profile not found. Please complete your onboarding.</p>
-                <Link to="/onboarding/employer">
-                  <Button>Complete Onboarding</Button>
-                </Link>
-              </div>
-            )}
-          </Card>
+          <div className="md:col-span-12">
+            <Card className="overflow-hidden bg-gray-900/60 border-gray-800/50">
+              {employerProfile ? (
+                <EmployerProfileDisplay 
+                  profile={employerProfile} 
+                  email={user?.email || ''} 
+                  username={user?.username || ''}
+                  onEditClick={this.handleOpenEmployerProfileModal}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-xl font-semibold text-white mb-2">Employer Profile Not Found</h3>
+                  <p className="text-gray-400 mb-6">Please complete your company profile to start posting jobs.</p>
+                  <Link to="/onboarding/employer">
+                    <Button variant="default">Complete Company Profile</Button>
+                  </Link>
+                </div>
+              )}
+            </Card>
+          </div>
         )}
         
         {/* Education Edit Modal */}
@@ -1127,6 +1473,30 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               linkedinUrl: studentProfile.linkedinUrl,
               portfolioUrl: studentProfile.portfolioUrl,
               skills: studentProfile.skills,
+            }}
+          />
+        )}
+
+        {/* Employer Profile Edit Modal */}
+        {employerProfile && (
+          <EmployerProfileEditModal
+            isOpen={isEmployerProfileModalOpen}
+            onClose={this.handleCloseEmployerProfileModal}
+            onSaved={this.handleEmployerProfileSaved}
+            initialData={{
+              companyName: employerProfile.companyName,
+              companySize: employerProfile.companySize,
+              industry: employerProfile.industry,
+              companyWebsite: employerProfile.companyWebsite,
+              websiteUrl: employerProfile.websiteUrl,
+              companyDescription: employerProfile.companyDescription,
+              companyLogoUrl: employerProfile.companyLogoUrl,
+              logoUrl: employerProfile.logoUrl,
+              companyAddress: employerProfile.companyAddress,
+              contactPersonName: employerProfile.contactPersonName,
+              contactPersonPosition: employerProfile.contactPersonPosition,
+              contactPersonEmail: employerProfile.contactPersonEmail,
+              contactPersonPhone: employerProfile.contactPersonPhone,
             }}
           />
         )}

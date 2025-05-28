@@ -271,6 +271,13 @@ public class DatabaseSeeder implements CommandLineRunner {
                 employerProfile.setWebsiteUrl("https://techcompany.com");
                 employerProfile.setLogoUrl("https://example.com/logo.png");
                 employerProfile.setHasCompletedOnboarding(true);
+                
+                // Add contact person information
+                employerProfile.setContactPersonName("John Smith");
+                employerProfile.setContactPersonPosition("HR Manager");
+                employerProfile.setContactPersonEmail("hr@techcompany.com");
+                employerProfile.setContactPersonPhone("555-123-4567");
+                
                 employerProfileRepository.save(employerProfile);
             }
         } catch (DataAccessException e) {

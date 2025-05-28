@@ -77,6 +77,49 @@ const updateProfile = async (data: any) => {
   }
 };
 
+// Update employer profile
+const updateEmployerProfile = async (data: any) => {
+  try {
+    // Format the data to match backend expectations
+    const formattedData = {
+      companyName: data.companyName,
+      companySize: data.companySize || null,
+      industry: data.industry || null,
+      websiteUrl: data.websiteUrl || data.companyWebsite || null, // Use websiteUrl or fall back to companyWebsite
+      companyDescription: data.companyDescription || null,
+      companyAddress: data.companyAddress || null,
+      contactPersonName: data.contactPersonName || null,
+      contactPersonPosition: data.contactPersonPosition || null,
+      contactPersonEmail: data.contactPersonEmail || null,
+      contactPersonPhone: data.contactPersonPhone || null,
+      companyLogoUrl: data.companyLogoUrl || null,
+      logoUrl: data.logoUrl || data.companyLogoUrl || null
+    };
+
+    console.log('Sending formatted employer data to backend:', formattedData);
+
+    const response = await axios.put(
+      `${API_BASE_URL}/employer-profiles/me`,
+      formattedData,
+      { 
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log('Employer profile update response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("Error updating employer profile:", error.message);
+    if (error.response) {
+      console.error("Server error details:", error.response.data);
+    }
+    throw error;
+  }
+};
+
 // Create initial profile after registration
 const createInitialProfile = async (fullName: string) => {
   try {
@@ -316,9 +359,9 @@ const completeEmployerOnboarding = async (data: any) => {
 
 const uploadEmployerLogo = async (logoFile: File) => {
   const formData = new FormData();
-  formData.append('logoFile', logoFile);
+  formData.append('file', logoFile);
   try {
-    const response = await axios.post(`${API_URL}/employer-profiles/logo`, formData, {
+    const response = await axios.post(`${API_BASE_URL}/employer-profiles/logo`, formData, {
       headers: {
         ...getAuthHeaders(),
         'Content-Type': 'multipart/form-data',
@@ -379,6 +422,7 @@ const profileService = {
   uploadEmployerLogo,
   getCurrentEmployerProfile,
   updateEducationInfo,
+  updateEmployerProfile,
 };
 
 export default profileService; 

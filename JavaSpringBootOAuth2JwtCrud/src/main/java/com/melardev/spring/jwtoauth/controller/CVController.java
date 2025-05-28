@@ -166,6 +166,7 @@ public class CVController {
     /**
      * Generate a CV based on student profile data
      * This creates a placeholder CV entity that will be updated with the actual CV data later
+     * If the student already has a CV, it will update the existing one instead of creating a new one
      */
     @PostMapping("/generate")
     @PreAuthorize("hasRole('STUDENT')")
@@ -176,9 +177,43 @@ public class CVController {
         }
         
         StudentProfile student = studentOpt.get();
+        CV cv;
         
-        // Create a CV entity that will store the AI-generated resume
-        CV cv = new CV();
+        // Check if the student already has an active CV
+        UUID activeCvId = student.getActiveCvId();
+        if (activeCvId != null) {
+            // Update the existing CV
+            Optional<CV> existingCvOpt = cvRepository.findById(activeCvId);
+            if (existingCvOpt.isPresent()) {
+                cv = existingCvOpt.get();
+                // Update the CV properties
+                cv.setLastUpdated(LocalDateTime.now());
+                cv.setGenerated(true);
+                // Keep the active status as true
+                cv.setActive(true);
+                
+                // Save the updated CV
+                cv = cvRepository.save(cv);
+                
+                System.out.println("Updated existing CV with ID: " + cv.getId() + " for student: " + student.getId());
+                
+                // Trigger job matching for the student
+                try {
+                    // Run job matching with no minimum score filter
+                    jobMatchService.findMatchesForStudent(student.getId(), null);
+                    System.out.println("Job matching completed successfully for student: " + student.getId());
+                } catch (Exception e) {
+                    // Log error but don't fail the CV generation
+                    System.err.println("Error during job matching: " + e.getMessage());
+                    e.printStackTrace();
+                }
+                
+                return ResponseEntity.ok(cv);
+            }
+        }
+        
+        // If no active CV or active CV not found, create a new one
+        cv = new CV();
         cv.setStudent(student);
         cv.setActive(true);
         cv.setGenerated(true);

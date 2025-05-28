@@ -202,6 +202,10 @@ public class EmployerProfileController {
             profile.setWebsiteUrl((String) data.get("websiteUrl"));
         }
         
+        if (data.containsKey("companyWebsite")) {
+            profile.setWebsiteUrl((String) data.get("companyWebsite"));
+        }
+        
         if (data.containsKey("phoneNumber")) {
             profile.setPhoneNumber((String) data.get("phoneNumber"));
         }
@@ -212,6 +216,31 @@ public class EmployerProfileController {
         
         if (data.containsKey("hasCompletedOnboarding")) {
             profile.setHasCompletedOnboarding((Boolean) data.get("hasCompletedOnboarding"));
+        }
+        
+        // New contact person fields
+        if (data.containsKey("contactPersonName")) {
+            profile.setContactPersonName((String) data.get("contactPersonName"));
+        }
+        
+        if (data.containsKey("contactPersonPosition")) {
+            profile.setContactPersonPosition((String) data.get("contactPersonPosition"));
+        }
+        
+        if (data.containsKey("contactPersonEmail")) {
+            profile.setContactPersonEmail((String) data.get("contactPersonEmail"));
+        }
+        
+        if (data.containsKey("contactPersonPhone")) {
+            profile.setContactPersonPhone((String) data.get("contactPersonPhone"));
+        }
+        
+        if (data.containsKey("companyAddress")) {
+            profile.setCompanyAddress((String) data.get("companyAddress"));
+        }
+        
+        if (data.containsKey("verified")) {
+            profile.setVerified((Boolean) data.get("verified"));
         }
     }
 } 

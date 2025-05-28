@@ -9,23 +9,10 @@ import { Loader2 } from "lucide-react";
 // Company size options
 const companySizeOptions = [
   { value: "1-10", label: "1-10 employees" },
-  { value: "11-50", label: "11-50 employees" },
-  { value: "51-200", label: "51-200 employees" },
-  { value: "201-500", label: "201-500 employees" },
-  { value: "501-1000", label: "501-1000 employees" },
-  { value: "1001+", label: "1001+ employees" }
-];
-
-// Industry options
-const industryOptions = [
-  { value: "technology", label: "Technology" },
-  { value: "finance", label: "Finance" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "education", label: "Education" },
-  { value: "retail", label: "Retail" },
-  { value: "manufacturing", label: "Manufacturing" },
-  { value: "services", label: "Services" },
-  { value: "other", label: "Other" }
+  { value: "11-20", label: "11-20 employees" },
+  { value: "21-30", label: "21-30 employees" },
+  { value: "31-40", label: "31-40 employees" },
+  { value: "41+", label: "41+ employees" }
 ];
 
 interface FormValues {
@@ -98,7 +85,7 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
         break;
       case 'industry':
         if (!formData.industry) {
-          error = 'Please select an industry';
+          error = 'Please enter an industry';
         }
         break;
       case 'companyDescription':
@@ -214,23 +201,13 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
               <FormField>
                 <FormItem>
                   <FormLabel>Industry</FormLabel>
-                  <Select 
-                    value={formData.industry}
-                    onValueChange={value => this.handleSelectChange('industry', value)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select industry" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {industryOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter industry"
+                      value={formData.industry}
+                      onChange={e => this.handleChange('industry', e.target.value)}
+                    />
+                  </FormControl>
                   {touched.industry && errors.industry && (
                     <FormMessage>{errors.industry}</FormMessage>
                   )}
