@@ -184,8 +184,8 @@ public class CoverLetterService {
         coverLetter.append(new Date().toString()).append("\n\n");
         
         // Greeting - use employer company name
-        String employerName = job.getEmployer().getCompanyName();
-        coverLetter.append("Dear ").append(employerName).append(",\n\n");
+        String employerContactPersonName = job.getEmployer().getContactPersonName();
+        coverLetter.append("Dear ").append(employerContactPersonName).append(",\n\n");
         
         // Introduction
         coverLetter.append("I am writing to express my interest in the ").append(job.getTitle())

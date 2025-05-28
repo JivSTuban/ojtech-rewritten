@@ -3,13 +3,15 @@ import axios from 'axios';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { AuthContext } from '../providers/AuthProvider';
-import { Loader2, Download, Code, FileText } from 'lucide-react';
+import { Loader2, Download, Code, FileText, Edit2, Save, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import cvGeneratorService from '../lib/api/cvGeneratorService';
 import { toast } from '../components/ui/toast-utils';
 import { ToastContext } from '../providers/ToastContext';
 import { ToastProps } from '../components/ui/use-toast';
 import resumeHtmlGenerator from '../lib/api/resumeHtmlGenerator';
+import { Input } from '../components/ui/Input';
+import { Textarea } from '../components/ui/Textarea';
 
 /**
  * ResumeManagementPage
@@ -38,13 +40,14 @@ const apiClient = axios.create({
 
 // Define the ResumeData interface to match the backend JSON structure
 interface ResumeData {
-  professionalSummary?: {
+  [key: string]: any;  // Add index signature
+  professionalSummary: {
     summaryPoints: string[];
   };
-  skills?: string[] | {
+  skills: {
     skillsList: string[];
   };
-  experience?: {
+  experience: {
     experiences: {
       title: string;
       company: string;
@@ -52,28 +55,28 @@ interface ResumeData {
       dateRange: string;
       achievements: string[];
     }[];
-  } | any[];
-  projects?: {
+  };
+  projects: {
     projectsList: {
       name: string;
       technologies?: string;
       highlights: string[];
     }[];
-  } | any[];
-  education?: {
+  };
+  education: {
     university: string;
     major: string;
     graduationYear?: string;
     location?: string;
-  } | any;
-  certifications?: {
+  };
+  certifications: {
     certificationsList: {
       name: string;
       issuer: string;
       dateReceived?: string;
     }[];
-  } | any[];
-  contactInfo?: {
+  };
+  contactInfo: {
     name: string;
     email: string;
     phone?: string;
@@ -82,12 +85,6 @@ interface ResumeData {
     linkedin?: string;
     github?: string;
     portfolio?: string;
-  } | {
-    // Alternative field names that might come from the backend
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: string;
-    email?: string;
   };
   personalInfo?: {
     name: string;
@@ -130,6 +127,8 @@ interface ResumeManagementPageState {
   skills: string[];
   generatingCV: boolean;
   uploadLoading: boolean;
+  isEditMode: boolean;
+  editableData: ResumeData | null;
 }
 
 // Student profile data structure
@@ -408,6 +407,487 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
   );
 };
 
+// Create a default resume data structure
+const createEmptyResumeData = (): ResumeData => ({
+  professionalSummary: {
+    summaryPoints: []
+  },
+  skills: {
+    skillsList: []
+  },
+  experience: {
+    experiences: []
+  },
+  projects: {
+    projectsList: []
+  },
+  education: {
+    university: '',
+    major: '',
+    graduationYear: '',
+    location: ''
+  },
+  certifications: {
+    certificationsList: []
+  },
+  contactInfo: {
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    address: '',
+    linkedin: '',
+    github: '',
+    portfolio: ''
+  }
+});
+
+// EditableResumeView component for editing resume content
+const EditableResumeView: React.FC<{
+  data: ResumeData;
+  onSave: (data: ResumeData) => void;
+  onCancel: () => void;
+}> = ({ data, onSave, onCancel }) => {
+  const [editedData, setEditedData] = React.useState<ResumeData>(data || createEmptyResumeData());
+
+  const handleChange = (section: keyof ResumeData, field: string, value: any) => {
+    setEditedData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleArrayChange = (section: keyof ResumeData, index: number, field: string, value: any) => {
+    setEditedData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [Array.isArray(prev[section]) ? index : field]: value
+      }
+    }));
+  };
+
+  const handleSave = () => {
+    onSave(editedData);
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-lg shadow">
+      <div className="flex justify-end gap-2 mb-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          className="flex items-center gap-2"
+        >
+          <Save className="h-4 w-4" />
+          Save Changes
+        </Button>
+      </div>
+
+      <div className="flex flex-col">
+        {/* Header - Full Name and Professional Title */}
+        <div className="mb-6 text-center">
+          <Input
+            value={editedData.contactInfo.name}
+            onChange={(e) => handleChange('contactInfo', 'name', e.target.value)}
+            placeholder="Full Name"
+            className="text-center text-2xl font-bold uppercase mb-2"
+          />
+          <Input
+            placeholder="Professional Title"
+            className="text-center"
+            value="PROFESSIONAL"
+          />
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Left Column - Contact and Skills */}
+          <div className="w-full md:w-1/3 space-y-8">
+            {/* Contact Information */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">CONTACT</h2>
+              <div className="space-y-3">
+                <Input
+                  value={editedData.contactInfo.email}
+                  onChange={(e) => handleChange('contactInfo', 'email', e.target.value)}
+                  placeholder="Email"
+                />
+                <Input
+                  value={editedData.contactInfo.phone || ''}
+                  onChange={(e) => handleChange('contactInfo', 'phone', e.target.value)}
+                  placeholder="Phone"
+                />
+                <Input
+                  value={editedData.contactInfo.location || ''}
+                  onChange={(e) => handleChange('contactInfo', 'location', e.target.value)}
+                  placeholder="Location"
+                />
+                <Input
+                  value={editedData.contactInfo.github || ''}
+                  onChange={(e) => handleChange('contactInfo', 'github', e.target.value)}
+                  placeholder="GitHub URL"
+                />
+                <Input
+                  value={editedData.contactInfo.linkedin || ''}
+                  onChange={(e) => handleChange('contactInfo', 'linkedin', e.target.value)}
+                  placeholder="LinkedIn URL"
+                />
+                <Input
+                  value={editedData.contactInfo.portfolio || ''}
+                  onChange={(e) => handleChange('contactInfo', 'portfolio', e.target.value)}
+                  placeholder="Portfolio URL"
+                />
+              </div>
+            </section>
+
+            {/* Skills */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">SKILLS</h2>
+              <div className="space-y-3">
+                {editedData.skills.skillsList.map((skill, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={skill}
+                      onChange={(e) => {
+                        const newSkills = [...editedData.skills.skillsList];
+                        newSkills[index] = e.target.value;
+                        handleChange('skills', 'skillsList', newSkills);
+                      }}
+                      placeholder={`Skill ${index + 1}`}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newSkills = editedData.skills.skillsList.filter((_, i) => i !== index);
+                        handleChange('skills', 'skillsList', newSkills);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newSkills = [...editedData.skills.skillsList, ''];
+                    handleChange('skills', 'skillsList', newSkills);
+                  }}
+                >
+                  Add Skill
+                </Button>
+              </div>
+            </section>
+
+            {/* Education */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">EDUCATION</h2>
+              <div className="space-y-3">
+                <Input
+                  value={editedData.education.university}
+                  onChange={(e) => handleChange('education', 'university', e.target.value)}
+                  placeholder="University"
+                />
+                <Input
+                  value={editedData.education.major}
+                  onChange={(e) => handleChange('education', 'major', e.target.value)}
+                  placeholder="Major"
+                />
+                <Input
+                  value={editedData.education.graduationYear || ''}
+                  onChange={(e) => handleChange('education', 'graduationYear', e.target.value)}
+                  placeholder="Graduation Year"
+                />
+                <Input
+                  value={editedData.education.location || ''}
+                  onChange={(e) => handleChange('education', 'location', e.target.value)}
+                  placeholder="Location"
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column - Professional Summary, Experience, Projects */}
+          <div className="w-full md:w-2/3 space-y-8">
+            {/* Professional Summary */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">PROFESSIONAL SUMMARY</h2>
+              <div className="space-y-3">
+                {editedData.professionalSummary.summaryPoints.map((point, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Textarea
+                      value={point}
+                      onChange={(e) => {
+                        const newPoints = [...editedData.professionalSummary.summaryPoints];
+                        newPoints[index] = e.target.value;
+                        handleChange('professionalSummary', 'summaryPoints', newPoints);
+                      }}
+                      placeholder={`Summary point ${index + 1}`}
+                      className="flex-1 w-full"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newPoints = editedData.professionalSummary.summaryPoints.filter((_, i) => i !== index);
+                        handleChange('professionalSummary', 'summaryPoints', newPoints);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newPoints = [...editedData.professionalSummary.summaryPoints, ''];
+                    handleChange('professionalSummary', 'summaryPoints', newPoints);
+                  }}
+                >
+                  Add Summary Point
+                </Button>
+              </div>
+            </section>
+
+            {/* Experience */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">EXPERIENCE</h2>
+              <div className="space-y-6">
+                {editedData.experience.experiences.map((exp, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-4">
+                    <div className="space-y-3">
+                      <Input
+                        value={exp.title}
+                        onChange={(e) => {
+                          const newExp = [...editedData.experience.experiences];
+                          newExp[index] = { ...newExp[index], title: e.target.value };
+                          handleChange('experience', 'experiences', newExp);
+                        }}
+                        placeholder="Job Title"
+                        label="Title"
+                      />
+                      <Input
+                        value={exp.company}
+                        onChange={(e) => {
+                          const newExp = [...editedData.experience.experiences];
+                          newExp[index] = { ...newExp[index], company: e.target.value };
+                          handleChange('experience', 'experiences', newExp);
+                        }}
+                        placeholder="Company"
+                        label="Company"
+                      />
+                      <div className="flex gap-3">
+                        <Input
+                          value={exp.location}
+                          onChange={(e) => {
+                            const newExp = [...editedData.experience.experiences];
+                            newExp[index] = { ...newExp[index], location: e.target.value };
+                            handleChange('experience', 'experiences', newExp);
+                          }}
+                          placeholder="Location"
+                          label="Location"
+                          className="flex-1"
+                        />
+                        <Input
+                          value={exp.dateRange}
+                          onChange={(e) => {
+                            const newExp = [...editedData.experience.experiences];
+                            newExp[index] = { ...newExp[index], dateRange: e.target.value };
+                            handleChange('experience', 'experiences', newExp);
+                          }}
+                          placeholder="Date Range"
+                          label="Date Range"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Achievements</label>
+                      {exp.achievements.map((achievement, achIndex) => (
+                        <div key={achIndex} className="flex gap-2">
+                          <Textarea
+                            value={achievement}
+                            onChange={(e) => {
+                              const newExp = [...editedData.experience.experiences];
+                              newExp[index].achievements[achIndex] = e.target.value;
+                              handleChange('experience', 'experiences', newExp);
+                            }}
+                            placeholder={`Achievement ${achIndex + 1}`}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newExp = [...editedData.experience.experiences];
+                              newExp[index].achievements = newExp[index].achievements.filter((_, i) => i !== achIndex);
+                              handleChange('experience', 'experiences', newExp);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newExp = [...editedData.experience.experiences];
+                          newExp[index].achievements.push('');
+                          handleChange('experience', 'experiences', newExp);
+                        }}
+                      >
+                        Add Achievement
+                      </Button>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newExp = editedData.experience.experiences.filter((_, i) => i !== index);
+                        handleChange('experience', 'experiences', newExp);
+                      }}
+                    >
+                      Remove Experience
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newExp = [...editedData.experience.experiences, {
+                      title: '',
+                      company: '',
+                      location: '',
+                      dateRange: '',
+                      achievements: []
+                    }];
+                    handleChange('experience', 'experiences', newExp);
+                  }}
+                >
+                  Add Experience
+                </Button>
+              </div>
+            </section>
+
+            {/* Projects */}
+            <section>
+              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">PROJECTS</h2>
+              <div className="space-y-6">
+                {editedData.projects.projectsList.map((project, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-4">
+                    <div className="space-y-3">
+                      <Input
+                        value={project.name}
+                        onChange={(e) => {
+                          const newProjects = [...editedData.projects.projectsList];
+                          newProjects[index] = { ...newProjects[index], name: e.target.value };
+                          handleChange('projects', 'projectsList', newProjects);
+                        }}
+                        placeholder="Project Name"
+                        label="Name"
+                      />
+                      <Input
+                        value={project.technologies || ''}
+                        onChange={(e) => {
+                          const newProjects = [...editedData.projects.projectsList];
+                          newProjects[index] = { ...newProjects[index], technologies: e.target.value };
+                          handleChange('projects', 'projectsList', newProjects);
+                        }}
+                        placeholder="Technologies Used"
+                        label="Technologies"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Highlights</label>
+                      {project.highlights.map((highlight, hlIndex) => (
+                        <div key={hlIndex} className="flex gap-2">
+                          <Textarea
+                            value={highlight}
+                            onChange={(e) => {
+                              const newProjects = [...editedData.projects.projectsList];
+                              newProjects[index].highlights[hlIndex] = e.target.value;
+                              handleChange('projects', 'projectsList', newProjects);
+                            }}
+                            placeholder={`Highlight ${hlIndex + 1}`}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newProjects = [...editedData.projects.projectsList];
+                              newProjects[index].highlights = newProjects[index].highlights.filter((_, i) => i !== hlIndex);
+                              handleChange('projects', 'projectsList', newProjects);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newProjects = [...editedData.projects.projectsList];
+                          newProjects[index].highlights.push('');
+                          handleChange('projects', 'projectsList', newProjects);
+                        }}
+                      >
+                        Add Highlight
+                      </Button>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const newProjects = editedData.projects.projectsList.filter((_, i) => i !== index);
+                        handleChange('projects', 'projectsList', newProjects);
+                      }}
+                    >
+                      Remove Project
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newProjects = [...editedData.projects.projectsList, {
+                      name: '',
+                      technologies: '',
+                      highlights: []
+                    }];
+                    handleChange('projects', 'projectsList', newProjects);
+                  }}
+                >
+                  Add Project
+                </Button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export class ResumeManagementPage extends Component<ResumeManagementPageProps, ResumeManagementPageState> {
   declare context: AuthContextType;
   static contextType = AuthContext;
@@ -442,7 +922,9 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
       loading: true,
       skills: [],
       generatingCV: false,
-      uploadLoading: false
+      uploadLoading: false,
+      isEditMode: false,
+      editableData: null
     };
   }
   
@@ -1758,14 +2240,78 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
       `;
     }
   };
-  
+
+  // Add new methods for handling edit mode
+  handleEditClick = () => {
+    const { cvData } = this.state;
+    if (cvData) {
+      let parsedData: ResumeData;
+      try {
+        parsedData = this.parseResumeContent(cvData.parsedResume);
+      } catch (e) {
+        parsedData = this.createEmptyResumeData();
+      }
+      this.setState({
+        isEditMode: true,
+        editableData: parsedData
+      });
+    }
+  };
+
+  handleSaveEdit = async (editedData: ResumeData) => {
+    try {
+      const { cvData } = this.state;
+      if (!cvData || !cvData.id) {
+        throw new Error('No CV data available');
+      }
+
+      // Convert edited data back to HTML
+      const resumeHtml = this.generateHTMLFromJSON(editedData);
+
+      // Save to backend
+      await cvGeneratorService.saveResumeHtml(cvData.id, resumeHtml);
+
+      // Update state
+      this.setState({
+        isEditMode: false,
+        resumeHtml,
+        cvData: {
+          ...cvData,
+          parsedResume: JSON.stringify(editedData)
+        }
+      });
+
+      this.showToast({
+        title: "Success",
+        description: "Resume updated successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error saving edited resume:', error);
+      this.showToast({
+        title: "Error",
+        description: "Failed to save resume changes",
+        variant: "destructive"
+      });
+    }
+  };
+
+  handleCancelEdit = () => {
+    this.setState({
+      isEditMode: false,
+      editableData: null
+    });
+  };
+
   render() {
     const { 
       loading, 
       studentProfile, 
       resumeHtml, 
       cvPreviewVisible,
-      generatingCV
+      generatingCV,
+      isEditMode,
+      editableData
     } = this.state;
     
     const { user } = this.context || {};
@@ -1830,7 +2376,6 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
               </p>
             </div>
             
-            {/* CV Generation Button */}
             <div className="flex gap-2">
               <Button 
                 onClick={this.handleGenerateCV} 
@@ -1850,10 +2395,17 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                 )}
               </Button>
               
-             
-              
-              {resumeHtml && (
+              {resumeHtml && !isEditMode && (
                 <>
+                  <Button 
+                    onClick={this.handleEditClick}
+                    variant="outline"
+                    className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    <span>Edit Resume</span>
+                  </Button>
+                  
                   <Button 
                     onClick={this.handleDownloadCV}
                     variant="outline"
@@ -1878,27 +2430,38 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
           </div>
         </div>
         
-        {/* CV Preview */}
+        {/* CV Preview/Edit */}
         {resumeHtml && (
           <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-gray-800/50">
-              <h4 className="font-medium text-white">Resume Preview</h4>
-              <div className="flex space-x-2">
-               
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={this.toggleCVPreview}
-                  className="text-gray-400 hover:text-white hover:bg-gray-800"
-                >
-                  {cvPreviewVisible ? 'Hide Preview' : 'Show Preview'}
-                </Button>
-              </div>
+              <h4 className="font-medium text-white">
+                {isEditMode ? 'Edit Resume' : 'Resume Preview'}
+              </h4>
+              {!isEditMode && (
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={this.toggleCVPreview}
+                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                  >
+                    {cvPreviewVisible ? 'Hide Preview' : 'Show Preview'}
+                  </Button>
+                </div>
+              )}
             </div>
             
             {cvPreviewVisible && (
               <div className="bg-white">
-                <ResumeHtmlView html={resumeHtml} />
+                {isEditMode && editableData ? (
+                  <EditableResumeView
+                    data={editableData}
+                    onSave={this.handleSaveEdit}
+                    onCancel={this.handleCancelEdit}
+                  />
+                ) : (
+                  <ResumeHtmlView html={resumeHtml} />
+                )}
               </div>
             )}
           </div>
