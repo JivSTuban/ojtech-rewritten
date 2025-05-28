@@ -9,7 +9,7 @@ export interface TextareaProps
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col w-19">
         {label && (
           <label className="text-sm font-medium text-gray-700">
             {label}
@@ -21,6 +21,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             className
           )}
           ref={ref}
+          cols={100}
           {...props}
         />
       </div>

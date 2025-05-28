@@ -498,7 +498,7 @@ const EditableResumeView: React.FC<{
 
       <div className="flex flex-col">
         {/* Header - Full Name and Professional Title */}
-        <div className="mb-6 text-center">
+        <div className="mb-6 text-center bg-background ">
           <Input
             value={editedData.contactInfo.name}
             onChange={(e) => handleChange('contactInfo', 'name', e.target.value)}
@@ -509,6 +509,7 @@ const EditableResumeView: React.FC<{
             placeholder="Professional Title"
             className="text-center"
             value="PROFESSIONAL"
+         
           />
         </div>
         
@@ -523,31 +524,37 @@ const EditableResumeView: React.FC<{
                   value={editedData.contactInfo.email}
                   onChange={(e) => handleChange('contactInfo', 'email', e.target.value)}
                   placeholder="Email"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.phone || ''}
                   onChange={(e) => handleChange('contactInfo', 'phone', e.target.value)}
                   placeholder="Phone"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.location || ''}
                   onChange={(e) => handleChange('contactInfo', 'location', e.target.value)}
                   placeholder="Location"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.github || ''}
                   onChange={(e) => handleChange('contactInfo', 'github', e.target.value)}
                   placeholder="GitHub URL"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.linkedin || ''}
                   onChange={(e) => handleChange('contactInfo', 'linkedin', e.target.value)}
                   placeholder="LinkedIn URL"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.contactInfo.portfolio || ''}
                   onChange={(e) => handleChange('contactInfo', 'portfolio', e.target.value)}
                   placeholder="Portfolio URL"
+                  className='bg-white text-gray-800'
                 />
               </div>
             </section>
@@ -566,7 +573,7 @@ const EditableResumeView: React.FC<{
                         handleChange('skills', 'skillsList', newSkills);
                       }}
                       placeholder={`Skill ${index + 1}`}
-                      className="flex-1"
+                      className="flex-1 bg-white text-gray-800"
                     />
                     <Button
                       variant="outline"
@@ -601,21 +608,25 @@ const EditableResumeView: React.FC<{
                   value={editedData.education.university}
                   onChange={(e) => handleChange('education', 'university', e.target.value)}
                   placeholder="University"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.major}
                   onChange={(e) => handleChange('education', 'major', e.target.value)}
                   placeholder="Major"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.graduationYear || ''}
                   onChange={(e) => handleChange('education', 'graduationYear', e.target.value)}
                   placeholder="Graduation Year"
+                  className='bg-white text-gray-800'
                 />
                 <Input
                   value={editedData.education.location || ''}
                   onChange={(e) => handleChange('education', 'location', e.target.value)}
                   placeholder="Location"
+                  className='bg-white text-gray-800'
                 />
               </div>
             </section>
@@ -637,7 +648,8 @@ const EditableResumeView: React.FC<{
                         handleChange('professionalSummary', 'summaryPoints', newPoints);
                       }}
                       placeholder={`Summary point ${index + 1}`}
-                      className="flex-1 w-full"
+                      className=" w-full bg-white text-gray-800"
+                    
                     />
                     <Button
                       variant="outline"
@@ -802,6 +814,7 @@ const EditableResumeView: React.FC<{
                         }}
                         placeholder="Project Name"
                         label="Name"
+                        className='bg-white text-gray-800'
                       />
                       <Input
                         value={project.technologies || ''}
@@ -812,6 +825,7 @@ const EditableResumeView: React.FC<{
                         }}
                         placeholder="Technologies Used"
                         label="Technologies"
+                        className="bg-white text-gray-800"
                       />
                     </div>
                     
@@ -827,7 +841,7 @@ const EditableResumeView: React.FC<{
                               handleChange('projects', 'projectsList', newProjects);
                             }}
                             placeholder={`Highlight ${hlIndex + 1}`}
-                            className="flex-1"
+                            className="flex-1  bg-white text-gray-800"
                           />
                           <Button
                             variant="outline"
