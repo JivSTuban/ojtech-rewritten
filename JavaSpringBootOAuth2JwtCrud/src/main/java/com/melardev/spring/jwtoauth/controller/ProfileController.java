@@ -529,8 +529,26 @@ public class ProfileController {
             if (updates.containsKey("websiteUrl")) {
                 employerProfile.setWebsiteUrl((String) updates.get("websiteUrl"));
             }
+            if (updates.containsKey("companyWebsite")) {
+                employerProfile.setWebsiteUrl((String) updates.get("companyWebsite"));
+            }
             if (updates.containsKey("logoUrl")) {
                 employerProfile.setLogoUrl((String) updates.get("logoUrl"));
+            }
+            if (updates.containsKey("companyAddress")) {
+                employerProfile.setCompanyAddress((String) updates.get("companyAddress"));
+            }
+            if (updates.containsKey("contactPersonName")) {
+                employerProfile.setContactPersonName((String) updates.get("contactPersonName"));
+            }
+            if (updates.containsKey("contactPersonPosition")) {
+                employerProfile.setContactPersonPosition((String) updates.get("contactPersonPosition"));
+            }
+            if (updates.containsKey("contactPersonEmail")) {
+                employerProfile.setContactPersonEmail((String) updates.get("contactPersonEmail"));
+            }
+            if (updates.containsKey("contactPersonPhone")) {
+                employerProfile.setContactPersonPhone((String) updates.get("contactPersonPhone"));
             }
         }
     }

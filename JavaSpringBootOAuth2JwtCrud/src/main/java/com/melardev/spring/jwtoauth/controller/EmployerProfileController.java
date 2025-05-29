@@ -10,6 +10,7 @@ import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
 import com.melardev.spring.jwtoauth.service.CloudinaryService;
+import com.melardev.spring.jwtoauth.dtos.EmployerProfileDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,7 +94,7 @@ public class EmployerProfileController {
         }
 
         logger.debug("Successfully found and returning employer profile");
-        return ResponseEntity.ok(profileOpt.get());
+        return ResponseEntity.ok(new EmployerProfileDto(profileOpt.get()));
     }
 
     @PostMapping
@@ -123,7 +124,7 @@ public class EmployerProfileController {
         
         profile = employerProfileRepository.save(profile);
         
-        return ResponseEntity.ok(profile);
+        return ResponseEntity.ok(new EmployerProfileDto(profile));
     }
 
     @PutMapping("/me")
@@ -144,7 +145,7 @@ public class EmployerProfileController {
         
         profile = employerProfileRepository.save(profile);
         
-        return ResponseEntity.ok(profile);
+        return ResponseEntity.ok(new EmployerProfileDto(profile));
     }
 
     @PostMapping("/logo")
@@ -170,7 +171,7 @@ public class EmployerProfileController {
         profile.setLogoUrl(logoUrl);
         profile = employerProfileRepository.save(profile);
         
-        return ResponseEntity.ok(profile);
+        return ResponseEntity.ok(new EmployerProfileDto(profile));
     }
 
     private void updateProfileFields(EmployerProfile profile, Map<String, Object> data) {
@@ -218,7 +219,7 @@ public class EmployerProfileController {
             profile.setHasCompletedOnboarding((Boolean) data.get("hasCompletedOnboarding"));
         }
         
-        // New contact person fields
+        // Contact person fields
         if (data.containsKey("contactPersonName")) {
             profile.setContactPersonName((String) data.get("contactPersonName"));
         }
@@ -237,10 +238,6 @@ public class EmployerProfileController {
         
         if (data.containsKey("companyAddress")) {
             profile.setCompanyAddress((String) data.get("companyAddress"));
-        }
-        
-        if (data.containsKey("verified")) {
-            profile.setVerified((Boolean) data.get("verified"));
         }
     }
 } 

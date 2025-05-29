@@ -13,6 +13,12 @@ public class EmployerProfileDto {
     private String companyDescription;
     private String websiteUrl;
     private String logoUrl;
+    private String companyAddress;
+    private String contactPersonName;
+    private String contactPersonPosition;
+    private String contactPersonEmail;
+    private String contactPersonPhone;
+    private Boolean verified;
     
     public EmployerProfileDto() {
     }
@@ -26,6 +32,12 @@ public class EmployerProfileDto {
         this.companyDescription = employerProfile.getCompanyDescription();
         this.websiteUrl = employerProfile.getWebsiteUrl();
         this.logoUrl = employerProfile.getLogoUrl();
+        this.companyAddress = employerProfile.getCompanyAddress();
+        this.contactPersonName = employerProfile.getContactPersonName();
+        this.contactPersonPosition = employerProfile.getContactPersonPosition();
+        this.contactPersonEmail = employerProfile.getContactPersonEmail();
+        this.contactPersonPhone = employerProfile.getContactPersonPhone();
+        this.verified = employerProfile.getVerified();
     }
     
     public UUID getId() {
@@ -90,6 +102,54 @@ public class EmployerProfileDto {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getCompanyAddress() {
+        return companyAddress;
+    }
+    
+    public void setCompanyAddress(String companyAddress) {
+        this.companyAddress = companyAddress;
+    }
+    
+    public String getContactPersonName() {
+        return contactPersonName;
+    }
+    
+    public void setContactPersonName(String contactPersonName) {
+        this.contactPersonName = contactPersonName;
+    }
+    
+    public String getContactPersonPosition() {
+        return contactPersonPosition;
+    }
+    
+    public void setContactPersonPosition(String contactPersonPosition) {
+        this.contactPersonPosition = contactPersonPosition;
+    }
+    
+    public String getContactPersonEmail() {
+        return contactPersonEmail;
+    }
+    
+    public void setContactPersonEmail(String contactPersonEmail) {
+        this.contactPersonEmail = contactPersonEmail;
+    }
+    
+    public String getContactPersonPhone() {
+        return contactPersonPhone;
+    }
+    
+    public void setContactPersonPhone(String contactPersonPhone) {
+        this.contactPersonPhone = contactPersonPhone;
+    }
+    
+    public Boolean getVerified() {
+        return verified;
+    }
+    
+    public void setVerified(Boolean verified) {
+        this.verified = verified;
     }
     
     // For compatibility with JobDto

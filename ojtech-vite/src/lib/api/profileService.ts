@@ -77,7 +77,7 @@ const updateProfile = async (data: any) => {
   }
 };
 
-// Update employer profile
+// Update employer profile     
 const updateEmployerProfile = async (data: any) => {
   try {
     // Format the data to match backend expectations
@@ -350,7 +350,9 @@ const submitStudentOnboarding = async (data: any) => {
 const completeEmployerOnboarding = async (data: any) => {
   try {
     const response = await axios.post(`${API_URL}/employer/onboarding`, data, { headers: getAuthHeaders() });
+    console.log('Employer onboarding successful response:', response.data);
     return response.data;
+
   } catch (error: any) {
     console.error("Error completing employer onboarding:", error.message);
     throw error;
@@ -366,7 +368,9 @@ const uploadEmployerLogo = async (logoFile: File) => {
         ...getAuthHeaders(),
         'Content-Type': 'multipart/form-data',
       },
+      
     });
+    
     return response.data;
   } catch (error: any) {
     console.error("Error uploading employer logo:", error.message);

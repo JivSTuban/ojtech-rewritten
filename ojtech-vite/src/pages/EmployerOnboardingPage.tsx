@@ -109,7 +109,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
         title: "Access Denied",
         description: "Only employer accounts can access this page",
         variant: "destructive"
-      });
+      }); 
       this.setState({ error: 'Access denied' });
       
       // Redirect to appropriate onboarding based on role
