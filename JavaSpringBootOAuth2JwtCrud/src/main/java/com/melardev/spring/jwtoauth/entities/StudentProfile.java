@@ -3,6 +3,7 @@ package com.melardev.spring.jwtoauth.entities;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,27 @@ public class StudentProfile extends Profile {
     
     @Column(name = "skills")
     private String skills;
+    
+    @Column(name = "email")
+    private String email;
+    
+    @Column(name = "phone")
+    private String phone;
+    
+    @Column(name = "degree")
+    private String degree;
+    
+    @Column(name = "institution")
+    private String institution;
+    
+    @Column(name = "field_of_study")
+    private String fieldOfStudy;
+    
+    @Column(name = "graduation_date")
+    private LocalDate graduationDate;
+    
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
     
     @Column(name = "github_url")
     private String githubUrl;
@@ -68,6 +90,8 @@ public class StudentProfile extends Profile {
     @Column(name = "github_projects", columnDefinition = "TEXT")
     private String githubProjects;
     
+    private boolean hasCompletedOnboarding;
+
     public StudentProfile() {
         super();
         setRole(UserRole.STUDENT);
@@ -129,6 +153,70 @@ public class StudentProfile extends Profile {
         this.skills = skills;
     }
     
+    public void setSkills(List<String> skills) {
+        if (skills != null) {
+            this.skills = String.join(", ", skills);
+        } else {
+            this.skills = null;
+        }
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    public String getPhone() {
+        return phone;
+    }
+    
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    public String getDegree() {
+        return degree;
+    }
+    
+    public void setDegree(String degree) {
+        this.degree = degree;
+    }
+    
+    public String getInstitution() {
+        return institution;
+    }
+    
+    public void setInstitution(String institution) {
+        this.institution = institution;
+    }
+    
+    public String getFieldOfStudy() {
+        return fieldOfStudy;
+    }
+    
+    public void setFieldOfStudy(String fieldOfStudy) {
+        this.fieldOfStudy = fieldOfStudy;
+    }
+    
+    public LocalDate getGraduationDate() {
+        return graduationDate;
+    }
+    
+    public void setGraduationDate(LocalDate graduationDate) {
+        this.graduationDate = graduationDate;
+    }
+    
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+    
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+    
     public String getGithubUrl() {
         return githubUrl;
     }
@@ -137,12 +225,24 @@ public class StudentProfile extends Profile {
         this.githubUrl = githubUrl;
     }
     
+    public void setGithub(String github) {
+        this.githubUrl = github;
+    }
+    
     public String getLinkedinUrl() {
         return linkedinUrl;
     }
     
     public void setLinkedinUrl(String linkedinUrl) {
         this.linkedinUrl = linkedinUrl;
+    }
+    
+    public void setLinkedIn(String linkedIn) {
+        this.linkedinUrl = linkedIn;
+    }
+    
+    public boolean isOnboardingCompleted() {
+        return hasCompletedOnboarding;
     }
     
     public String getPortfolioUrl() {

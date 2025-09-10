@@ -2,6 +2,7 @@ package com.melardev.spring.jwtoauth.repositories;
 
 import com.melardev.spring.jwtoauth.entities.EmployerProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
+import com.melardev.spring.jwtoauth.entities.JobStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,6 +19,8 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
     List<Job> findByActiveTrue();
     
     List<Job> findByActiveTrueAndEmployer(EmployerProfile employer);
+    
+    List<Job> findByStatus(JobStatus status);
     
     Page<Job> findByActive(boolean active, Pageable pageable);
     

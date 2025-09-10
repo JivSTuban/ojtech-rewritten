@@ -49,6 +49,19 @@ public class Job extends BaseEntity {
     @Column(name = "active")
     private boolean active = true;
     
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private JobStatus status = JobStatus.DRAFT;
+    
+    @Column(name = "salary_range")
+    private String salaryRange;
+    
+    @Column(name = "requirements", length = 2000)
+    private String requirements;
+    
+    @Column(name = "benefits", length = 2000)
+    private String benefits;
+    
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
     @JsonManagedReference
     @JsonIgnoreProperties("job")
@@ -150,6 +163,38 @@ public class Job extends BaseEntity {
         this.active = active;
     }
     
+    public JobStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(JobStatus status) {
+        this.status = status;
+    }
+    
+    public String getSalaryRange() {
+        return salaryRange;
+    }
+    
+    public void setSalaryRange(String salaryRange) {
+        this.salaryRange = salaryRange;
+    }
+    
+    public String getRequirements() {
+        return requirements;
+    }
+    
+    public void setRequirements(String requirements) {
+        this.requirements = requirements;
+    }
+    
+    public String getBenefits() {
+        return benefits;
+    }
+    
+    public void setBenefits(String benefits) {
+        this.benefits = benefits;
+    }
+    
     public List<JobApplication> getApplications() {
         return applications;
     }
@@ -175,4 +220,4 @@ public class Job extends BaseEntity {
         jobMatches.remove(jobMatch);
         jobMatch.setJob(null);
     }
-} 
+}

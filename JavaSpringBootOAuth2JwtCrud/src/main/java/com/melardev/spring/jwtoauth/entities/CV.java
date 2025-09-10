@@ -20,6 +20,9 @@ public class CV extends BaseEntity {
     @Column(name = "html_content", columnDefinition = "text")
     private String htmlContent;
 
+    @Column(name = "template")
+    private String template;
+
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
@@ -68,6 +71,14 @@ public class CV extends BaseEntity {
     
     public void setHtmlContent(String htmlContent) {
         this.htmlContent = htmlContent;
+    }
+    
+    public String getTemplate() {
+        return template;
+    }
+    
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public LocalDateTime getLastUpdated() {

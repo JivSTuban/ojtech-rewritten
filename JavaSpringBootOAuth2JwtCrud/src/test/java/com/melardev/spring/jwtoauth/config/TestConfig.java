@@ -26,9 +26,14 @@ public class TestConfig {
             }
 
             @Override
+            public String uploadImage(MultipartFile file) throws IOException {
+                return "https://example.com/test-image.jpg";
+            }
+
+            @Override
             public void delete(String publicId) throws IOException {
                 // Do nothing in test environment
             }
         };
     }
-} 
+}

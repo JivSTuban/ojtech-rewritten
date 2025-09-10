@@ -32,7 +32,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
+    public String uploadImage(MultipartFile file) throws IOException {
+        Map result = upload(file, "profile_images");
+        return (String) result.get("url");
+    }
+
+    @Override
     public void delete(String publicId) throws IOException {
         cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
     }
-} 
+}
