@@ -2,7 +2,7 @@ import React, { Component, ChangeEvent } from 'react';
 import localStorageManager from '../../lib/utils/localStorageManager';
 
 interface BioStepProps {
-  bio: string;
+  bio: string | null | undefined;
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -10,8 +10,8 @@ interface BioStepProps {
 
 export default class BioStep extends Component<BioStepProps> {
   componentDidMount() {
-    // Load saved bio from localStorage if current bio is empty
-    if (!this.props.bio.trim()) {
+    // Load saved bio from localStorage if current bio is empty, null, or undefined
+    if (!this.props.bio || typeof this.props.bio !== 'string' || !this.props.bio.trim()) {
       const savedBio = localStorageManager.getStepData<string>('bio');
       if (savedBio) {
         // Simulate a change event to update the parent state
@@ -27,14 +27,16 @@ export default class BioStep extends Component<BioStepProps> {
   }
 
   isValid = (): boolean => {
-    return this.props.bio.length >= 50;
+    return this.props.bio ? this.props.bio.length >= 50 : false;
   };
 
   handleNext = (e: React.MouseEvent) => {
     e.preventDefault();
     if (this.isValid()) {
       // Save bio to localStorage
-      localStorageManager.saveStepData('bio', this.props.bio);
+      if (this.props.bio) {
+        localStorageManager.saveStepData('bio', this.props.bio);
+      }
       this.props.onNext();
     }
   };
@@ -43,7 +45,7 @@ export default class BioStep extends Component<BioStepProps> {
     const { bio, onChange, onPrev } = this.props;
     const minLength = 50;
     const maxLength = 500;
-    const currentLength = bio.length;
+    const currentLength = bio ? bio.length : 0;
 
     return (
       <div className="space-y-6">
@@ -66,7 +68,7 @@ export default class BioStep extends Component<BioStepProps> {
               name="bio"
               id="bio"
               rows={6}
-              value={bio}
+              value={bio || ''}
               onChange={onChange}
               required
               minLength={minLength}
@@ -133,4 +135,4 @@ export default class BioStep extends Component<BioStepProps> {
       </div>
     );
   }
-} 
+}

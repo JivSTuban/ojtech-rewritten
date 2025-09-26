@@ -3,7 +3,7 @@ import authService from './authService';
 import { API_BASE_URL } from '../../apiConfig';
 
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-const API_URL = `${API_BASE_URL}/profiles`;
+const API_URL = `${API_BASE_URL}profiles`;
 
 const getAuthHeaders = () => {
   // First, try to get the token from the user object
@@ -233,7 +233,7 @@ const completeStudentOnboarding = async (data: any) => {
     
     // Now proceed with the onboarding data submission
     console.log('Submitting complete onboarding data');
-    const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, data, { headers: authHeaders });
+    const response = await axios.post(`${API_BASE_URL}student-profiles/complete-onboarding`, data, { headers: authHeaders });
     console.log('Student onboarding successful response:', response.data);
     return response.data;
   } catch (error: any) {

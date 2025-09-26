@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs'
 import { AuthContext } from '../providers/AuthProvider';
 import { Loader2, Upload, Download, Github, Linkedin, Globe, Pencil, Code, FileUp, Mail, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import cvGeneratorService from '../lib/api/cvGeneratorService';
 import EducationEditModal from '../components/profile/EducationEditModal';
 import { useToast } from '../components/ui/use-toast';
 import { ToastContext } from '../providers/ToastContext';
@@ -536,7 +535,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   
   constructor(props: ProfilePageProps) {
     super(props);
-    this.API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    this.API_BASE_URL = normalizedApiBaseUrl;
     
     // Ensure API URL is properly set
     console.log('Profile page using API base URL:', this.API_BASE_URL);

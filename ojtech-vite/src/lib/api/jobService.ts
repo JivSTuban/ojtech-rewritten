@@ -1,7 +1,8 @@
 import axios from 'axios';
 import authService from './authService'; // To get the token
+import { normalizedApiBaseUrl } from '../../apiConfig';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/jobs';
+const API_URL = `${normalizedApiBaseUrl}/jobs`;
 
 const getAuthHeaders = () => {
   const user = authService.getCurrentUser();

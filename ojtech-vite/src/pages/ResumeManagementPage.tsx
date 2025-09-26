@@ -33,9 +33,12 @@ import { Textarea } from '../components/ui/Textarea';
  * - Keywords relevant to the user's field
  */
 
+// Import the normalized API URL from apiConfig
+import { normalizedApiBaseUrl } from '../apiConfig';
+
 // Create an axios instance with the API base URL
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+  baseURL: normalizedApiBaseUrl
 });
 
 // Define the ResumeData interface to match the backend JSON structure
@@ -910,7 +913,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
   
   constructor(props: ResumeManagementPageProps) {
     super(props);
-    this.API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    this.API_BASE_URL = normalizedApiBaseUrl;
     
     // Ensure API URL is properly set
     console.log('Resume Management page using API base URL:', this.API_BASE_URL);

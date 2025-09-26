@@ -11,6 +11,7 @@ import { AuthLayout } from '../components/layouts/AuthLayout';
 import { toast } from '../components/ui/toast-utils';
 import { GoogleLogin } from '@react-oauth/google';
 import emailjs from '@emailjs/browser';
+import { normalizedApiBaseUrl } from '../apiConfig';
 
 interface RegisterPageState {
   fullName: string;
@@ -36,7 +37,7 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
   declare context: React.ContextType<typeof AuthContext>;
   
   // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  private API_BASE_URL = normalizedApiBaseUrl;
   // EmailJS credentials
   private EMAIL_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_gzgua2e';
   private EMAIL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'yhRZXtxm7JWqyq2ep';

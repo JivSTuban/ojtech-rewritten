@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
 import { JobApplication, ApplicationStatus } from '../types/application';
 
-const API_URL = '/api/applications';
+const API_URL = '/applications';
 
 // Job matching interfaces
 interface JobEmployer {
@@ -56,7 +56,7 @@ const getJobApplications = async (jobId: string): Promise<JobApplication[]> => {
 
 // Get job matches for the logged-in student
 const getStudentJobMatches = async (): Promise<JobMatch[]> => {
-  const response = await apiClient.get('/api/student/job-matches');
+  const response = await apiClient.get('/student/job-matches');
   return response.data;
 };
 
