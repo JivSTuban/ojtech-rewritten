@@ -40,8 +40,10 @@ const updateProfile = async (data: any) => {
   try {
     // Format the data to match backend expectations
     const formattedData = {
+      id: data.id,
       firstName: data.firstName,
       lastName: data.lastName,
+      fullName: `${data.firstName} ${data.lastName}`.trim(),
       phoneNumber: data.phoneNumber || null,
       location: data.location || null,
       address: data.address || null,
@@ -49,8 +51,19 @@ const updateProfile = async (data: any) => {
       githubUrl: data.githubUrl || null,
       linkedinUrl: data.linkedinUrl || null,
       portfolioUrl: data.portfolioUrl || null,
-      // Convert skills array to comma-separated string
-      skills: Array.isArray(data.skills) ? data.skills.join(',') : data.skills || ''
+      // Education fields
+      university: data.university || null,
+      major: data.major || null,
+      graduationYear: data.graduationYear || null,
+      // Role and onboarding status
+      role: data.role || 'STUDENT',
+      hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true,
+      // Complex fields
+      githubProjects: data.githubProjects || [],
+      certifications: data.certifications || [],
+      experiences: data.experiences || [],
+      // Convert skills array to comma-separated string if needed by backend
+      skills: Array.isArray(data.skills) ? data.skills : (data.skills ? data.skills.split(',') : [])
     };
 
     console.log('Sending formatted data to backend:', formattedData);
@@ -231,10 +244,30 @@ const completeStudentOnboarding = async (data: any) => {
     const authHeaders = getAuthHeaders();
     console.log('Using auth headers for onboarding submission:', authHeaders);
     
+    // Explicitly set hasCompletedOnboarding to true
+    const onboardingData = {
+      ...data,
+      hasCompletedOnboarding: true
+    };
+    
     // Now proceed with the onboarding data submission
-    console.log('Submitting complete onboarding data');
-    const response = await axios.post(`${API_BASE_URL}student-profiles/complete-onboarding`, data, { headers: authHeaders });
+    console.log('Submitting complete onboarding data with hasCompletedOnboarding set to true');
+    const response = await axios.post(`${API_BASE_URL}student-profiles/complete-onboarding`, onboardingData, { headers: authHeaders });
     console.log('Student onboarding successful response:', response.data);
+    
+    // Also update the profile directly to ensure the status is updated
+    try {
+      await axios.put(
+        `${API_BASE_URL}student-profiles/me`,
+        { hasCompletedOnboarding: true },
+        { headers: authHeaders }
+      );
+      console.log('Explicitly updated hasCompletedOnboarding status');
+    } catch (updateError) {
+      console.error('Error updating onboarding status:', updateError);
+      // Continue even if this fails, as the main onboarding was successful
+    }
+    
     return response.data;
   } catch (error: any) {
     console.error("Error completing student onboarding:", error);
@@ -265,7 +298,7 @@ const uploadStudentCv = async (cvFile: File) => {
 
 const getCurrentStudentProfile = async () => {
   try {
-    const response = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
+    const response = await axios.get(`${API_BASE_URL}student-profiles/me`, { headers: getAuthHeaders() });
   
     return response.data;
   } catch (error: any) {
@@ -331,10 +364,30 @@ const submitStudentOnboarding = async (data: any) => {
     const authHeaders = getAuthHeaders();
     console.log('Using auth headers for onboarding submission:', authHeaders);
     
+    // Explicitly set hasCompletedOnboarding to true
+    const onboardingData = {
+      ...data,
+      hasCompletedOnboarding: true
+    };
+    
     // Now proceed with the onboarding data submission
-    console.log('Submitting complete onboarding data');
-    const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, data, { headers: authHeaders });
+    console.log('Submitting complete onboarding data with hasCompletedOnboarding set to true');
+    const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, onboardingData, { headers: authHeaders });
     console.log('Student onboarding successful response:', response.data);
+    
+    // Also update the profile directly to ensure the status is updated
+    try {
+      await axios.put(
+        `${API_BASE_URL}/student-profiles/me`,
+        { hasCompletedOnboarding: true },
+        { headers: authHeaders }
+      );
+      console.log('Explicitly updated hasCompletedOnboarding status');
+    } catch (updateError) {
+      console.error('Error updating onboarding status:', updateError);
+      // Continue even if this fails, as the main onboarding was successful
+    }
+    
     return response.data;
   } catch (error: any) {
     console.error('Error submitting student onboarding:', error.message);
@@ -410,6 +463,19 @@ const updateEducationInfo = async (educationData: any) => {
   }
 };
 
+// Check verification status for students
+const getVerificationStatus = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/student-profiles/verification-status`, { 
+      headers: getAuthHeaders() 
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching verification status:", error.message);
+    throw error;
+  }
+};
+
 const profileService = {
   getCurrentProfile,
   updateProfile,
@@ -423,6 +489,7 @@ const profileService = {
   getCurrentEmployerProfile,
   updateEducationInfo,
   updateEmployerProfile,
+  getVerificationStatus,
 };
 
-export default profileService; 
+export default profileService;

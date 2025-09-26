@@ -28,7 +28,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
   declare context: React.ContextType<typeof AuthContext>;
   
   // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   
   constructor(props: {}) {
     super(props);

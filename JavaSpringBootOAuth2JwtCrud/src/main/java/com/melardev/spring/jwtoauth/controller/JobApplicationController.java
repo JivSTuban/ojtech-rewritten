@@ -108,6 +108,12 @@ public class JobApplicationController {
         }
 
         StudentProfile studentProfile = studentProfileOpt.get();
+        
+        // Check if student is verified
+        if (!studentProfile.isVerified()) {
+            return ResponseEntity.status(403).body(new MessageResponse(
+                "Your account needs to be verified before you can apply for jobs. Please contact support."));
+        }
 
         Optional<Job> jobOpt = jobRepository.findById(jobId);
         if (jobOpt.isEmpty()) {

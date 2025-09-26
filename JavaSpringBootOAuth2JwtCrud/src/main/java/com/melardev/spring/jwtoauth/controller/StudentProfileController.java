@@ -199,6 +199,7 @@ public class StudentProfileController {
             }
 
             StudentProfile profile = profileOpt.get();
+            profile.setHasCompletedOnboarding(true);
             logger.info("Processing onboarding data for profile ID: {}", profile.getId());
             
             // Handle personal info

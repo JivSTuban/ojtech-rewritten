@@ -99,6 +99,9 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     <Link to="/admin/users" className="text-gray-400 hover:text-white">
                       Users
                     </Link>         
+                    <Link to="/admin/students/verification" className="text-gray-400 hover:text-white">
+                      Verify Profiles
+                    </Link>
                   </>
                 )}
               </div>
@@ -114,7 +117,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                       ? 'Admin' 
                       : user.roles.includes('ROLE_EMPLOYER') 
                         ? 'Employer' 
-                        : 'Student'}
+                          : 'Student'}
                   </span>
                 )}
                 
@@ -131,7 +134,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                       />
                     ) : (
                       <span className="text-white">
-                        {user.firstName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                        {user.username?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </span>
                     )}
                   </button>

@@ -15,6 +15,7 @@ import { ToastProps } from '../components/ui/use-toast';
 import { toast } from '../components/ui/toast-utils';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import EmployerProfileEditModal from '../components/profile/EmployerProfileEditModal';
+import { normalizedApiBaseUrl } from '../apiConfig';
 
 // Add type definitions at the top of the file
 interface User {

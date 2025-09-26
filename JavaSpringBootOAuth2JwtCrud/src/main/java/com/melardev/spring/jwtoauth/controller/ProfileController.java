@@ -111,7 +111,7 @@ public class ProfileController {
                 responseMap.put("bio", Collections.emptyList());
             }
             responseMap.put("phoneNumber", profile.getPhoneNumber());
-            responseMap.put("hasCompletedOnboarding", profile.isHasCompletedOnboarding());
+            responseMap.put("CompletedOnboarding", profile.isHasCompletedOnboarding());
             responseMap.put("activeCvId", profile.getActiveCvId());
             responseMap.put("role", profile.getRole());
             responseMap.put("avatarUrl", profile.getAvatarUrl());
