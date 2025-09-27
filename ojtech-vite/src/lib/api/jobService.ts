@@ -1,8 +1,8 @@
 import axios from 'axios';
 import authService from './authService'; // To get the token
-import { normalizedApiBaseUrl } from '../../apiConfig';
+import { API_BASE_URL } from '../../apiConfig';
 
-const API_URL = `${normalizedApiBaseUrl}/jobs`;
+const API_URL = `${API_BASE_URL}/jobs`;
 
 const getAuthHeaders = () => {
   const user = authService.getCurrentUser();

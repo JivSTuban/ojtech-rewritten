@@ -108,8 +108,7 @@ public class JobApplicationControllerTest {
         cv = new CV();
         cv.setId(cvId);
         cv.setStudent(studentProfile);
-        cv.setFileName("test_cv.pdf");
-        cv.setFileUrl("https://example.com/test_cv.pdf");
+        cv.setParsedResume("{\"fileName\":\"test_cv.pdf\",\"fileUrl\":\"https://example.com/test_cv.pdf\"}");
         
         // Set up repository mocks
         when(userRepository.findById(employerId)).thenReturn(Optional.of(employerUser));

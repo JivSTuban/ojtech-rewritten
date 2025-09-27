@@ -96,6 +96,9 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     <Link to="/admin/dashboard" className="text-gray-400 hover:text-white">
                       Dashboard
                     </Link>
+                    <Link to="/admin/jobs" className="text-gray-400 hover:text-white">
+                      Manage Jobs
+                    </Link>
                     <Link to="/admin/users" className="text-gray-400 hover:text-white">
                       Users
                     </Link>         

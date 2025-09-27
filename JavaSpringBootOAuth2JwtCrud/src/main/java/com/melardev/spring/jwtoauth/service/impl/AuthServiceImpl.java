@@ -200,7 +200,7 @@ public class AuthServiceImpl implements AuthService {
 
             // Send verification email
             try {
-                emailService.sendVerificationEmail(user.getEmail(), user.getId(), baseURL);
+                emailService.sendVerificationEmail(user.getEmail(), user.getId().toString());
                 logger.info("Verification email sent to {}", email);
             } catch (Exception e) {
                 logger.warn("Failed to send verification email to {}: {}", email, e.getMessage());
@@ -259,7 +259,7 @@ public class AuthServiceImpl implements AuthService {
                 return new MessageResponse("Email is already verified");
             }
 
-            emailService.sendVerificationEmail(user.getEmail(), userId, baseURL);
+            emailService.sendVerificationEmail(user.getEmail(), userId.toString());
             return new MessageResponse("Verification email sent successfully");
 
         } catch (Exception e) {
@@ -316,8 +316,7 @@ public class AuthServiceImpl implements AuthService {
             if (roles.contains(ERole.ROLE_ADMIN)) {
                 AdminProfile adminProfile = new AdminProfile();
                 adminProfile.setUser(user);
-                adminProfile.setFirstName("Admin");
-                adminProfile.setLastName("User");
+                adminProfile.setFullName("Admin User");
                 adminProfileRepository.save(adminProfile);
             }
 

@@ -6,6 +6,7 @@ import { AuthContext } from '../providers/AuthProvider';
 import { Loader2, Download, Code, FileText, Edit2, Save, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import cvGeneratorService from '../lib/api/cvGeneratorService';
+import profileService from '../lib/api/profileService';
 import { toast } from '../components/ui/toast-utils';
 import { ToastContext } from '../providers/ToastContext';
 import { ToastProps } from '../components/ui/use-toast';
@@ -1046,18 +1047,14 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     try {
       console.log('Attempting to load student profile data');
       
-      // Try student-profiles/me first, which has the most complete data
-      const response = await apiClient.get('/student-profiles/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Use smart profile fetching that adapts to user role
+      const profileData = await profileService.getCurrentUserProfileSmart();
       
-      if (response.data) {
-        console.log('Student profile loaded:', response.data);
+      if (profileData) {
+        console.log('Profile loaded:', profileData);
         
         // Parse GitHub projects if they come as a string
-        let githubProjects = response.data.githubProjects;
+        let githubProjects = profileData.githubProjects;
         if (typeof githubProjects === 'string') {
           try {
             githubProjects = JSON.parse(githubProjects);
@@ -1068,32 +1065,32 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
         }
         
         // Create a properly formatted student profile object with safe defaults
-        const profileData: StudentProfileData = {
-          id: response.data.id || null,
-          firstName: response.data.firstName || '',
-          lastName: response.data.lastName || '',
-          phoneNumber: response.data.phoneNumber || '',
-          location: response.data.location || '',
-          address: response.data.address || '',
-          university: response.data.university || '',  
-          major: response.data.major || '',
-          graduationYear: response.data.graduationYear || null,
-          bio: response.data.bio || '',
-          linkedinUrl: response.data.linkedinUrl || '',
-          githubUrl: response.data.githubUrl || '',
-          portfolioUrl: response.data.portfolioUrl || '',
-          hasCompletedOnboarding: response.data.hasCompletedOnboarding || false,
-          skills: Array.isArray(response.data.skills) ? response.data.skills : [],
-          experiences: Array.isArray(response.data.experiences) ? response.data.experiences : [],
-          certifications: Array.isArray(response.data.certifications) ? response.data.certifications : [],
+        const studentProfileData: StudentProfileData = {
+          id: profileData.id || null,
+          firstName: profileData.firstName || '',
+          lastName: profileData.lastName || '',
+          phoneNumber: profileData.phoneNumber || '',
+          location: profileData.location || '',
+          address: profileData.address || '',
+          university: profileData.university || '',  
+          major: profileData.major || '',
+          graduationYear: profileData.graduationYear || null,
+          bio: profileData.bio || '',
+          linkedinUrl: profileData.linkedinUrl || '',
+          githubUrl: profileData.githubUrl || '',
+          portfolioUrl: profileData.portfolioUrl || '',
+          hasCompletedOnboarding: profileData.hasCompletedOnboarding || false,
+          skills: Array.isArray(profileData.skills) ? profileData.skills : [],
+          experiences: Array.isArray(profileData.experiences) ? profileData.experiences : [],
+          certifications: Array.isArray(profileData.certifications) ? profileData.certifications : [],
           githubProjects: Array.isArray(githubProjects) ? githubProjects : []
         };
         
-        console.log('Processed profile data:', profileData);
+        console.log('Processed profile data:', studentProfileData);
         
         this.setState({ 
-          studentProfile: profileData,
-          skills: Array.isArray(response.data.skills) ? response.data.skills : []
+          studentProfile: studentProfileData,
+          skills: Array.isArray(profileData.skills) ? profileData.skills : []
         });
       }
     } catch (error: any) {

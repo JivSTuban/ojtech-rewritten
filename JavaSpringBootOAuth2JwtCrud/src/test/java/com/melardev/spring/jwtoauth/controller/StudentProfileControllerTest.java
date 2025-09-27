@@ -184,10 +184,8 @@ public class StudentProfileControllerTest {
         CV cv = new CV();
         cv.setId(UUID.randomUUID());
         cv.setStudent(studentProfile);
-        cv.setFileName("test-cv.pdf");
-        cv.setFileUrl("https://example.com/test-cv.pdf");
-        cv.setFileType("application/pdf");
-        cv.setUploadDate(LocalDateTime.now());
+        cv.setParsedResume("{\"fileName\":\"test-cv.pdf\",\"fileUrl\":\"https://example.com/test-cv.pdf\",\"fileType\":\"application/pdf\"}");
+        cv.setLastUpdated(LocalDateTime.now());
         
         when(cvRepository.save(any(CV.class))).thenReturn(cv);
         
@@ -195,7 +193,7 @@ public class StudentProfileControllerTest {
         mockMvc.perform(multipart("/api/student-profiles/cv")
                 .file(file))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fileName").value("test-cv.pdf"));
+                .andExpect(jsonPath("$.parsedResume").exists());
     }
 
     @Test
@@ -206,15 +204,13 @@ public class StudentProfileControllerTest {
         CV cv1 = new CV();
         cv1.setId(UUID.randomUUID());
         cv1.setStudent(studentProfile);
-        cv1.setFileName("cv1.pdf");
-        cv1.setFileUrl("https://example.com/cv1.pdf");
+        cv1.setParsedResume("{\"fileName\":\"cv1.pdf\",\"fileUrl\":\"https://example.com/cv1.pdf\"}");
         cvList.add(cv1);
         
         CV cv2 = new CV();
         cv2.setId(UUID.randomUUID());
         cv2.setStudent(studentProfile);
-        cv2.setFileName("cv2.pdf");
-        cv2.setFileUrl("https://example.com/cv2.pdf");
+        cv2.setParsedResume("{\"fileName\":\"cv2.pdf\",\"fileUrl\":\"https://example.com/cv2.pdf\"}");
         cvList.add(cv2);
         
         when(cvRepository.findByStudent(studentProfile)).thenReturn(cvList);
@@ -222,8 +218,8 @@ public class StudentProfileControllerTest {
         // Execute and Verify
         mockMvc.perform(get("/api/student-profiles/cvs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].fileName").value("cv1.pdf"))
-                .andExpect(jsonPath("$[1].fileName").value("cv2.pdf"));
+                .andExpect(jsonPath("$[0].parsedResume").exists())
+                .andExpect(jsonPath("$[1].parsedResume").exists());
     }
 
     @Test
@@ -234,7 +230,7 @@ public class StudentProfileControllerTest {
         CV cv = new CV();
         cv.setId(cvId);
         cv.setStudent(studentProfile);
-        cv.setFileName("active-cv.pdf");
+        cv.setParsedResume("{\"fileName\":\"active-cv.pdf\"}");
         
         List<CV> cvList = new ArrayList<>();
         cvList.add(cv);

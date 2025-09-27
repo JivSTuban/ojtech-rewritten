@@ -22,6 +22,7 @@ import { JobFormPage } from './pages/employer/JobFormPage';
 import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { AdminJobsPage } from "./pages/admin/AdminJobsPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import { StudentVerificationPage } from "./pages/admin/StudentVerificationPage";
 import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
@@ -196,6 +197,7 @@ export const App: React.FC = () => {
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
               <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin/jobs" element={<AdminJobsPage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
               <Route path="/admin/students/verification" element={<StudentVerificationPage />} />
               <Route path="/admin/students/:id" element={<StudentDetailsPage />} />

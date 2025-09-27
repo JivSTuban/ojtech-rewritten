@@ -2,13 +2,12 @@ import axios from 'axios';
 import html2pdf from 'html2pdf.js';
 import { CV_TEMPLATE } from '../templates/cvTemplate';
 import authService from './authService';
-import { normalizedApiBaseUrl } from '../../apiConfig';
+import { API_BASE_URL } from '../../apiConfig';
 
 // Constants
 const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const MODEL = 'gemini-2.5-flash-preview-05-20';
-const API_BASE_URL = normalizedApiBaseUrl; // Use the normalized API URL from apiConfig.ts
 
 // Add these interfaces at the top of the file
 interface ResumeData {

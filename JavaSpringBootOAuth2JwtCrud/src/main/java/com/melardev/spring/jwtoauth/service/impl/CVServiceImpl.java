@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,7 +113,7 @@ public class CVServiceImpl implements CVService {
         // Create new CV
         CV cv = new CV();
         cv.setStudent(student);
-        cv.setContent(content);
+        cv.setHtmlContent(content);
         cv.setTemplate(template != null ? template : "standard");
         cv.setActive(false); // Not active by default
         cv.setCreatedAt(LocalDateTime.now());
@@ -129,7 +130,7 @@ public class CVServiceImpl implements CVService {
     @Override
     public CV updateCVContent(UUID cvId, UUID userId, String content) {
         CV cv = getCVById(cvId, userId);
-        cv.setContent(content);
+        cv.setHtmlContent(content);
         cv.setUpdatedAt(LocalDateTime.now());
         return cvRepository.save(cv);
     }
@@ -167,20 +168,20 @@ public class CVServiceImpl implements CVService {
     @Override
     public String getActiveCVContentByStudent(UUID userId) {
         CV activeCV = getActiveCVByStudent(userId);
-        return activeCV != null ? activeCV.getContent() : null;
+        return activeCV != null ? activeCV.getHtmlContent() : null;
     }
 
     // Certification Management
     @Override
     public List<Certification> getCertificationsByCVId(UUID cvId, UUID userId) {
         CV cv = getCVById(cvId, userId);
-        return certificationRepository.findByCvId(cvId);
+        return new ArrayList<>(certificationRepository.findByCvId(cvId));
     }
 
     @Override
     public List<Certification> getCertificationsByCVIdForEmployer(UUID cvId) {
         CV cv = getCVByIdForEmployer(cvId);
-        return certificationRepository.findByCvId(cvId);
+        return new ArrayList<>(certificationRepository.findByCvId(cvId));
     }
 
     @Override
@@ -189,10 +190,10 @@ public class CVServiceImpl implements CVService {
         CV cv = getCVById(cvId, userId);
         
         Certification certification = new Certification();
-        certification.setCertificationName(certificationName);
-        certification.setIssuingOrganization(issuingOrganization);
-        certification.setDateObtained(dateObtained);
-        certification.setCredentialId(credentialId);
+        certification.setName(certificationName);
+        certification.setIssuer(issuingOrganization);
+        certification.setDateReceived(dateObtained);
+        certification.setCredentialUrl(credentialId);
         certification.setCv(cv);
         
         return certificationRepository.save(certification);
@@ -210,10 +211,10 @@ public class CVServiceImpl implements CVService {
         }
         
         Certification certification = certOpt.get();
-        certification.setCertificationName(certificationName);
-        certification.setIssuingOrganization(issuingOrganization);
-        certification.setDateObtained(dateObtained);
-        certification.setCredentialId(credentialId);
+        certification.setName(certificationName);
+        certification.setIssuer(issuingOrganization);
+        certification.setDateReceived(dateObtained);
+        certification.setCredentialUrl(credentialId);
         
         return certificationRepository.save(certification);
     }
@@ -235,13 +236,13 @@ public class CVServiceImpl implements CVService {
     @Override
     public List<WorkExperience> getExperiencesByCVId(UUID cvId, UUID userId) {
         CV cv = getCVById(cvId, userId);
-        return workExperienceRepository.findByCvId(cvId);
+        return new ArrayList<>(workExperienceRepository.findByCvId(cvId));
     }
 
     @Override
     public List<WorkExperience> getExperiencesByCVIdForEmployer(UUID cvId) {
         CV cv = getCVByIdForEmployer(cvId);
-        return workExperienceRepository.findByCvId(cvId);
+        return new ArrayList<>(workExperienceRepository.findByCvId(cvId));
     }
 
     @Override
@@ -251,13 +252,13 @@ public class CVServiceImpl implements CVService {
         CV cv = getCVById(cvId, userId);
         
         WorkExperience experience = new WorkExperience();
-        experience.setJobTitle(jobTitle);
+        experience.setTitle(jobTitle);
         experience.setCompany(company);
         experience.setStartDate(startDate);
         experience.setEndDate(endDate);
         experience.setDescription(description);
         experience.setLocation(location);
-        experience.setEmploymentType(employmentType);
+        // Note: employmentType field doesn't exist in WorkExperience entity
         experience.setCv(cv);
         
         return workExperienceRepository.save(experience);
@@ -275,13 +276,13 @@ public class CVServiceImpl implements CVService {
         }
         
         WorkExperience experience = expOpt.get();
-        experience.setJobTitle(jobTitle);
+        experience.setTitle(jobTitle);
         experience.setCompany(company);
         experience.setStartDate(startDate);
         experience.setEndDate(endDate);
         experience.setDescription(description);
         experience.setLocation(location);
-        experience.setEmploymentType(employmentType);
+        // Note: employmentType field doesn't exist in WorkExperience entity
         
         return workExperienceRepository.save(experience);
     }

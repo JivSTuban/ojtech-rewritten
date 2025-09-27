@@ -3,7 +3,7 @@ import authService from './authService';
 import { API_BASE_URL } from '../../apiConfig';
 
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-const API_URL = `${API_BASE_URL}profiles`;
+const API_URL = `${API_BASE_URL}/profiles`;
 
 const getAuthHeaders = () => {
   // First, try to get the token from the user object
@@ -24,6 +24,19 @@ const getAuthHeaders = () => {
   return {};
 };
 
+// Helper function to get user role
+const getUserRole = (): string | null => {
+  const user = authService.getCurrentUser();
+  if (user && user.roles && user.roles.length > 0) {
+    // Return the first role, or check for specific role hierarchy
+    if (user.roles.includes('ROLE_ADMIN')) return 'ADMIN';
+    if (user.roles.includes('ROLE_EMPLOYER')) return 'EMPLOYER';
+    if (user.roles.includes('ROLE_STUDENT')) return 'STUDENT';
+    return user.roles[0]; // fallback to first role
+  }
+  return null;
+};
+
 // Generic profile endpoint
 const getCurrentProfile = async () => {
   try {
@@ -35,41 +48,79 @@ const getCurrentProfile = async () => {
   }
 };
 
-// Update profile with basic information
+// Smart profile updating based on user role
 const updateProfile = async (data: any) => {
   try {
-    // Format the data to match backend expectations
-    const formattedData = {
-      id: data.id,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      fullName: `${data.firstName} ${data.lastName}`.trim(),
-      phoneNumber: data.phoneNumber || null,
-      location: data.location || null,
-      address: data.address || null,
-      bio: data.bio || null,
-      githubUrl: data.githubUrl || null,
-      linkedinUrl: data.linkedinUrl || null,
-      portfolioUrl: data.portfolioUrl || null,
-      // Education fields
-      university: data.university || null,
-      major: data.major || null,
-      graduationYear: data.graduationYear || null,
-      // Role and onboarding status
-      role: data.role || 'STUDENT',
-      hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true,
-      // Complex fields
-      githubProjects: data.githubProjects || [],
-      certifications: data.certifications || [],
-      experiences: data.experiences || [],
-      // Convert skills array to comma-separated string if needed by backend
-      skills: Array.isArray(data.skills) ? data.skills : (data.skills ? data.skills.split(',') : [])
-    };
+    const userRole = getUserRole();
+    console.log(`Updating profile for user with role: ${userRole}`);
+    
+    let endpoint = '';
+    let formattedData: any = {};
+    
+    switch (userRole) {
+      case 'STUDENT':
+        endpoint = `${API_BASE_URL}/student-profiles/me`;
+        // Format student-specific data
+        formattedData = {
+          id: data.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          fullName: `${data.firstName} ${data.lastName}`.trim(),
+          phoneNumber: data.phoneNumber || null,
+          location: data.location || null,
+          address: data.address || null,
+          bio: data.bio || null,
+          githubUrl: data.githubUrl || null,
+          linkedinUrl: data.linkedinUrl || null,
+          portfolioUrl: data.portfolioUrl || null,
+          // Education fields
+          university: data.university || null,
+          major: data.major || null,
+          graduationYear: data.graduationYear || null,
+          // Role and onboarding status
+          role: data.role || 'STUDENT',
+          hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true,
+          // Complex fields
+          githubProjects: data.githubProjects || [],
+          certifications: data.certifications || [],
+          experiences: data.experiences || [],
+          // Convert skills array to comma-separated string if needed by backend
+          skills: Array.isArray(data.skills) ? data.skills : (data.skills ? data.skills.split(',') : [])
+        };
+        break;
+        
+      case 'EMPLOYER':
+        endpoint = `${API_BASE_URL}/employer-profiles/me`;
+        // Format employer-specific data
+        formattedData = {
+          companyName: data.companyName,
+          companySize: data.companySize || null,
+          industry: data.industry || null,
+          websiteUrl: data.websiteUrl || data.companyWebsite || null,
+          companyDescription: data.companyDescription || null,
+          companyAddress: data.companyAddress || null,
+          contactPersonName: data.contactPersonName || null,
+          contactPersonPosition: data.contactPersonPosition || null,
+          contactPersonEmail: data.contactPersonEmail || null,
+          contactPersonPhone: data.contactPersonPhone || null,
+          companyLogoUrl: data.companyLogoUrl || null,
+          logoUrl: data.logoUrl || data.companyLogoUrl || null,
+          hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true
+        };
+        break;
+        
+      case 'ADMIN':
+      default:
+        // Use generic endpoint for admin or unknown roles
+        endpoint = `${API_BASE_URL}/profiles/me`;
+        formattedData = data; // Pass data as-is for generic endpoint
+        break;
+    }
 
-    console.log('Sending formatted data to backend:', formattedData);
+    console.log(`Sending formatted data to ${endpoint}:`, formattedData);
 
     const response = await axios.put(
-      `${API_BASE_URL}/student-profiles/me`,
+      endpoint,
       formattedData,
       { 
         headers: {
@@ -251,14 +302,38 @@ const completeStudentOnboarding = async (data: any) => {
     };
     
     // Now proceed with the onboarding data submission
-    console.log('Submitting complete onboarding data with hasCompletedOnboarding set to true');
-    const response = await axios.post(`${API_BASE_URL}student-profiles/complete-onboarding`, onboardingData, { headers: authHeaders });
-    console.log('Student onboarding successful response:', response.data);
+    const userRole = getUserRole();
+    console.log(`Completing onboarding for user with role: ${userRole}`);
+    
+    let onboardingEndpoint = '';
+    let updateEndpoint = '';
+    
+    switch (userRole) {
+      case 'STUDENT':
+        onboardingEndpoint = `${API_BASE_URL}/student-profiles/complete-onboarding`;
+        updateEndpoint = `${API_BASE_URL}/student-profiles/me`;
+        break;
+      case 'EMPLOYER':
+        // Employer onboarding might use a different endpoint
+        onboardingEndpoint = `${API_BASE_URL}/employer-profiles/complete-onboarding`;
+        updateEndpoint = `${API_BASE_URL}/employer-profiles/me`;
+        break;
+      case 'ADMIN':
+      default:
+        // Use generic endpoint for admin or unknown roles
+        onboardingEndpoint = `${API_BASE_URL}/profiles/complete-onboarding`;
+        updateEndpoint = `${API_BASE_URL}/profiles/me`;
+        break;
+    }
+    
+    console.log(`Submitting complete onboarding data to ${onboardingEndpoint} with hasCompletedOnboarding set to true`);
+    const response = await axios.post(onboardingEndpoint, onboardingData, { headers: authHeaders });
+    console.log('Onboarding successful response:', response.data);
     
     // Also update the profile directly to ensure the status is updated
     try {
       await axios.put(
-        `${API_BASE_URL}student-profiles/me`,
+        updateEndpoint,
         { hasCompletedOnboarding: true },
         { headers: authHeaders }
       );
@@ -296,15 +371,59 @@ const uploadStudentCv = async (cvFile: File) => {
   }
 };
 
-const getCurrentStudentProfile = async () => {
+// Smart profile fetching based on user role
+const getCurrentUserProfileSmart = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}student-profiles/me`, { headers: getAuthHeaders() });
-  
+    const userRole = getUserRole();
+    console.log(`Fetching profile for user with role: ${userRole}`);
+    
+    let endpoint = '';
+    
+    switch (userRole) {
+      case 'STUDENT':
+        endpoint = `${API_BASE_URL}/student-profiles/me`;
+        break;
+      case 'EMPLOYER':
+        endpoint = `${API_BASE_URL}/employer-profiles/me`;
+        break;
+      case 'ADMIN':
+        // Admin can use the generic endpoint or student endpoint depending on needs
+        endpoint = `${API_BASE_URL}/profiles/me`;
+        break;
+      default:
+        // Fallback to generic endpoint for unknown roles
+        console.warn(`Unknown user role: ${userRole}, using generic endpoint`);
+        endpoint = `${API_BASE_URL}/profiles/me`;
+        break;
+    }
+    
+    console.log(`Making request to: ${endpoint}`);
+    const response = await axios.get(endpoint, { headers: getAuthHeaders() });
+    
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching student profile:", error.message);
+    console.error("Error fetching user profile:", error.message);
+    
+    // If the role-specific endpoint fails, try the generic endpoint as fallback
+    if (error.response?.status === 403 || error.response?.status === 404) {
+      console.warn("Role-specific endpoint failed, trying generic endpoint as fallback");
+      try {
+        const fallbackResponse = await axios.get(`${API_BASE_URL}/profiles/me`, { headers: getAuthHeaders() });
+        return fallbackResponse.data;
+      } catch (fallbackError: any) {
+        console.error("Fallback endpoint also failed:", fallbackError.message);
+        throw fallbackError;
+      }
+    }
+    
     throw error;
   }
+};
+
+// Keep the old function for backward compatibility but redirect to smart version
+const getCurrentStudentProfile = async () => {
+  console.warn("getCurrentStudentProfile is deprecated, use getCurrentUserProfileSmart instead");
+  return getCurrentUserProfileSmart();
 };
 
 const submitStudentOnboarding = async (data: any) => {
@@ -483,6 +602,7 @@ const profileService = {
   completeStudentOnboarding,
   uploadStudentCv,
   getCurrentStudentProfile,
+  getCurrentUserProfileSmart, // Add the new smart function
   submitStudentOnboarding,
   completeEmployerOnboarding,
   uploadEmployerLogo,

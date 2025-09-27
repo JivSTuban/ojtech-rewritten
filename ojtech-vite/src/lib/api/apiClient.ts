@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { toast } from '../../components/ui/toast-utils';
-import { normalizedApiBaseUrl } from '../../apiConfig';
+import { API_BASE_URL } from '../../apiConfig';
 
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: normalizedApiBaseUrl,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

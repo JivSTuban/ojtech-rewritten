@@ -1,7 +1,6 @@
 import React, { Component, createContext, useContext, ReactNode } from 'react';
 import authService, { UserData } from '@/lib/api/authService';
 import profileService from '@/lib/api/profileService'; // Import profile service
-import axios from 'axios';
 
 export interface AppUser extends UserData {
   // Add profile specific fields here, or a nested profile object
@@ -306,7 +305,16 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
   logout = () => {
     authService.logout();
-    this.setState({ user: null });
+    this.setState({ 
+      user: null,
+      isAuthenticated: false,
+      profile: null,
+      needsOnboarding: true,
+      isLoading: false
+    });
+    
+    // Prioritize redirection to home page after logout
+    window.location.href = '/';
   };
 
   fetchUserProfile = async () => {

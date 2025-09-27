@@ -16,6 +16,7 @@ import { toast } from '../components/ui/toast-utils';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import EmployerProfileEditModal from '../components/profile/EmployerProfileEditModal';
 import { normalizedApiBaseUrl } from '../apiConfig';
+import profileService from '../lib/api/profileService';
 
 // Add type definitions at the top of the file
 interface User {
@@ -663,26 +664,22 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     try {
       console.log('Attempting to load student profile data');
       
-      // Try student-profiles/me first, which has the most complete data
-      const response = await axios.get(`${this.API_BASE_URL}/student-profiles/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Use smart profile fetching that adapts to user role
+      const rawProfileData = await profileService.getCurrentUserProfileSmart();
       
-      if (response.data) {
-        console.log('Student profile loaded:', response.data);
-        console.log('Raw university data:', response.data.university, 'Type:', typeof response.data.university);
-        console.log('Raw bio data:', response.data.bio, 'Type:', typeof response.data.bio);
+      if (rawProfileData) {
+        console.log('Student profile loaded:', rawProfileData);
+        console.log('Raw university data:', rawProfileData.university, 'Type:', typeof rawProfileData.university);
+        console.log('Raw bio data:', rawProfileData.bio, 'Type:', typeof rawProfileData.bio);
         
         // Check for null or undefined fields
         const fields = ['university', 'major', 'graduationYear', 'bio', 'skills', 'experiences', 'certifications'];
         fields.forEach(field => {
-          console.log(`Field ${field}:`, response.data[field], 'Type:', typeof response.data[field]);
+          console.log(`Field ${field}:`, (rawProfileData as any)[field], 'Type:', typeof (rawProfileData as any)[field]);
         });
         
         // Parse GitHub projects if they come as a string
-        let githubProjects = response.data.githubProjects;
+        let githubProjects = rawProfileData.githubProjects;
         if (typeof githubProjects === 'string') {
           try {
             githubProjects = JSON.parse(githubProjects);
@@ -695,24 +692,24 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         // Create a properly formatted student profile object with safe defaults
         // Handle the case where bio and university might be in the parent Profile object
         const profileData: StudentProfileData = {
-          id: response.data.id || null,
-          firstName: response.data.firstName || '',
-          lastName: response.data.lastName || '',
-          phoneNumber: response.data.phoneNumber || '',
-          location: response.data.location || '',
-          address: response.data.address || '',
+          id: rawProfileData.id || null,
+          firstName: rawProfileData.firstName || '',
+          lastName: rawProfileData.lastName || '',
+          phoneNumber: rawProfileData.phoneNumber || '',
+          location: rawProfileData.location || '',
+          address: rawProfileData.address || '',
           // Special handling for fields that might be inherited from the parent Profile class
-          university: response.data.university || '',  
-          major: response.data.major || '',
-          graduationYear: response.data.graduationYear || null,
-          bio: response.data.bio || '',
-          linkedinUrl: response.data.linkedinUrl || '',
-          githubUrl: response.data.githubUrl || '',
-          portfolioUrl: response.data.portfolioUrl || '',
-          hasCompletedOnboarding: response.data.hasCompletedOnboarding || false,
-          skills: Array.isArray(response.data.skills) ? response.data.skills : [],
-          experiences: Array.isArray(response.data.experiences) ? response.data.experiences : [],
-          certifications: Array.isArray(response.data.certifications) ? response.data.certifications : [],
+          university: rawProfileData.university || '',  
+          major: rawProfileData.major || '',
+          graduationYear: rawProfileData.graduationYear || null,
+          bio: rawProfileData.bio || '',
+          linkedinUrl: rawProfileData.linkedinUrl || '',
+          githubUrl: rawProfileData.githubUrl || '',
+          portfolioUrl: rawProfileData.portfolioUrl || '',
+          hasCompletedOnboarding: rawProfileData.hasCompletedOnboarding || false,
+          skills: Array.isArray(rawProfileData.skills) ? rawProfileData.skills : [],
+          experiences: Array.isArray(rawProfileData.experiences) ? rawProfileData.experiences : [],
+          certifications: Array.isArray(rawProfileData.certifications) ? rawProfileData.certifications : [],
           githubProjects: Array.isArray(githubProjects) ? githubProjects : []
         };
         
@@ -720,7 +717,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         
         this.setState({ 
           studentProfile: profileData,
-          skills: Array.isArray(response.data.skills) ? response.data.skills : []
+          skills: Array.isArray(rawProfileData.skills) ? rawProfileData.skills : []
         }, () => {
           console.log('State updated with profile:', this.state.studentProfile);
         });
