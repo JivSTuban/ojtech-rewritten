@@ -11,6 +11,7 @@ import com.melardev.spring.jwtoauth.service.CloudinaryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -48,6 +49,9 @@ public class StudentProfileController {
 
     @Autowired
     private CloudinaryService cloudinaryService;
+    
+    @Value("${cloudinary.api-secret-preset:OJTECH}")
+    private String cloudinaryPreset;
     
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -109,6 +113,9 @@ public class StudentProfileController {
             // Add certifications and experiences
             responseMap.put("certifications", profile.getCertifications());
             responseMap.put("experiences", profile.getExperiences());
+            
+            // Add PreOJT Orientation URL
+            responseMap.put("preojtOrientationUrl", profile.getPreojtOrientationUrl());
             
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {
@@ -500,6 +507,76 @@ public class StudentProfileController {
         return ResponseEntity.ok(new MessageResponse("Active CV updated successfully"));
     }
 
+    @PostMapping("/preojt-orientation")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> uploadPreOJTOrientation(
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "fileUrl", required = false) String fileUrl) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            UUID userId = userDetails.getId();
+
+            // Allow sending an already-uploaded Cloudinary URL instead of a file
+            boolean hasFileUrl = fileUrl != null && !fileUrl.isBlank();
+            if (!hasFileUrl) {
+                // Validate file if not using fileUrl
+                if (file == null || file.isEmpty()) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("File is empty"));
+                }
+
+                String contentType = file.getContentType();
+                if (contentType == null || !contentType.equals("application/pdf")) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Only PDF files are allowed"));
+                }
+
+                // Check file size (max 10MB)
+                if (file.getSize() > 10 * 1024 * 1024) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("File size must be less than 10MB"));
+                }
+            } else {
+                // Basic validation for Cloudinary host to avoid persisting arbitrary URLs
+                try {
+                    java.net.URI uri = java.net.URI.create(fileUrl);
+                    String host = uri.getHost();
+                    if (host == null || (!host.endsWith("cloudinary.com") && !host.contains("res.cloudinary.com"))) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("fileUrl must be a Cloudinary URL"));
+                    }
+                } catch (Exception ex) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Invalid fileUrl"));
+                }
+            }
+
+            Optional<StudentProfile> profileOpt = studentProfileRepository.findByUserId(userId);
+            if (profileOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            StudentProfile profile = profileOpt.get();
+            
+            // Upload to Cloudinary when file present; otherwise trust provided fileUrl
+            if (!hasFileUrl) {
+                fileUrl = cloudinaryService.uploadPdf(file, cloudinaryPreset);
+            }
+            
+            // Update profile with the new PDF URL
+            profile.setPreojtOrientationUrl(fileUrl);
+            studentProfileRepository.save(profile);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "PreOJT Orientation PDF uploaded successfully");
+            response.put("fileUrl", fileUrl);
+            
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            logger.error("Error uploading PreOJT Orientation PDF", e);
+            return ResponseEntity.status(500).body(new MessageResponse("Failed to upload PDF: " + e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error uploading PreOJT Orientation PDF", e);
+            return ResponseEntity.status(500).body(new MessageResponse("An unexpected error occurred"));
+        }
+    }
+
     private void updateProfileFields(StudentProfile profile, Map<String, Object> data) {
         if (data.containsKey("firstName")) {
             profile.setFirstName((String) data.get("firstName"));
@@ -535,7 +612,13 @@ public class StudentProfileController {
         }
         
         if (data.containsKey("skills")) {
-            profile.setSkills((String) data.get("skills"));
+            Object skillsObj = data.get("skills");
+            if (skillsObj instanceof String) {
+                profile.setSkills((String) skillsObj);
+            } else if (skillsObj instanceof List) {
+                List<String> skillsList = (List<String>) skillsObj;
+                profile.setSkills(String.join(", ", skillsList));
+            }
         }
         
         if (data.containsKey("githubUrl")) {
@@ -559,7 +642,22 @@ public class StudentProfileController {
         }
         
         if (data.containsKey("hasCompletedOnboarding")) {
-            profile.setHasCompletedOnboarding((Boolean) data.get("hasCompletedOnboarding"));
+            Object onboardingObj = data.get("hasCompletedOnboarding");
+            boolean requestedValue = false;
+            if (onboardingObj instanceof Boolean) {
+                requestedValue = (Boolean) onboardingObj;
+            } else if (onboardingObj != null) {
+                requestedValue = Boolean.parseBoolean(String.valueOf(onboardingObj));
+            }
+            // Never downgrade the onboarding status via generic profile updates.
+            // Allow setting to true, ignore attempts to set false.
+            if (requestedValue) {
+                profile.setHasCompletedOnboarding(true);
+            }
+        }
+        
+        if (data.containsKey("preojtOrientationUrl")) {
+            profile.setPreojtOrientationUrl((String) data.get("preojtOrientationUrl"));
         }
     }
 } 

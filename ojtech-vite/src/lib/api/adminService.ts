@@ -180,12 +180,36 @@ const getStudentsForVerification = async (verified?: boolean): Promise<any[]> =>
   const response = await apiClient.get('admin/students', {
     params: { verified }
   });
-  return response.data;
+  // Handle paginated response structure
+  if (response.data && response.data.students && Array.isArray(response.data.students)) {
+    return response.data.students;
+  }
+  // Fallback for direct array response
+  return Array.isArray(response.data) ? response.data : [];
 };
 
 const getStudentDetails = async (id: string): Promise<any> => {
   const response = await apiClient.get(`admin/students/${id}`);
-  return response.data;
+  const data = response.data;
+  // Normalize fields to ensure the UI can safely render
+  if (data) {
+    // skills can arrive as a comma-separated string; convert to array
+    if (typeof data.skills === 'string') {
+      data.skills = data.skills
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+    } else if (!Array.isArray(data.skills)) {
+      data.skills = [];
+    }
+
+    // Ensure list fields are arrays
+    data.certifications = Array.isArray(data.certifications) ? data.certifications : [];
+    data.experiences = Array.isArray(data.experiences) ? data.experiences : [];
+    data.applications = Array.isArray(data.applications) ? data.applications : [];
+    data.cvs = Array.isArray(data.cvs) ? data.cvs : [];
+  }
+  return data;
 };
 
 const verifyStudent = async (id: string, notes?: string): Promise<any> => {

@@ -28,7 +28,7 @@ interface StudentProfile {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
-  skills?: string[];
+  skills?: string | string[];
   cvs?: any[];
   applications?: any[];
   certifications?: any[];
@@ -169,6 +169,13 @@ const StudentDetailsPage: React.FC = () => {
     );
   }
   
+  // Normalize skills defensively in the UI as well (in case API shape varies)
+  const skillsArray: string[] = Array.isArray(student.skills)
+    ? student.skills
+    : typeof student.skills === 'string'
+      ? student.skills.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
@@ -249,7 +256,7 @@ const StudentDetailsPage: React.FC = () => {
                 
                 <div className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{student.phone || 'No phone number'}</span>
+                  <span>{student.phoneNumber || (student as any).phone || 'No phone number'}</span>
                 </div>
                 
                 <div className="flex items-center">
@@ -341,8 +348,8 @@ const StudentDetailsPage: React.FC = () => {
                     <div>
                       <h3 className="text-lg font-medium mb-2">Skills</h3>
                       <div className="flex flex-wrap gap-2">
-                        {student.skills && student.skills.length > 0 ? (
-                          student.skills.map((skill, index) => (
+                        {skillsArray.length > 0 ? (
+                          skillsArray.map((skill, index) => (
                             <Badge key={index} variant="secondary">
                               {skill}
                             </Badge>

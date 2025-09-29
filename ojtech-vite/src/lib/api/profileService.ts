@@ -78,8 +78,7 @@ const updateProfile = async (data: any) => {
           major: data.major || null,
           graduationYear: data.graduationYear || null,
           // Role and onboarding status
-          role: data.role || 'STUDENT',
-          hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true,
+      role: data.role || 'STUDENT',
           // Complex fields
           githubProjects: data.githubProjects || [],
           certifications: data.certifications || [],
@@ -105,7 +104,7 @@ const updateProfile = async (data: any) => {
           contactPersonPhone: data.contactPersonPhone || null,
           companyLogoUrl: data.companyLogoUrl || null,
           logoUrl: data.logoUrl || data.companyLogoUrl || null,
-          hasCompletedOnboarding: data.hasCompletedOnboarding !== undefined ? data.hasCompletedOnboarding : true
+      // Do not include hasCompletedOnboarding in generic updates; handled by onboarding endpoints
         };
         break;
         

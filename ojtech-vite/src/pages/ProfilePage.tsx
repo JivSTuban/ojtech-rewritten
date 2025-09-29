@@ -104,6 +104,8 @@ interface StudentProfileData {
   linkedinUrl?: string;
   portfolioUrl?: string;
   hasCompletedOnboarding?: boolean;
+  role?: string;
+  preojtOrientationUrl?: string;
   experiences?: WorkExperience[];
   certifications?: Certification[];
   githubProjects?: GitHubProject[];
@@ -707,6 +709,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           githubUrl: rawProfileData.githubUrl || '',
           portfolioUrl: rawProfileData.portfolioUrl || '',
           hasCompletedOnboarding: rawProfileData.hasCompletedOnboarding || false,
+          role: rawProfileData.role || 'STUDENT',
+          preojtOrientationUrl: rawProfileData.preojtOrientationUrl || '',
           skills: Array.isArray(rawProfileData.skills) ? rawProfileData.skills : [],
           experiences: Array.isArray(rawProfileData.experiences) ? rawProfileData.experiences : [],
           certifications: Array.isArray(rawProfileData.certifications) ? rawProfileData.certifications : [],
@@ -777,6 +781,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 githubUrl: retryResponse.data.githubUrl || '',
                 portfolioUrl: retryResponse.data.portfolioUrl || '',
                 hasCompletedOnboarding: retryResponse.data.hasCompletedOnboarding || false,
+                role: retryResponse.data.role || 'STUDENT',
+                preojtOrientationUrl: retryResponse.data.preojtOrientationUrl || '',
                 skills: Array.isArray(retryResponse.data.skills) ? retryResponse.data.skills : [],
                 experiences: Array.isArray(retryResponse.data.experiences) ? retryResponse.data.experiences : [],
                 certifications: Array.isArray(retryResponse.data.certifications) ? retryResponse.data.certifications : [],
@@ -842,6 +848,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               githubUrl: fallbackResponse.data.githubUrl || '',
               portfolioUrl: fallbackResponse.data.portfolioUrl || '',
               hasCompletedOnboarding: fallbackResponse.data.hasCompletedOnboarding || false,
+              role: fallbackResponse.data.role || 'STUDENT',
+              preojtOrientationUrl: fallbackResponse.data.preojtOrientationUrl || '',
               skills: Array.isArray(fallbackResponse.data.skills) ? fallbackResponse.data.skills : [],
               experiences: Array.isArray(fallbackResponse.data.experiences) ? fallbackResponse.data.experiences : [],
               certifications: Array.isArray(fallbackResponse.data.certifications) ? fallbackResponse.data.certifications : [],
@@ -1460,6 +1468,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             onClose={this.handleCloseProfileModal}
             onSaved={this.handleProfileSaved}
             initialData={{
+              id: studentProfile.id,
               firstName: studentProfile.firstName,
               lastName: studentProfile.lastName,
               phoneNumber: studentProfile.phoneNumber,
@@ -1470,6 +1479,15 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               linkedinUrl: studentProfile.linkedinUrl,
               portfolioUrl: studentProfile.portfolioUrl,
               skills: studentProfile.skills,
+              university: studentProfile.university,
+              major: studentProfile.major,
+              graduationYear: studentProfile.graduationYear,
+              role: studentProfile.role || 'STUDENT',
+              hasCompletedOnboarding: studentProfile.hasCompletedOnboarding || false,
+              githubProjects: studentProfile.githubProjects || [],
+              certifications: studentProfile.certifications || [],
+              experiences: studentProfile.experiences || [],
+              preojtOrientationUrl: studentProfile.preojtOrientationUrl || ''
             }}
           />
         )}

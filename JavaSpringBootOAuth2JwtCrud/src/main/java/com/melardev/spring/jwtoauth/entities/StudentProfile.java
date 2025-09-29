@@ -96,6 +96,9 @@ public class StudentProfile extends Profile {
     @Column(name = "verification_notes")
     private String verificationNotes;
 
+    @Column(name = "preojt_orientation_url")
+    private String preojtOrientationUrl;
+
     public StudentProfile() {
         super();
         setRole(UserRole.STUDENT);
@@ -205,4 +208,7 @@ public class StudentProfile extends Profile {
     
     public String getVerificationNotes() { return verificationNotes; }
     public void setVerificationNotes(String verificationNotes) { this.verificationNotes = verificationNotes; }
+
+    public String getPreojtOrientationUrl() { return preojtOrientationUrl; }
+    public void setPreojtOrientationUrl(String preojtOrientationUrl) { this.preojtOrientationUrl = preojtOrientationUrl; }
 }

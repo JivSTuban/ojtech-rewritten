@@ -15,8 +15,9 @@ interface Student {
   firstName: string;
   lastName: string;
   fullName: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phoneNumber?: string; // API uses phoneNumber instead of phone
+  phone?: string; // Keep for backward compatibility
   university: string;
   major: string;
   graduationYear: number;
@@ -28,10 +29,21 @@ interface Student {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
-  cvCount: number;
-  applicationCount: number;
-  certificationCount: number;
-  experienceCount: number;
+  cvCount?: number;
+  applicationCount?: number;
+  certificationCount?: number;
+  experienceCount?: number;
+  // Additional fields from API response
+  createdAt?: string;
+  updatedAt?: string;
+  location?: string;
+  role?: string;
+  skills?: string;
+  certifications?: any[];
+  experiences?: any[];
+  githubProjects?: string;
+  onboardingCompleted?: boolean;
+  active?: boolean;
 }
 
 const StudentVerificationPage: React.FC = () => {
@@ -52,11 +64,16 @@ const StudentVerificationPage: React.FC = () => {
     try {
       const unverified = await adminService.getStudentsForVerification(false);
       const verified = await adminService.getStudentsForVerification(true);
-      setUnverifiedStudents(unverified);
-      setVerifiedStudents(verified);
+      
+      // Ensure we always have arrays, even if API returns unexpected data
+      setUnverifiedStudents(Array.isArray(unverified) ? unverified : []);
+      setVerifiedStudents(Array.isArray(verified) ? verified : []);
     } catch (err) {
       console.error('Error fetching students:', err);
       setError('Failed to load students. Please try again later.');
+      // Set empty arrays on error to prevent map errors
+      setUnverifiedStudents([]);
+      setVerifiedStudents([]);
     } finally {
       setLoading(false);
     }
@@ -121,7 +138,11 @@ const StudentVerificationPage: React.FC = () => {
     }
   };
 
-  const renderStudentTable = (students: Student[]) => (
+  const renderStudentTable = (students: Student[]) => {
+    // Safety check: ensure students is an array
+    const safeStudents = Array.isArray(students) ? students : [];
+    
+    return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
@@ -135,16 +156,16 @@ const StudentVerificationPage: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.length === 0 ? (
+          {safeStudents.length === 0 ? (
             <TableRow>
-              <TableCell className="text-center" style={{textAlign: 'center'}}>
+              <TableCell className="text-center" style={{textAlign: 'center'}} {...{colSpan: 6}}>
                 <p className="text-muted-foreground">
                   No students found
                 </p>
               </TableCell>
             </TableRow>
           ) : (
-            students.map((student) => (
+            safeStudents.map((student) => (
               <TableRow key={student.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -163,7 +184,7 @@ const StudentVerificationPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium">{student.fullName}</p>
-                      <p className="text-sm text-muted-foreground">{student.email}</p>
+                      <p className="text-sm text-muted-foreground">{student.email || 'No email'}</p>
                     </div>
                   </div>
                 </TableCell>
@@ -204,11 +225,11 @@ const StudentVerificationPage: React.FC = () => {
                     )}
                   </div>
                   <div className="mt-2 flex gap-1">
-                    <Badge variant={student.cvCount > 0 ? "default" : "outline"} className="text-xs">
-                      {student.cvCount} CVs
+                    <Badge variant={(student.cvCount || 0) > 0 ? "default" : "outline"} className="text-xs">
+                      {student.cvCount || 0} CVs
                     </Badge>
-                    <Badge variant={student.experienceCount > 0 ? "default" : "outline"} className="text-xs">
-                      {student.experienceCount} Exp
+                    <Badge variant={(student.experienceCount || 0) > 0 ? "default" : "outline"} className="text-xs">
+                      {student.experienceCount || 0} Exp
                     </Badge>
                   </div>
                 </TableCell>
@@ -251,7 +272,8 @@ const StudentVerificationPage: React.FC = () => {
         </TableBody>
       </Table>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="container mx-auto py-6">

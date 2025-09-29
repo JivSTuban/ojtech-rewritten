@@ -111,7 +111,7 @@ public class ProfileController {
                 responseMap.put("bio", Collections.emptyList());
             }
             responseMap.put("phoneNumber", profile.getPhoneNumber());
-            responseMap.put("CompletedOnboarding", profile.isHasCompletedOnboarding());
+            responseMap.put("hasCompletedOnboarding", profile.isHasCompletedOnboarding());
             responseMap.put("activeCvId", profile.getActiveCvId());
             responseMap.put("role", profile.getRole());
             responseMap.put("avatarUrl", profile.getAvatarUrl());
@@ -443,7 +443,16 @@ public class ProfileController {
             profile.setLocation((String) updates.get("location"));
         }
         if (updates.containsKey("hasCompletedOnboarding")) {
-            profile.setHasCompletedOnboarding((Boolean) updates.get("hasCompletedOnboarding"));
+            Object onboardingObj = updates.get("hasCompletedOnboarding");
+            boolean requestedValue = false;
+            if (onboardingObj instanceof Boolean) {
+                requestedValue = (Boolean) onboardingObj;
+            } else if (onboardingObj != null) {
+                requestedValue = Boolean.parseBoolean(String.valueOf(onboardingObj));
+            }
+            if (requestedValue) {
+                profile.setHasCompletedOnboarding(true);
+            }
         }
 
         // Handle student-specific fields

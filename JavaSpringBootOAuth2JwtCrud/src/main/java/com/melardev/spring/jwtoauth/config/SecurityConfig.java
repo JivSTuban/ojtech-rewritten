@@ -130,6 +130,8 @@ public class SecurityConfig {
                                 .requestMatchers("/api-docs/**").permitAll()
                                 .requestMatchers("/swagger-ui/**").permitAll()
                                 .requestMatchers("/h2-console/**").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers("/api/public/cloudinary/**").permitAll()
                                 .requestMatchers("/api/public/**").permitAll()
                                 .anyRequest().authenticated()
                 )
