@@ -90,7 +90,8 @@ public class StudentProfileController {
             responseMap.put("githubUrl", profile.getGithubUrl());
             responseMap.put("linkedinUrl", profile.getLinkedinUrl());
             responseMap.put("portfolioUrl", profile.getPortfolioUrl());
-            responseMap.put("bio", profile.getBio());
+            // Ensure bio is always present in the response
+            responseMap.put("bio", profile.getBio() != null ? profile.getBio() : "");
             responseMap.put("phoneNumber", profile.getPhoneNumber());
             responseMap.put("hasCompletedOnboarding", profile.isHasCompletedOnboarding());
             responseMap.put("activeCvId", profile.getActiveCvId());
@@ -250,9 +251,11 @@ public class StudentProfileController {
                 profile.setPortfolioUrl(contact.get("portfolioUrl"));
             }
             
-            // Handle bio
+            // Handle bio (ensure both child and parent Profile.bio are kept in sync)
             if (completeData.containsKey("bio")) {
-                profile.setBio((String) completeData.get("bio"));
+                String bio = (String) completeData.get("bio");
+                profile.setBio(bio); // StudentProfile.bio
+                ((Profile) profile).setBio(bio); // Parent Profile.bio
             }
             
             // Process GitHub projects
@@ -380,7 +383,8 @@ public class StudentProfileController {
             responseMap.put("githubUrl", profile.getGithubUrl());
             responseMap.put("linkedinUrl", profile.getLinkedinUrl());
             responseMap.put("portfolioUrl", profile.getPortfolioUrl());
-            responseMap.put("bio", profile.getBio());
+            // Ensure bio is always present in the response
+            responseMap.put("bio", profile.getBio() != null ? profile.getBio() : "");
             responseMap.put("phoneNumber", profile.getPhoneNumber());
             responseMap.put("hasCompletedOnboarding", profile.isHasCompletedOnboarding());
             responseMap.put("activeCvId", profile.getActiveCvId());
@@ -638,7 +642,9 @@ public class StudentProfileController {
         }
         
         if (data.containsKey("bio")) {
-            profile.setBio((String) data.get("bio"));
+            String bio = (String) data.get("bio");
+            profile.setBio(bio);
+            ((Profile) profile).setBio(bio);
         }
         
         if (data.containsKey("hasCompletedOnboarding")) {

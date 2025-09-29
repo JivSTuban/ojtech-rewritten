@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
 import { AuthContext } from '../providers/AuthProvider';
-import { Loader2, Upload, Download, Github, Linkedin, Globe, Pencil, Code, FileUp, Mail, Phone } from 'lucide-react';
+import { Loader2, Upload, Download, Github, Linkedin, Globe, Pencil, Code, FileUp, Mail, Phone, FileText, Eye, Calendar, Star, GitFork, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EducationEditModal from '../components/profile/EducationEditModal';
 import { useToast } from '../components/ui/use-toast';
@@ -15,8 +15,11 @@ import { ToastProps } from '../components/ui/use-toast';
 import { toast } from '../components/ui/toast-utils';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import EmployerProfileEditModal from '../components/profile/EmployerProfileEditModal';
+import PDFViewer from '../components/pdf/PDFViewer';
 import { normalizedApiBaseUrl } from '../apiConfig';
 import profileService from '../lib/api/profileService';
+import apiClient from '../lib/api/apiClient';
+import resumeHtmlGenerator from '../lib/api/resumeHtmlGenerator';
 
 // Add type definitions at the top of the file
 interface User {
@@ -53,6 +56,12 @@ interface ProfilePageState {
   isEducationModalOpen: boolean;
   isProfileModalOpen: boolean;
   isEmployerProfileModalOpen: boolean;
+  showCvViewer: boolean;
+  showPreOjtViewer: boolean;
+  cvData: any | null;
+  resumeHtml: string | null;
+  hasResume: boolean;
+  uploadPreOjtLoading?: boolean;
 }
 
 // New data structure interfaces
@@ -83,13 +92,16 @@ interface GitHubProject {
   technologies?: string[];
   stars?: number;
   forks?: number;
+  lastUpdated?: string;
+  readme?: string;
 }
 
 // Student profile data structure
 interface StudentProfileData {
-  id?: number;
+  id?: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   phoneNumber?: string;
   location?: string;
   address?: string;
@@ -100,6 +112,7 @@ interface StudentProfileData {
   skills?: string[];
   cvUrl?: string;
   cvFilename?: string;
+  activeCvId?: string;
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
@@ -130,6 +143,257 @@ interface EmployerProfileData {
   verified?: boolean;
   hasCompletedOnboarding?: boolean;
 }
+
+// HTML Resume view component with iframe to safely render HTML content
+const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [processedHtml, setProcessedHtml] = React.useState<string>(html);
+  const [iframeLoaded, setIframeLoaded] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    // Helper function to generate HTML from JSON data
+    const generateHTMLFromJSON = (jsonData: any): string => {
+      try {
+        return resumeHtmlGenerator.generateResumeHtml(jsonData);
+      } catch (error) {
+        console.error('Error in generateHTMLFromJSON:', error);
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head><title>Resume</title></head>
+          <body>
+            <h1>Resume Generation Error</h1>
+            <p>There was an error generating your resume. Please try again or contact support.</p>
+          </body>
+          </html>
+        `;
+      }
+    };
+    
+    // Process HTML content - handle both JSON and HTML formats
+    const processHtml = (content: string) => {
+      console.log('Processing HTML content, length:', content.length);
+      
+      if (!content || content.trim() === '') {
+        console.warn('Empty HTML content received');
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Resume</title>
+            <style>
+              body { 
+                font-family: 'Segoe UI', Arial, sans-serif; 
+                padding: 20px; 
+                text-align: center;
+                color: #4a5568;
+                line-height: 1.6;
+              }
+              h1 { color: #2d3748; }
+            </style>
+          </head>
+          <body>
+            <h1>No Resume Content Available</h1>
+            <p>Please try regenerating your resume.</p>
+          </body>
+          </html>
+        `;
+      }
+      
+      // Check if it looks like HTML
+      const isHtml = content.includes('<!DOCTYPE html>') || 
+                    content.includes('<html>') || 
+                    (content.includes('<') && content.includes('</'));
+      
+      // Check if it looks like JSON
+      const isJson = (content.startsWith('{') && content.endsWith('}')) || 
+                     (content.includes('\\\"') && content.includes('\\\"'));
+                   
+      console.log('Content appears to be:', isHtml ? 'HTML' : isJson ? 'JSON' : 'Unknown format');
+      
+      // If it's already HTML, use it directly
+      if (isHtml) {
+        return content;
+      }
+      
+      // If it might be JSON, try to parse and convert
+      if (isJson) {
+        try {
+          // Handle multiple levels of escaping
+          let processedContent = content;
+          
+          // Handle string with quotes at start and end
+          if (processedContent.startsWith('"') && processedContent.endsWith('"')) {
+            processedContent = processedContent.substring(1, processedContent.length - 1);
+          }
+          
+          // Handle escaped quotes and backslashes
+          processedContent = processedContent.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          
+          // Parse the JSON data
+          const jsonData = JSON.parse(processedContent);
+          console.log('Successfully parsed JSON data:', Object.keys(jsonData));
+          
+          // Use our resumeHtmlGenerator to create HTML
+          try {
+            const htmlContent = resumeHtmlGenerator.generateResumeHtml(jsonData);
+            console.log('Generated HTML from JSON with resumeHtmlGenerator, length:', htmlContent.length);
+            return htmlContent;
+          } catch (generatorError) {
+            console.error('Error using resumeHtmlGenerator:', generatorError);
+            // If the generator fails, fall back to legacy method
+            const htmlContent = generateHTMLFromJSON(jsonData);
+            console.log('Fallback: Generated HTML from JSON with legacy method, length:', htmlContent.length);
+            return htmlContent;
+          }
+        } catch (error) {
+          console.error('Error processing JSON content:', error);
+          // If parsing fails, return a fallback HTML
+          return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Resume</title>
+              <style>
+                body { 
+                  font-family: 'Segoe UI', Arial, sans-serif; 
+                  padding: 20px; 
+                  line-height: 1.6;
+                }
+                .error { 
+                  color: #e53e3e; 
+                  margin-bottom: 1rem;
+                  padding: 1rem;
+                  border-left: 4px solid #e53e3e;
+                  background-color: #fff5f5;
+                }
+                h1 { color: #2d3748; }
+                pre {
+                  background-color: #f7fafc;
+                  padding: 1rem;
+                  border-radius: 0.25rem;
+                  overflow: auto;
+                  font-size: 0.875rem;
+                }
+              </style>
+            </head>
+            <body>
+              <h1>Resume Parsing Error</h1>
+              <p class="error">There was an error processing your resume data. Please try regenerating it.</p>
+              <pre>${content.substring(0, 200)}...</pre>
+            </body>
+            </html>
+          `;
+        }
+      }
+      
+      // If we couldn't determine the format, wrap it in basic HTML
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Resume</title>
+          <style>
+            body { 
+              font-family: 'Segoe UI', Arial, sans-serif; 
+              padding: 20px; 
+              line-height: 1.6;
+              color: #2d3748;
+            }
+            pre {
+              background-color: #f7fafc;
+              padding: 1rem;
+              border-radius: 0.25rem;
+              overflow: auto;
+              font-size: 0.875rem;
+              white-space: pre-wrap;
+            }
+          </style>
+        </head>
+        <body>
+          <pre>${content}</pre>
+        </body>
+        </html>
+      `;
+    };
+    
+    // Process the HTML content and update state
+    try {
+      const processed = processHtml(html);
+      console.log('Setting processed HTML, length:', processed.length);
+      setProcessedHtml(processed);
+      setIframeLoaded(false); // Reset loaded state when content changes
+    } catch (error) {
+      console.error('Error processing HTML:', error);
+      // Set a fallback HTML on error
+      setProcessedHtml(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Resume</title>
+          <style>
+            body { 
+              font-family: 'Segoe UI', Arial, sans-serif; 
+              padding: 20px; 
+              line-height: 1.6;
+            }
+            .error { 
+              color: #e53e3e; 
+              padding: 1rem;
+              border-left: 4px solid #e53e3e;
+              background-color: #fff5f5;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Error Loading Resume</h1>
+          <p class="error">There was an error processing your resume. Please try regenerating it.</p>
+        </body>
+        </html>
+      `);
+    }
+  }, [html]);
+
+  // Handle iframe load event
+  const handleIframeLoad = () => {
+    console.log('Iframe loaded!');
+    setIframeLoaded(true);
+    
+    // Check if iframe content is loaded correctly
+    if (iframeRef.current) {
+      try {
+        const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+        if (iframeDoc) {
+          const bodyContent = iframeDoc.body.innerHTML;
+          console.log('Iframe body content length:', bodyContent.length);
+        }
+      } catch (e) {
+        console.error('Error checking iframe content:', e);
+      }
+    }
+  };
+
+  return (
+    <div className="relative">
+      {!iframeLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+          <div className="text-center text-white">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-white mx-auto mb-4"></div>
+            <p>Loading resume...</p>
+          </div>
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        title="Resume Preview"
+        className="w-full h-[600px] border-0 bg-white rounded-b-lg"
+        sandbox="allow-same-origin allow-scripts"
+        srcDoc={processedHtml}
+        onLoad={handleIframeLoad}
+      />
+    </div>
+  );
+};
 
 // Component to display student profile
 const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: string, username: string }> = ({ profile, email, username }) => (
@@ -557,7 +821,13 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       skills: [],
       isEducationModalOpen: false,
       isProfileModalOpen: false,
-      isEmployerProfileModalOpen: false
+      isEmployerProfileModalOpen: false,
+      showCvViewer: false,
+      showPreOjtViewer: false,
+      cvData: null,
+      resumeHtml: null,
+      hasResume: false,
+      uploadPreOjtLoading: false
     };
   }
   
@@ -640,6 +910,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       if (isStudent) {
         try {
         await this.loadStudentProfile(token);
+        await this.loadResumeData(token);
         } catch (profileError) {
           console.error('Error loading student profile:', profileError);
           // Don't log out immediately for profile errors
@@ -691,12 +962,13 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           }
         }
         
-        // Create a properly formatted student profile object with safe defaults
+              // Create a properly formatted student profile object with safe defaults
         // Handle the case where bio and university might be in the parent Profile object
         const profileData: StudentProfileData = {
           id: rawProfileData.id || null,
           firstName: rawProfileData.firstName || '',
           lastName: rawProfileData.lastName || '',
+          fullName: rawProfileData.fullName || `${rawProfileData.firstName || ''} ${rawProfileData.lastName || ''}`.trim(),
           phoneNumber: rawProfileData.phoneNumber || '',
           location: rawProfileData.location || '',
           address: rawProfileData.address || '',
@@ -704,13 +976,16 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           university: rawProfileData.university || '',  
           major: rawProfileData.major || '',
           graduationYear: rawProfileData.graduationYear || null,
-          bio: rawProfileData.bio || '',
+          bio: typeof rawProfileData.bio === 'string' 
+            ? rawProfileData.bio 
+            : (rawProfileData.bio ? JSON.stringify(rawProfileData.bio) : ''),
           linkedinUrl: rawProfileData.linkedinUrl || '',
           githubUrl: rawProfileData.githubUrl || '',
           portfolioUrl: rawProfileData.portfolioUrl || '',
           hasCompletedOnboarding: rawProfileData.hasCompletedOnboarding || false,
           role: rawProfileData.role || 'STUDENT',
           preojtOrientationUrl: rawProfileData.preojtOrientationUrl || '',
+          activeCvId: rawProfileData.activeCvId || '',
           skills: Array.isArray(rawProfileData.skills) ? rawProfileData.skills : [],
           experiences: Array.isArray(rawProfileData.experiences) ? rawProfileData.experiences : [],
           certifications: Array.isArray(rawProfileData.certifications) ? rawProfileData.certifications : [],
@@ -769,6 +1044,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 id: retryResponse.data.id || null,
                 firstName: retryResponse.data.firstName || '',
                 lastName: retryResponse.data.lastName || '',
+                fullName: retryResponse.data.fullName || `${retryResponse.data.firstName || ''} ${retryResponse.data.lastName || ''}`.trim(),
                 phoneNumber: retryResponse.data.phoneNumber || '',
                 location: retryResponse.data.location || '',
                 address: retryResponse.data.address || '',
@@ -776,13 +1052,16 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 university: retryResponse.data.university || '',
                 major: retryResponse.data.major || '',
                 graduationYear: retryResponse.data.graduationYear || null,
-                bio: retryResponse.data.bio || '',
+                bio: typeof retryResponse.data.bio === 'string' 
+                  ? retryResponse.data.bio 
+                  : (retryResponse.data.bio ? JSON.stringify(retryResponse.data.bio) : ''),
                 linkedinUrl: retryResponse.data.linkedinUrl || '',
                 githubUrl: retryResponse.data.githubUrl || '',
                 portfolioUrl: retryResponse.data.portfolioUrl || '',
                 hasCompletedOnboarding: retryResponse.data.hasCompletedOnboarding || false,
                 role: retryResponse.data.role || 'STUDENT',
                 preojtOrientationUrl: retryResponse.data.preojtOrientationUrl || '',
+                activeCvId: retryResponse.data.activeCvId || '',
                 skills: Array.isArray(retryResponse.data.skills) ? retryResponse.data.skills : [],
                 experiences: Array.isArray(retryResponse.data.experiences) ? retryResponse.data.experiences : [],
                 certifications: Array.isArray(retryResponse.data.certifications) ? retryResponse.data.certifications : [],
@@ -836,6 +1115,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               id: fallbackResponse.data.id || null,
               firstName: fallbackResponse.data.firstName || '',
               lastName: fallbackResponse.data.lastName || '',
+              fullName: fallbackResponse.data.fullName || `${fallbackResponse.data.firstName || ''} ${fallbackResponse.data.lastName || ''}`.trim(),
               phoneNumber: fallbackResponse.data.phoneNumber || '',
               location: fallbackResponse.data.location || '',
               address: fallbackResponse.data.address || '',
@@ -843,13 +1123,16 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               university: fallbackResponse.data.university || '',
               major: fallbackResponse.data.major || '',
               graduationYear: fallbackResponse.data.graduationYear || null,
-              bio: fallbackResponse.data.bio || '',
+              bio: typeof fallbackResponse.data.bio === 'string' 
+                ? fallbackResponse.data.bio 
+                : (fallbackResponse.data.bio ? JSON.stringify(fallbackResponse.data.bio) : ''),
               linkedinUrl: fallbackResponse.data.linkedinUrl || '',
               githubUrl: fallbackResponse.data.githubUrl || '',
               portfolioUrl: fallbackResponse.data.portfolioUrl || '',
               hasCompletedOnboarding: fallbackResponse.data.hasCompletedOnboarding || false,
               role: fallbackResponse.data.role || 'STUDENT',
               preojtOrientationUrl: fallbackResponse.data.preojtOrientationUrl || '',
+              activeCvId: fallbackResponse.data.activeCvId || '',
               skills: Array.isArray(fallbackResponse.data.skills) ? fallbackResponse.data.skills : [],
               experiences: Array.isArray(fallbackResponse.data.experiences) ? fallbackResponse.data.experiences : [],
               certifications: Array.isArray(fallbackResponse.data.certifications) ? fallbackResponse.data.certifications : [],
@@ -1042,6 +1325,236 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     }
   };
   
+  // Load resume data
+  loadResumeData = async (token: string | null) => {
+    if (!token) {
+      console.error('No authentication token found');
+      return;
+    }
+    
+    try {
+      const response = await axios.get(`${this.API_BASE_URL}/cvs/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Resume data loaded:', response.data);
+      
+      if (response.data && response.data.length > 0) {
+        const cvData = response.data[0]; // Get the first CV if array
+        this.setState({ 
+          cvData: cvData,
+          hasResume: true
+        });
+        
+        // Make sure we have a valid ID before loading the content
+        if (cvData.id) {
+          // Load the CV content
+          try {
+            const contentResponse = await axios.get(`${this.API_BASE_URL}/cvs/${cvData.id}/content`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+              responseType: 'text',
+              // Accept any status code to handle errors gracefully
+              validateStatus: (status) => true
+            });
+            
+            // Check if the response was successful
+            if (contentResponse.status >= 200 && contentResponse.status < 300) {
+              if (contentResponse.data) {
+                const contentStr = contentResponse.data;
+                console.log('Resume content loaded, length:', contentStr.length);
+                
+                // Check if it looks like HTML
+                const isHtml = contentStr.includes('<!DOCTYPE html>') || 
+                              contentStr.includes('<html>') || 
+                              (contentStr.includes('<') && contentStr.includes('</'));
+                
+                // If it's HTML, use it directly
+                if (isHtml) {
+                  console.log('Content is HTML, using directly');
+                  this.setState({
+                    resumeHtml: contentStr
+                  });
+                  return;
+                }
+                
+                // Otherwise, treat as JSON
+                try {
+                  // Parse and convert to HTML
+                  const jsonData = JSON.parse(contentStr);
+                  const resumeHtml = this.generateHTMLFromJSON(jsonData);
+                  console.log('Parsed JSON data and generated HTML, length:', resumeHtml.length);
+                  
+                  this.setState({
+                    resumeHtml
+                  });
+                } catch (e) {
+                  console.error('Error parsing JSON content:', e);
+                  this.setState({ 
+                    resumeHtml: contentStr // Fall back to raw content
+                  });
+                }
+              } else {
+                console.warn('CV content response was empty');
+                this.setState({ 
+                  resumeHtml: null
+                });
+              }
+            } else {
+              // Handle error responses
+              console.error(`Error loading CV content, status: ${contentResponse.status}`, contentResponse.data);
+              
+              // Keep the CV data but don't show content
+              this.setState({ 
+                resumeHtml: null
+              });
+            }
+          } catch (contentError) {
+            console.error('Error loading CV content:', contentError);
+            this.setState({ 
+              resumeHtml: null
+            });
+          }
+        } else {
+          console.warn('CV data missing ID, cannot load content');
+        }
+      } else if (response.data && !Array.isArray(response.data)) {
+        // Handle case where response.data is a single object, not an array
+        const cvData = response.data;
+        this.setState({ 
+          cvData: cvData,
+          hasResume: true
+        });
+        
+        // Make sure we have a valid ID before loading the content
+        if (cvData.id) {
+          // Load the CV content (same logic as above)
+          try {
+            const contentResponse = await axios.get(`${this.API_BASE_URL}/cvs/${cvData.id}/content`, {
+              headers: { 'Authorization': `Bearer ${token}` },
+              responseType: 'text',
+              validateStatus: (status) => true
+            });
+            
+            if (contentResponse.status >= 200 && contentResponse.status < 300) {
+              if (contentResponse.data) {
+                const contentStr = contentResponse.data;
+                console.log('Resume content loaded, length:', contentStr.length);
+                
+                const isHtml = contentStr.includes('<!DOCTYPE html>') || 
+                              contentStr.includes('<html>') || 
+                              (contentStr.includes('<') && contentStr.includes('</'));
+                
+                if (isHtml) {
+                  console.log('Content is HTML, using directly');
+                  this.setState({
+                    resumeHtml: contentStr
+                  });
+                  return;
+                }
+                
+                try {
+                  const jsonData = JSON.parse(contentStr);
+                  const resumeHtml = this.generateHTMLFromJSON(jsonData);
+                  console.log('Parsed JSON data and generated HTML, length:', resumeHtml.length);
+                  
+                  this.setState({
+                    resumeHtml
+                  });
+                } catch (e) {
+                  console.error('Error parsing JSON content:', e);
+                  this.setState({ 
+                    resumeHtml: contentStr
+                  });
+                }
+              } else {
+                console.warn('CV content response was empty');
+                this.setState({ 
+                  resumeHtml: null
+                });
+              }
+            } else {
+              console.error(`Error loading CV content, status: ${contentResponse.status}`, contentResponse.data);
+              this.setState({ 
+                resumeHtml: null
+              });
+            }
+          } catch (contentError) {
+            console.error('Error loading CV content:', contentError);
+            this.setState({ 
+              resumeHtml: null
+            });
+          }
+        } else {
+          console.warn('CV data missing ID, cannot load content');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading resume data:', error);
+      this.setState({ hasResume: false });
+    }
+  };
+
+  // Generate HTML from JSON resume data
+  generateHTMLFromJSON = (jsonData: any): string => {
+    try {
+      console.log('Generating HTML from JSON data of type:', typeof jsonData);
+      
+      // Use the resumeHtmlGenerator for all HTML generation
+      try {
+        const html = resumeHtmlGenerator.generateResumeHtml(jsonData);
+        console.log('Generated HTML with resumeHtmlGenerator, length:', html.length);
+        return html;
+      } catch (e) {
+        console.error('Error using resumeHtmlGenerator:', e);
+        // Fall back to a simple error page
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Resume Error</title>
+            <style>
+              body { 
+                font-family: 'Segoe UI', Arial, sans-serif; 
+                padding: 20px; 
+                text-align: center;
+                color: #4a5568;
+                line-height: 1.6;
+              }
+              h1 { color: #e53e3e; }
+              .message {
+                padding: 20px;
+                border-left: 4px solid #e53e3e;
+                background-color: #fff5f5;
+                text-align: left;
+                margin: 20px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Resume Generation Error</h1>
+            <div class="message">
+              <p>There was an error generating your resume. Please try regenerating it.</p>
+              <p>Error details: ${e instanceof Error ? e.message : String(e)}</p>
+            </div>
+          </body>
+          </html>
+        `;
+      }
+    } catch (error) {
+      console.error('Error in generateHTMLFromJSON:', error);
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head><title>Resume Error</title></head>
+        <body>
+          <h1>Resume Generation Error</h1>
+          <p>There was an error generating your resume. Please try again.</p>
+        </body>
+        </html>
+      `;
+    }
+  };
+  
   // Handle tab change
   handleTabChange = (value: string) => {
     this.setState({ currentTab: value });
@@ -1106,6 +1619,108 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     const toastContext = this.context as unknown as { toast?: (props: ToastProps) => void };
     toastContext.toast?.(props);
   };
+
+  // Handle CV viewer toggle
+  handleToggleCvViewer = () => {
+    this.setState(prevState => ({ showCvViewer: !prevState.showCvViewer }));
+  };
+
+  // Handle Pre-OJT viewer toggle
+  handleTogglePreOjtViewer = () => {
+    this.setState(prevState => ({ showPreOjtViewer: !prevState.showPreOjtViewer }));
+  };
+
+  // Handle Pre-OJT upload button click
+  handlePreOjtUploadClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf';
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      await this.uploadPreOjt(file);
+    };
+    input.click();
+  };
+
+  // Upload Pre-OJT orientation PDF (mimic ProfileEditModal flow: signed → unsigned → persist URL)
+  uploadPreOjt = async (file: File) => {
+    try {
+      this.setState({ uploadPreOjtLoading: true });
+
+      // Validate file
+      if (file.type !== 'application/pdf') {
+        console.error('Invalid file type, only PDF allowed');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        console.error('File too large (>10MB)');
+        return;
+      }
+
+      let cloudRes: Response;
+      let cloudJson: any;
+
+      try {
+        // Try signed upload first
+        const { data: signed } = await apiClient.get('/public/cloudinary/signed-params');
+
+        const cloudForm = new FormData();
+        cloudForm.append('file', file);
+        cloudForm.append('timestamp', String(signed.timestamp));
+        cloudForm.append('api_key', signed.apiKey);
+        cloudForm.append('signature', signed.signature);
+        cloudForm.append('folder', signed.folder);
+        cloudForm.append('resource_type', signed.resourceType || 'raw');
+        cloudForm.append('use_filename', String(signed.useFilename));
+        cloudForm.append('unique_filename', String(signed.uniqueFilename));
+        cloudForm.append('access_mode', 'public');
+
+        const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${signed.cloudName}/${signed.resourceType || 'raw'}/upload`;
+        cloudRes = await fetch(cloudinaryUrl, { method: 'POST', body: cloudForm });
+        cloudJson = await cloudRes.json();
+      } catch (signedError) {
+        console.warn('Signed upload failed, trying unsigned preset upload:', signedError);
+
+        // Fallback to unsigned upload with preset
+        const { data: unsigned } = await apiClient.get('/public/cloudinary/unsigned-params');
+
+        const presetForm = new FormData();
+        presetForm.append('file', file);
+        presetForm.append('upload_preset', unsigned.uploadPreset);
+        presetForm.append('folder', unsigned.folder);
+        presetForm.append('resource_type', 'raw');
+
+        const presetUrl = `https://api.cloudinary.com/v1_1/${unsigned.cloudName}/raw/upload`;
+        cloudRes = await fetch(presetUrl, { method: 'POST', body: presetForm });
+        cloudJson = await cloudRes.json();
+      }
+
+      if (!cloudRes.ok) {
+        throw new Error(cloudJson?.error?.message || 'Cloudinary upload failed');
+      }
+
+      const uploadedUrl: string | undefined = cloudJson.secure_url || cloudJson.url;
+      if (!uploadedUrl) throw new Error('Cloudinary did not return a URL');
+
+      // Persist URL in backend
+      const backendForm = new FormData();
+      backendForm.append('fileUrl', uploadedUrl);
+      await apiClient.post('/student-profiles/preojt-orientation', backendForm, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      // Refresh profile to reflect new URL
+      const token = this.getAuthToken();
+      if (token) {
+        await this.loadStudentProfile(token);
+      }
+    } catch (e) {
+      console.error('Failed uploading Pre-OJT orientation PDF', e);
+    } finally {
+      this.setState({ uploadPreOjtLoading: false });
+    }
+  };
   
   render() {
     const { 
@@ -1114,7 +1729,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       employerProfile, 
       isEducationModalOpen,
       isProfileModalOpen,
-      isEmployerProfileModalOpen
+      isEmployerProfileModalOpen,
+      showCvViewer,
+      showPreOjtViewer,
+      cvData,
+      resumeHtml,
+      hasResume
     } = this.state;
     
     console.log('Render - studentProfile:', studentProfile);
@@ -1349,33 +1969,74 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                           {/* GitHub Projects section */}
                           {studentProfile.githubProjects && studentProfile.githubProjects.length > 0 && (
                             <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
-                              <h3 className="text-xl font-semibold text-white mb-4">Projects</h3>
-                              <div className="grid gap-4 md:grid-cols-2">
+                              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                <Github className="h-5 w-5" />
+                                GitHub Projects
+                              </h3>
+                              <div className="grid gap-6">
                                 {studentProfile.githubProjects.map((project: GitHubProject, index: number) => (
-                                  <div key={index} className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
-                                    <h4 className="font-bold text-white">{project.name}</h4>
-                                    {project.description && (
-                                      <p className="text-gray-400 text-sm mt-1">{project.description}</p>
-                                    )}
+                                  <div key={index} className="bg-black/40 rounded-lg p-6 border border-gray-800/30">
+                                    <div className="flex items-start justify-between mb-4">
+                                      <div className="flex-1">
+                                        <h4 className="text-lg font-bold text-white mb-2">{project.name}</h4>
+                                        {project.description && (
+                                          <p className="text-gray-400 text-sm mb-3 leading-relaxed">{project.description}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-gray-500 ml-4">
+                                        {project.stars !== undefined && (
+                                          <div className="flex items-center gap-1">
+                                            <Star className="h-4 w-4" />
+                                            <span>{project.stars}</span>
+                                          </div>
+                                        )}
+                                        {project.forks !== undefined && (
+                                          <div className="flex items-center gap-1">
+                                            <GitFork className="h-4 w-4" />
+                                            <span>{project.forks}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
                                     {project.technologies && project.technologies.length > 0 && (
-                                      <div className="mt-2 flex flex-wrap gap-1">
-                                        {project.technologies.map((tech: string, techIndex: number) => (
-                                          <span key={techIndex} className="bg-gray-800 text-gray-300 px-2 py-0.5 rounded text-xs">
-                                            {tech}
-                                          </span>
-                                        ))}
+                                      <div className="mb-4">
+                                        <div className="flex flex-wrap gap-2">
+                                          {project.technologies.map((tech: string, techIndex: number) => (
+                                            <span key={techIndex} className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-medium">
+                                              {tech}
+                                            </span>
+                                          ))}
+                                        </div>
                                       </div>
                                     )}
-                                    {project.url && (
-                                      <a 
-                                        href={project.url} 
-                                        target="_blank" 
-                                        rel="noreferrer"
-                                        className="mt-3 inline-flex items-center text-gray-400 hover:text-white text-sm"
-                                      >
-                                        <Github className="h-3.5 w-3.5 mr-1" /> View Project
-                                      </a>
-                                    )}
+                                    
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-4">
+                                        {project.url && (
+                                          <a 
+                                            href={project.url} 
+                                            target="_blank" 
+                                            rel="noreferrer"
+                                            className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+                                          >
+                                            <ExternalLink className="h-4 w-4 mr-1" />
+                                            View Repository
+                                          </a>
+                                        )}
+                                      </div>
+                                      
+                                      {project.lastUpdated && (
+                                        <div className="flex items-center text-xs text-gray-500">
+                                          <Calendar className="h-3 w-3 mr-1" />
+                                          Updated {new Date(project.lastUpdated).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -1402,6 +2063,154 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                                     </div>
                                   </div>
                                 ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* CV/Resume section */}
+                          {hasResume && cvData && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Resume/CV
+                              </h3>
+                              <div className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div>
+                                    <p className="text-white font-medium">Generated Resume</p>
+                                    <p className="text-gray-400 text-sm">CV ID: {cvData.id}</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={this.handleToggleCvViewer}
+                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      {showCvViewer ? 'Hide CV' : 'View CV'}
+                                    </Button>
+                                    <Link
+                                      to="/resume-management"
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      Edit CV
+                                    </Link>
+                                  </div>
+                                </div>
+                                
+                                {showCvViewer && resumeHtml && (
+                                  <div className="mt-4">
+                                    <ResumeHtmlView html={resumeHtml} />
+                                  </div>
+                                )}
+                                
+                                {showCvViewer && !resumeHtml && (
+                                  <div className="mt-4 p-4 bg-gray-800/50 rounded-lg text-center">
+                                    <p className="text-gray-400">No resume content available</p>
+                                    <p className="text-gray-500 text-sm mt-1">
+                                      Visit the <Link to="/resume-management" className="text-indigo-400 hover:text-indigo-300">Resume Management</Link> page to generate your CV.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* No CV section */}
+                          {!hasResume && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Resume/CV
+                              </h3>
+                              <div className="bg-black/40 rounded-lg p-4 border border-gray-800/30 text-center">
+                                <p className="text-gray-400 mb-4">No resume generated yet</p>
+                                <Link
+                                  to="/resume-management"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  Generate Resume
+                                </Link>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Pre-OJT Orientation section */}
+                          {studentProfile.preojtOrientationUrl && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Pre-OJT Orientation Document
+                              </h3>
+                              <div className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div>
+                                    <p className="text-white font-medium">Orientation Document</p>
+                                    <p className="text-gray-400 text-sm">Required pre-OJT documentation</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={this.handleTogglePreOjtViewer}
+                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      {showPreOjtViewer ? 'Hide Document' : 'View Document'}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => window.open(studentProfile.preojtOrientationUrl, '_blank')}
+                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Download
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                {showPreOjtViewer && (
+                                  <div className="mt-4">
+                                    <PDFViewer 
+                                      fileUrl={studentProfile.preojtOrientationUrl}
+                                      onClose={this.handleTogglePreOjtViewer}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Pre-OJT missing -> upload prompt */}
+                          {!studentProfile.preojtOrientationUrl && (
+                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
+                              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Pre-OJT Orientation Document
+                              </h3>
+                              <div className="bg-black/40 rounded-lg p-6 border border-gray-800/30 text-center">
+                                <p className="text-gray-400 mb-4">No Pre-OJT Orientation Certificate uploaded</p>
+                                <Button
+                                  onClick={this.handlePreOjtUploadClick}
+                                  disabled={this.state.uploadPreOjtLoading}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                                >
+                                  {this.state.uploadPreOjtLoading ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <span>Uploading...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="h-4 w-4" />
+                                      <span>Upload Certificate (PDF)</span>
+                                    </>
+                                  )}
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -1471,6 +2280,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               id: studentProfile.id,
               firstName: studentProfile.firstName,
               lastName: studentProfile.lastName,
+              fullName: studentProfile.fullName,
               phoneNumber: studentProfile.phoneNumber,
               location: studentProfile.location,
               address: studentProfile.address,
@@ -1487,7 +2297,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               githubProjects: studentProfile.githubProjects || [],
               certifications: studentProfile.certifications || [],
               experiences: studentProfile.experiences || [],
-              preojtOrientationUrl: studentProfile.preojtOrientationUrl || ''
+              preojtOrientationUrl: studentProfile.preojtOrientationUrl || '',
+              activeCvId: studentProfile.activeCvId || ''
             }}
           />
         )}
