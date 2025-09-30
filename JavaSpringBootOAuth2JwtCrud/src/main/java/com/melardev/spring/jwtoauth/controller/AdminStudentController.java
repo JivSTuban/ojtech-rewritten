@@ -142,10 +142,12 @@ public class AdminStudentController {
         dto.put("lastName", student.getLastName());
         dto.put("fullName", student.getFullName());
         dto.put("email", student.getEmail());
-        dto.put("phoneNumber", student.getPhone());
+        dto.put("phoneNumber", student.getPhone() != null ? student.getPhone() : student.getPhoneNumber());
+        dto.put("location", student.getLocation());
         dto.put("university", student.getUniversity());
         dto.put("major", student.getMajor());
         dto.put("graduationYear", student.getGraduationYear());
+        dto.put("bio", student.getBio());
         dto.put("profilePictureUrl", student.getProfilePictureUrl());
         dto.put("verified", student.isVerified());
         dto.put("verifiedAt", student.getVerifiedAt());
@@ -154,8 +156,7 @@ public class AdminStudentController {
         dto.put("githubUrl", student.getGithubUrl());
         dto.put("linkedinUrl", student.getLinkedinUrl());
         dto.put("portfolioUrl", student.getPortfolioUrl());
-        dto.put("bio", student.getBio());
-        dto.put("location", student.getFieldOfStudy()); // Using fieldOfStudy as location
+        dto.put("preojtOrientationUrl", student.getPreojtOrientationUrl());
         dto.put("activeCvId", student.getActiveCvId());
         dto.put("role", "STUDENT");
         

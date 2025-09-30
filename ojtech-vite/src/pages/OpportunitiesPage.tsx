@@ -1,10 +1,10 @@
-import React, { Component, createRef, RefObject } from "react";
+import { Component, createRef, RefObject } from "react";
 import TinderCard from "react-tinder-card";
-import { Loader2, Check, X, Briefcase, MapPin, Calendar, Undo2, DollarSign, Info, HelpCircle, ChevronRight, AlertTriangle } from "lucide-react";
+import { Loader2, Briefcase, MapPin, Calendar, DollarSign, Info, HelpCircle, ChevronRight, AlertTriangle, FileText, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { JobCard } from "../components/jobs/JobCard";
 import { Button } from "../components/ui/Button";
 import jobApplicationService from "../lib/api/jobApplicationService";
+import profileService from "../lib/api/profileService";
 
 // Job types
 interface Job {
@@ -40,6 +40,13 @@ interface Toast {
   variant?: string;
 }
 
+interface StudentProfile {
+  preojtOrientationUrl: string | null;
+  verified: boolean;
+  verifiedAt: string | null;
+  verificationNotes: string | null;
+}
+
 interface OpportunitiesPageState {
   jobs: JobWithMatchScore[];
   loading: boolean;
@@ -51,6 +58,8 @@ interface OpportunitiesPageState {
   } | null;
   expandedJobId: string | null;
   isProcessingCV: boolean;
+  studentProfile: StudentProfile | null;
+  profileLoading: boolean;
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
@@ -66,14 +75,40 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       currentIndex: 0,
       lastRemovedJob: null,
       expandedJobId: null,
-      isProcessingCV: false
+      isProcessingCV: false,
+      studentProfile: null,
+      profileLoading: true
     };
   }
   
   componentDidMount() {
+    this.fetchStudentProfile();
     this.checkCVProcessingStatus();
     this.fetchJobs();
   }
+  
+  // Fetch student profile to check verification status
+  fetchStudentProfile = async () => {
+    try {
+      const profile = await profileService.getCurrentUserProfileSmart();
+      this.setState({ 
+        studentProfile: {
+          preojtOrientationUrl: profile.preojtOrientationUrl || null,
+          verified: profile.verified || false,
+          verifiedAt: profile.verifiedAt || null,
+          verificationNotes: profile.verificationNotes || null
+        },
+        profileLoading: false 
+      });
+    } catch (error) {
+      console.error("Error fetching student profile:", error);
+      // Don't block the page if profile fetch fails, just continue without profile data
+      this.setState({ 
+        studentProfile: null,
+        profileLoading: false 
+      });
+    }
+  };
   
   componentDidUpdate(prevProps: {}, prevState: OpportunitiesPageState) {
     // Update refs if jobs array changes
@@ -419,9 +454,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   };
   
   render() {
-    const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV } = this.state;
+    const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading } = this.state;
     
-    if (loading) {
+    if (loading || profileLoading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -429,16 +464,6 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       );
     }
 
-    if (error) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-          <h2 className="text-2xl font-semibold text-red-500 mb-4">Error Loading Jobs</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      );
-    }
-    
     return (
       <main className="min-h-screen container mx-auto py-8 flex flex-col items-center relative overflow-hidden">
         <h1 className="text-4xl font-bold mb-6 text-center">New Job Matches</h1>
@@ -454,6 +479,25 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           </Button>
         </div>
         
+        {/* Error Banner - Show inline instead of full screen */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 flex items-start gap-3 max-w-xl w-full">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold mb-1">Error Loading Jobs</p>
+              <p className="mb-3">{error}</p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={this.fetchJobs} variant="default">
+                  Retry Matched Jobs
+                </Button>
+                <Button size="sm" onClick={this.findJobs} variant="outline">
+                  Try Find More Jobs
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* CV Processing Warning */}
         {isProcessingCV && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800 flex items-center gap-2 max-w-xl">
@@ -462,6 +506,38 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               <p className="font-medium">Your CV is still being processed</p>
               <p className="mt-1">
                 Matches may not be fully accurate until processing is complete. Check back soon!
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Warning: Missing Pre-OJT Orientation Document */}
+        {studentProfile && !studentProfile.preojtOrientationUrl && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 flex items-start gap-3 max-w-xl w-full">
+            <FileText className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold mb-1">Pre-OJT Orientation Document Required</p>
+              <p className="mb-3">
+                You need to upload your Pre-OJT Orientation Document to find a job. This document is required for verification.
+              </p>
+              <Link to="/profile">
+                <Button size="sm" variant="default">
+                  Upload Document
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+        
+        {/* Warning: Pending Admin Verification */}
+        {studentProfile && studentProfile.preojtOrientationUrl && !studentProfile.verified && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-3 max-w-xl w-full">
+            <Clock className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold mb-1">Account Verification in Progress</p>
+              <p>
+                Admin is verifying your account. Please wait while we review your Pre-OJT Orientation Document. 
+                You'll be notified once verification is complete.
               </p>
             </div>
           </div>

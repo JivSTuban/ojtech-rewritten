@@ -7,14 +7,13 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { JobDetailPage } from './pages/JobDetailPage';
 import { JobApplicationPage } from './pages/JobApplicationPage';
 import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
-import { ProtectedRoute, PublicOnlyRoute } from './components/auth/ProtectedRoute';
+import { PublicOnlyRoute } from './components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
 import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
 import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
@@ -23,6 +22,9 @@ import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminJobsPage } from "./pages/admin/AdminJobsPage";
+import { AdminJobFormPage } from "./pages/admin/AdminJobFormPage";
+import { AdminJobDetailsPage } from "./pages/admin/AdminJobDetailsPage";
+import { AdminJobModeratePage } from "./pages/admin/AdminJobModeratePage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import { StudentVerificationPage } from "./pages/admin/StudentVerificationPage";
 import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
@@ -85,14 +87,18 @@ const MainLayout: React.FC = () => {
         '/auth',
         '/privacy',
         '/terms',
+        '/admin',
         '/'
       ];
       
       // Check if current path is in safe paths
       const isOnSafePath = safePaths.some(path => location.pathname.startsWith(path));
       
-      // Only redirect if onboarding isn't complete AND we're not on a safe path
-      if (user.hasCompletedOnboarding === false && !isOnSafePath) {
+      // Check if user is an admin - admins don't need onboarding
+      const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+      
+      // Only redirect if onboarding isn't complete AND we're not on a safe path AND not an admin
+      if (user.hasCompletedOnboarding === false && !isOnSafePath && !isAdmin) {
         // User has NOT completed onboarding, redirect to appropriate onboarding page
         if (user?.roles?.includes('ROLE_STUDENT') && 
             location.pathname !== '/onboarding/student') {
@@ -198,6 +204,11 @@ export const App: React.FC = () => {
               <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/jobs" element={<AdminJobsPage />} />
+              <Route path="/admin/jobs/new" element={<AdminJobFormPage />} />
+              <Route path="/admin/jobs/:jobId" element={<AdminJobDetailsPage />} />
+              <Route path="/admin/jobs/:jobId/edit" element={<AdminJobFormPage />} />
+              <Route path="/admin/jobs/:jobId/moderate" element={<AdminJobModeratePage />} />
+              <Route path="/admin/jobs/analytics" element={<div className="container mx-auto px-4 py-6"><h1 className="text-3xl font-bold mb-4">Job Analytics</h1><p className="text-gray-600">Analytics dashboard coming soon...</p></div>} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
               <Route path="/admin/students/verification" element={<StudentVerificationPage />} />
               <Route path="/admin/students/:id" element={<StudentDetailsPage />} />

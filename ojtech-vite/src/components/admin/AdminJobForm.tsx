@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   AdminJobFormData, 
   AdminJobFormState,
-  JobCategory,
   JOB_STATUSES,
   JOB_TYPES,
   WORK_MODES
@@ -22,7 +21,6 @@ import {
   AlertCircle,
   Star,
   Flag,
-  Info,
   Building,
   MapPin,
   DollarSign,
@@ -97,7 +95,6 @@ export const AdminJobForm: React.FC<AdminJobFormProps> = ({
         employers,
         categories,
       }));
-
       // Load job data if editing
       if (jobId) {
         const jobDetails = await adminJobService.getJobDetails(jobId);
@@ -110,14 +107,14 @@ export const AdminJobForm: React.FC<AdminJobFormProps> = ({
             description: job.description,
             requirements: job.requirements,
             location: job.location,
-            jobType: job.jobType,
-            workMode: job.workMode,
+            jobType: job.jobType || 'FULL_TIME',
+            workMode: job.workMode || 'ON_SITE',
             salaryMin: job.salaryMin,
             salaryMax: job.salaryMax,
             currency: job.currency,
             categoryId: job.category?.id || '',
             expiresAt: job.expiresAt ? job.expiresAt.split('T')[0] : '',
-            employerId: job.employer.id,
+            employerId: job.employer?.id || '',
             status: job.status,
             isFeatured: job.isFeatured,
             featuredUntil: job.featuredUntil ? job.featuredUntil.split('T')[0] : '',
@@ -149,15 +146,23 @@ export const AdminJobForm: React.FC<AdminJobFormProps> = ({
   };
 
   const handleInputChange = (field: keyof AdminJobFormData, value: any) => {
+    const newErrors = { ...state.errors };
+    if (newErrors[field]) {
+      delete newErrors[field];
+    }
     setState(prev => ({
       ...prev,
       formData: { ...prev.formData, [field]: value },
-      errors: { ...prev.errors, [field]: undefined }, // Clear field error
+      errors: newErrors,
     }));
   };
 
   const addTag = () => {
     if (newTag.trim() && !state.formData.internalTags.includes(newTag.trim())) {
+      setState(prev => ({
+        ...prev,
+        formData: { ...prev.formData, internalTags: [...prev.formData.internalTags, newTag.trim()] },
+      }));
       handleInputChange('internalTags', [...state.formData.internalTags, newTag.trim()]);
       setNewTag('');
     }
@@ -357,14 +362,14 @@ export const AdminJobForm: React.FC<AdminJobFormProps> = ({
                 Category
               </label>
               <Select
-                value={state.formData.categoryId || ''}
-                onValueChange={(value) => handleInputChange('categoryId', value || undefined)}
+                value={state.formData.categoryId || 'none'}
+                onValueChange={(value) => handleInputChange('categoryId', value === 'none' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Category</SelectItem>
+                  <SelectItem value="none">No Category</SelectItem>
                   {state.categories.map(category => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}

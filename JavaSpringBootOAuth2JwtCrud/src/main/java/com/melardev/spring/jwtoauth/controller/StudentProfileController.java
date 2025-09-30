@@ -118,6 +118,11 @@ public class StudentProfileController {
             // Add PreOJT Orientation URL
             responseMap.put("preojtOrientationUrl", profile.getPreojtOrientationUrl());
             
+            // Add verification status
+            responseMap.put("verified", profile.isVerified());
+            responseMap.put("verifiedAt", profile.getVerifiedAt());
+            responseMap.put("verificationNotes", profile.getVerificationNotes());
+            
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {
             logger.error("Error getting student profile", e);
@@ -407,6 +412,12 @@ public class StudentProfileController {
             // Add certifications and experiences
             responseMap.put("certifications", profile.getCertifications());
             responseMap.put("experiences", profile.getExperiences());
+            
+            // Add PreOJT Orientation URL and verification status
+            responseMap.put("preojtOrientationUrl", profile.getPreojtOrientationUrl());
+            responseMap.put("verified", profile.isVerified());
+            responseMap.put("verifiedAt", profile.getVerifiedAt());
+            responseMap.put("verificationNotes", profile.getVerificationNotes());
             
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {

@@ -6,8 +6,8 @@ export interface AdminJob {
   description: string;
   requirements: string;
   location: string;
-  jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'TEMPORARY';
-  workMode: 'REMOTE' | 'ON_SITE' | 'HYBRID';
+  jobType?: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'TEMPORARY';
+  workMode?: 'REMOTE' | 'ON_SITE' | 'HYBRID';
   salaryMin?: number;
   salaryMax?: number;
   currency: string;
@@ -16,7 +16,7 @@ export interface AdminJob {
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
-  employer: {
+  employer?: {
     id: string;
     companyName: string;
     email: string;

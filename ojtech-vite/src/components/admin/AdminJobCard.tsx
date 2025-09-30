@@ -85,10 +85,10 @@ export const AdminJobCard: React.FC<AdminJobCardProps> = ({
               </div>
               
               <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                <span className="font-medium">{job.employer.companyName}</span>
+                <span className="font-medium">{job.employer?.companyName || 'Unknown Company'}</span>
                 <div className="flex items-center">
                   <MapPin className="w-3 h-3 mr-1" />
-                  {job.location}
+                  {job.location || 'Unknown Location'}
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-3 h-3 mr-1" />
@@ -110,8 +110,12 @@ export const AdminJobCard: React.FC<AdminJobCardProps> = ({
                 >
                   {moderationConfig?.label}
                 </Badge>
-                <Badge variant="outline">{job.jobType.replace('_', ' ')}</Badge>
-                <Badge variant="outline">{job.workMode.replace('_', ' ')}</Badge>
+                {job.jobType && (
+                  <Badge variant="outline">{job.jobType.replace('_', ' ')}</Badge>
+                )}
+                {job.workMode && (
+                  <Badge variant="outline">{job.workMode.replace('_', ' ')}</Badge>
+                )}
               </div>
             </div>
           </div>
@@ -199,11 +203,11 @@ export const AdminJobCard: React.FC<AdminJobCardProps> = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <Eye className="w-3 h-3 mr-1" />
-              {job.viewCount.toLocaleString()} views
+              {(job.viewCount || 0).toLocaleString()} views
             </div>
             <div className="flex items-center">
               <Users className="w-3 h-3 mr-1" />
-              {job.applicationCount} applications
+              {job.applicationCount || 0} applications
             </div>
             {job.adminMetadata?.qualityScore && (
               <div className="flex items-center">

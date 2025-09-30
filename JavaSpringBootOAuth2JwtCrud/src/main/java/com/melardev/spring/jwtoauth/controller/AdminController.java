@@ -70,6 +70,9 @@ public class AdminController {
     @Autowired
     private AdminJobService adminJobService;
     
+    @Autowired
+    private com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository employerProfileRepository;
+    
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.findAll();
@@ -714,6 +717,30 @@ public class AdminController {
         try {
             AdminJobFilterDto filters = adminJobService.getJobFilters();
             return ResponseEntity.ok(filters);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get all employers for dropdown/form selection
+     */
+    @GetMapping("/employers")
+    public ResponseEntity<?> getAllEmployers() {
+        try {
+            List<com.melardev.spring.jwtoauth.entities.EmployerProfile> employers = employerProfileRepository.findAll();
+            
+            // Map to simpler DTO for frontend
+            List<Map<String, Object>> employerList = employers.stream()
+                    .map(emp -> {
+                        Map<String, Object> employerData = new HashMap<>();
+                        employerData.put("id", emp.getId().toString());
+                        employerData.put("name", emp.getCompanyName());
+                        return employerData;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(employerList);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }

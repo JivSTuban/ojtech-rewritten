@@ -5,10 +5,47 @@ import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/badge";
 import Separator from "../../components/ui/Separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/Tabs";
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Mail, Phone, GraduationCap } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Mail, Phone, GraduationCap, Eye, MapPin, FileText, Github, Star, GitFork, ExternalLink, Award, Briefcase, X } from "lucide-react";
 import { useToast } from "../../components/ui/use-toast";
 import adminService from '../../lib/api/adminService';
 import { formatDate } from '../../lib/utils';
+import PDFViewer from '../../components/pdf/PDFViewer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
+import resumeHtmlGenerator from '../../lib/api/resumeHtmlGenerator';
+
+interface GitHubProject {
+  name: string;
+  url: string;
+  description?: string;
+  technologies?: string[];
+  stars?: number;
+  forks?: number;
+  lastUpdated?: string;
+  readme?: string;
+}
+
+interface Certification {
+  id?: string;
+  name: string;
+  issuer: string;
+  dateReceived?: string;
+  expiryDate?: string;
+  credentialUrl?: string;
+  issuingOrganization?: string;
+  issueDate?: string;
+  expirationDate?: string;
+}
+
+interface Experience {
+  id?: string;
+  title: string;
+  company: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  current?: boolean;
+  description?: string;
+}
 
 interface StudentProfile {
   id: string;
@@ -17,9 +54,12 @@ interface StudentProfile {
   fullName: string;
   email: string;
   phoneNumber?: string;
+  location?: string;
+  address?: string;
   university?: string;
   major?: string;
   graduationYear?: number;
+  bio?: string;
   profilePictureUrl?: string;
   verified: boolean;
   verifiedAt?: string;
@@ -28,14 +68,83 @@ interface StudentProfile {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
+  preojtOrientationUrl?: string;
   skills?: string | string[];
   cvs?: any[];
   applications?: any[];
-  certifications?: any[];
-  experiences?: any[];
-  githubProjects?: any[];
+  certifications?: Certification[];
+  experiences?: Experience[];
+  githubProjects?: GitHubProject[];
+  role?: string;
   [key: string]: any; // Allow for additional properties
 }
+
+// Resume HTML viewer component
+const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const [processedHtml, setProcessedHtml] = React.useState<string>(html);
+  const [iframeLoaded, setIframeLoaded] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const processHtml = (content: string) => {
+      if (!content || content.trim() === '') {
+        return `<!DOCTYPE html><html><head><title>Resume</title></head><body><h1>No Resume Content Available</h1></body></html>`;
+      }
+      
+      const isHtml = content.includes('<!DOCTYPE html>') || content.includes('<html>');
+      const isJson = (content.startsWith('{') && content.endsWith('}')) || content.includes('\\"');
+      
+      if (isHtml) return content;
+      
+      if (isJson) {
+        try {
+          let processedContent = content;
+          if (processedContent.startsWith('"') && processedContent.endsWith('"')) {
+            processedContent = processedContent.substring(1, processedContent.length - 1);
+          }
+          processedContent = processedContent.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          const jsonData = JSON.parse(processedContent);
+          return resumeHtmlGenerator.generateResumeHtml(jsonData);
+        } catch (error) {
+          console.error('Error processing JSON:', error);
+          return `<!DOCTYPE html><html><head><title>Resume</title></head><body><h1>Error Loading Resume</h1><p>Unable to parse resume data.</p></body></html>`;
+        }
+      }
+      
+      return `<!DOCTYPE html><html><head><title>Resume</title></head><body><pre>${content}</pre></body></html>`;
+    };
+    
+    try {
+      const processed = processHtml(html);
+      setProcessedHtml(processed);
+      setIframeLoaded(false);
+    } catch (error) {
+      console.error('Error processing HTML:', error);
+      setProcessedHtml(`<!DOCTYPE html><html><head><title>Resume</title></head><body><h1>Error Loading Resume</h1></body></html>`);
+    }
+  }, [html]);
+
+  return (
+    <div className="relative">
+      {!iframeLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+          <div className="text-center text-white">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading resume...</p>
+          </div>
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        title="Resume Preview"
+        className="w-full h-[1000px] border-0 bg-white rounded"
+        sandbox="allow-same-origin allow-scripts"
+        srcDoc={processedHtml}
+        onLoad={() => setIframeLoaded(true)}
+      />
+    </div>
+  );
+};
 
 const StudentDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +152,9 @@ const StudentDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
+  const [showPreOjtViewer, setShowPreOjtViewer] = useState(false);
+  const [showCvPreview, setShowCvPreview] = useState(false);
+  const [selectedCv, setSelectedCv] = useState<any | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -259,6 +371,13 @@ const StudentDetailsPage: React.FC = () => {
                   <span>{student.phoneNumber || (student as any).phone || 'No phone number'}</span>
                 </div>
                 
+                {student.location && (
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>{student.location}</span>
+                  </div>
+                )}
+                
                 <div className="flex items-center">
                   <GraduationCap className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span>{student.major || 'No major'} ({student.graduationYear || 'N/A'})</span>
@@ -329,8 +448,11 @@ const StudentDetailsPage: React.FC = () => {
           <Card>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <CardHeader className="pb-0">
-                <TabsList className="grid grid-cols-4">
+                <TabsList className="grid grid-cols-6">
                   <TabsTrigger value="profile">Profile</TabsTrigger>
+                  <TabsTrigger value="projects">
+                    Projects ({student.githubProjects?.length || 0})
+                  </TabsTrigger>
                   <TabsTrigger value="applications">
                     Applications ({student.applications?.length || 0})
                   </TabsTrigger>
@@ -338,13 +460,25 @@ const StudentDetailsPage: React.FC = () => {
                     Experience ({student.experiences?.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="certifications">
-                    Certifications ({student.certifications?.length || 0})
+                    Certs ({student.certifications?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="documents">
+                    Documents
                   </TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="pt-6">
                 <TabsContent value="profile">
                   <div className="space-y-6">
+                    {student.bio && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-2">Bio</h3>
+                        <div className="p-4 bg-muted rounded-md">
+                          <p className="text-sm whitespace-pre-wrap">{student.bio}</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div>
                       <h3 className="text-lg font-medium mb-2">Skills</h3>
                       <div className="flex flex-wrap gap-2">
@@ -361,23 +495,29 @@ const StudentDetailsPage: React.FC = () => {
                     </div>
                     
                     <div>
-                      <h3 className="text-lg font-medium mb-2">CVs</h3>
+                      <h3 className="text-lg font-medium mb-2">CVs / Resumes</h3>
                       {student.cvs && student.cvs.length > 0 ? (
                         <div className="space-y-2">
-                          {student.cvs.map(cv => (
+                          {student.cvs.map((cv, index) => (
                             <div key={cv.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
                               <div>
-                                <p className="font-medium">{cv.name}</p>
+                                <p className="font-medium">Resume {index + 1}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  Uploaded on {formatDate(cv.createdAt)}
+                                  Last updated: {formatDate(cv.lastUpdated)}
+                                  {cv.active && <Badge className="ml-2" variant="default">Active</Badge>}
                                 </p>
                               </div>
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => window.open(cv.url, '_blank')}
+                                onClick={() => {
+                                  setSelectedCv(cv);
+                                  setShowCvPreview(true);
+                                }}
+                                className="flex items-center gap-2"
                               >
-                                View CV
+                                <Eye className="h-4 w-4" />
+                                Preview CV
                               </Button>
                             </div>
                           ))}
@@ -387,6 +527,66 @@ const StudentDetailsPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+                </TabsContent>
+                
+                <TabsContent value="projects">
+                  {student.githubProjects && student.githubProjects.length > 0 ? (
+                    <div className="space-y-6">
+                      {student.githubProjects.map((project, index) => (
+                        <Card key={index} className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold flex items-center gap-2">
+                                <Github className="h-5 w-5" />
+                                {project.name}
+                              </h4>
+                              <a 
+                                href={project.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                View Repository
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                            <div className="flex gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-4 w-4" />
+                                {project.stars || 0}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <GitFork className="h-4 w-4" />
+                                {project.forks || 0}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {project.description && (
+                            <p className="text-sm text-muted-foreground mb-3">{project.description}</p>
+                          )}
+                          
+                          {project.technologies && project.technologies.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {project.technologies.map((tech, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {project.lastUpdated && (
+                            <p className="text-xs text-muted-foreground">
+                              Last updated: {new Date(project.lastUpdated).toLocaleDateString()}
+                            </p>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No GitHub projects found</p>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="applications">
@@ -431,15 +631,22 @@ const StudentDetailsPage: React.FC = () => {
                 <TabsContent value="experiences">
                   {student.experiences && student.experiences.length > 0 ? (
                     <div className="space-y-6">
-                      {student.experiences.map(exp => (
-                        <div key={exp.id} className="border-l-2 border-primary pl-4 relative">
+                      {student.experiences.map((exp, index) => (
+                        <div key={exp.id || index} className="border-l-2 border-primary pl-4 relative">
                           <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
-                          <h4 className="font-medium">{exp.title}</h4>
-                          <p className="text-sm font-medium">{exp.company}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(exp.startDate)} - {exp.endDate ? formatDate(exp.endDate) : 'Present'}
-                          </p>
-                          <p className="text-sm mt-2">{exp.description}</p>
+                          <div className="flex items-start gap-2">
+                            <Briefcase className="h-5 w-5 text-primary mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{exp.title}</h4>
+                              <p className="text-sm font-medium">{exp.company}{exp.location && ` • ${exp.location}`}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {exp.startDate ? formatDate(exp.startDate) : 'N/A'} - {exp.current ? 'Present' : exp.endDate ? formatDate(exp.endDate) : 'N/A'}
+                              </p>
+                              {exp.description && (
+                                <p className="text-sm mt-2">{exp.description}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -451,14 +658,32 @@ const StudentDetailsPage: React.FC = () => {
                 <TabsContent value="certifications">
                   {student.certifications && student.certifications.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {student.certifications.map(cert => (
-                        <div key={cert.id} className="p-4 border rounded-md">
-                          <h4 className="font-medium">{cert.name}</h4>
-                          <p className="text-sm">Issued by {cert.issuingOrganization}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Issued: {formatDate(cert.issueDate)}
-                            {cert.expirationDate && ` • Expires: ${formatDate(cert.expirationDate)}`}
-                          </p>
+                      {student.certifications.map((cert, index) => (
+                        <div key={cert.id || index} className="p-4 border rounded-md">
+                          <div className="flex items-start gap-2">
+                            <Award className="h-5 w-5 text-primary mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="font-medium">{cert.name}</h4>
+                              <p className="text-sm">Issued by {cert.issuer || cert.issuingOrganization}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {cert.dateReceived && `Issued: ${formatDate(cert.dateReceived)}`}
+                                {cert.issueDate && !cert.dateReceived && `Issued: ${formatDate(cert.issueDate)}`}
+                                {cert.expiryDate && ` • Expires: ${formatDate(cert.expiryDate)}`}
+                                {cert.expirationDate && !cert.expiryDate && ` • Expires: ${formatDate(cert.expirationDate)}`}
+                              </p>
+                              {cert.credentialUrl && (
+                                <a 
+                                  href={cert.credentialUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                                >
+                                  View Credential
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -466,11 +691,122 @@ const StudentDetailsPage: React.FC = () => {
                     <p className="text-muted-foreground">No certifications listed</p>
                   )}
                 </TabsContent>
+                
+                <TabsContent value="documents">
+                  <div className="space-y-6">
+                    {/* PreOJT Orientation Document */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">PreOJT Orientation Certificate</h3>
+                      {student.preojtOrientationUrl ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-muted rounded-md">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <div>
+                                <p className="font-medium">PreOJT Orientation Certificate</p>
+                                <p className="text-xs text-muted-foreground">PDF Document</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowPreOjtViewer(!showPreOjtViewer)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                {showPreOjtViewer ? 'Hide Document' : 'View Document'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(student.preojtOrientationUrl, '_blank')}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Open in New Tab
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {showPreOjtViewer && (
+                            <div className="mt-4">
+                              <PDFViewer 
+                                fileUrl={student.preojtOrientationUrl}
+                                onClose={() => setShowPreOjtViewer(false)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No PreOJT orientation certificate uploaded</p>
+                      )}
+                    </div>
+                    
+                    <Separator />
+                    
+                    {/* CVs Section */}
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">CVs / Resumes</h3>
+                      {student.cvs && student.cvs.length > 0 ? (
+                        <div className="space-y-2">
+                          {student.cvs.map(cv => (
+                            <div key={cv.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                              <div>
+                                <p className="font-medium">{cv.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Uploaded on {formatDate(cv.createdAt)}
+                                </p>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(cv.url, '_blank')}
+                              >
+                                View CV
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No CVs uploaded</p>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
               </CardContent>
             </Tabs>
           </Card>
         </div>
       </div>
+
+      {/* CV Preview Modal */}
+      <Dialog open={showCvPreview} onOpenChange={setShowCvPreview}>
+        <DialogContent className="w-[95vw] max-w-[1600px] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>CV Preview</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCvPreview(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="overflow-y-auto">
+            {selectedCv && selectedCv.htmlContent ? (
+              <ResumeHtmlView html={selectedCv.htmlContent} />
+            ) : selectedCv && selectedCv.parsedResume ? (
+              <ResumeHtmlView html={JSON.stringify(selectedCv.parsedResume)} />
+            ) : (
+              <div className="p-6 text-center">
+                <p className="text-muted-foreground">No resume content available</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
