@@ -1,6 +1,7 @@
+
 // This file configures the API URL for the application
 // Use environment variable with fallback
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Remove trailing slash if present
 export const normalizedApiBaseUrl = API_BASE_URL.endsWith('/')

@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// Determine the environment directory (parent directory for shared .env)
-const envDir = path.resolve(__dirname, '..')
+// Use the current directory for environment variables
+const envDir = path.resolve(__dirname)
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
