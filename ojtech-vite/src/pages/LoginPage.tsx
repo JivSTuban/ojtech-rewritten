@@ -155,21 +155,32 @@ export class LoginPage extends Component<{}, LoginPageState> {
       if (this.context && this.context.user) {
         const { user } = this.context;
         
-        // Redirect based on user role and onboarding status
+        // PRIORITY CHECK: Password reset requirement (highest priority)
+        if (this.context.requiresPasswordReset) {
+          this.setState({ redirectTo: '/change-password' });
+          return;
+        }
+        
+        // SECOND PRIORITY: Onboarding requirement
+        if (this.context.needsOnboarding) {
+          if (user.roles?.includes('ROLE_EMPLOYER')) {
+            this.setState({ redirectTo: '/onboarding/employer' });
+          } else if (user.roles?.includes('ROLE_STUDENT')) {
+            this.setState({ redirectTo: '/onboarding/student' });
+          } else {
+            this.setState({ redirectTo: '/onboarding' });
+          }
+          return;
+        }
+        
+        // FINAL: Role-based redirect after onboarding is complete
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
-          this.setState({ redirectTo: '/onboarding/employer' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
-          this.setState({ redirectTo: '/onboarding/student' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
-          // Redirect students with completed onboarding to track page
-          this.setState({ redirectTo: '/track' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
-          // Redirect employers with completed onboarding to jobs page
+        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
           this.setState({ redirectTo: '/employer/jobs' });
+        } else if (user.roles?.includes('ROLE_STUDENT')) {
+          this.setState({ redirectTo: '/track' });
         } else {
-          // Default fallback
           this.setState({ redirectTo: '/' });
         }
       } else {

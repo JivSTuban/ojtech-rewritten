@@ -292,7 +292,7 @@ const StudentDetailsPage: React.FC = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Link to="/admin/students" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
+          <Link to="/admin/students/verification" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Student List
           </Link>
@@ -743,33 +743,7 @@ const StudentDetailsPage: React.FC = () => {
                     
                     <Separator />
                     
-                    {/* CVs Section */}
-                    <div>
-                      <h3 className="text-lg font-medium mb-3">CVs / Resumes</h3>
-                      {student.cvs && student.cvs.length > 0 ? (
-                        <div className="space-y-2">
-                          {student.cvs.map(cv => (
-                            <div key={cv.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
-                              <div>
-                                <p className="font-medium">{cv.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Uploaded on {formatDate(cv.createdAt)}
-                                </p>
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => window.open(cv.url, '_blank')}
-                              >
-                                View CV
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground">No CVs uploaded</p>
-                      )}
-                    </div>
+                   
                   </div>
                 </TabsContent>
               </CardContent>

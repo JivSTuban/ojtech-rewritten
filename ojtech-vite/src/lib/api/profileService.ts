@@ -275,6 +275,8 @@ const completeStudentOnboarding = async (data: any) => {
           githubUrl: data.githubUrl || '',
           linkedinUrl: data.linkedinUrl || '',
           portfolioUrl: data.portfolioUrl || '',
+          // Include bio
+          bio: data.bio || '',
           // Include other minimal required fields
           skills: data.skills || []
         };
@@ -463,6 +465,13 @@ const submitStudentOnboarding = async (data: any) => {
           university: education.university || data.university || '',
           major: education.major || data.major || '',
           graduationYear: education.graduationYear || data.graduationYear || null,
+          // Include contact info and professional links
+          phoneNumber: data.phoneNumber || '',
+          githubUrl: data.githubUrl || '',
+          linkedinUrl: data.linkedinUrl || '',
+          portfolioUrl: data.portfolioUrl || '',
+          // Include bio
+          bio: data.bio || '',
           // Include other minimal required fields
           skills: data.skills || []
         };

@@ -1,7 +1,6 @@
 package com.melardev.spring.jwtoauth.entities;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
@@ -18,7 +17,7 @@ public abstract class Profile extends BaseEntity {
     @Column(name = "phone_number")
     private String phoneNumber;
 
-    @Column(name = "bio", length = 1000)
+    @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
 
     @Column(name = "location")

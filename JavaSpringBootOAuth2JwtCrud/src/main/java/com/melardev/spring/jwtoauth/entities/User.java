@@ -56,6 +56,9 @@ public class User extends BaseEntity {
     @Column(name = "email_verified")
     private boolean emailVerified = false;
     
+    @Column(name = "requires_password_reset")
+    private boolean requiresPasswordReset = false;
+    
     public User() {
     }
     
@@ -143,5 +146,13 @@ public class User extends BaseEntity {
     
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+    
+    public boolean isRequiresPasswordReset() {
+        return requiresPasswordReset;
+    }
+    
+    public void setRequiresPasswordReset(boolean requiresPasswordReset) {
+        this.requiresPasswordReset = requiresPasswordReset;
     }
 } 

@@ -2128,7 +2128,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                               <div className="bg-black/40 rounded-lg p-4 border border-gray-800/30 text-center">
                                 <p className="text-gray-400 mb-4">No resume generated yet</p>
                                 <Link
-                                  to="/resume-management"
+                                  to="/resume"
                                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
                                 >
                                   <FileText className="h-4 w-4" />

@@ -22,6 +22,14 @@ export interface UserData {
   email: string;
   roles: string[];
   accessToken: string;
+  hasCompletedOnboarding?: boolean;
+  requiresPasswordReset?: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 interface GoogleAuthResponse {
@@ -174,6 +182,34 @@ const checkAuthStatus = () => {
   }
 };
 
+const changePassword = async (data: ChangePasswordRequest) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    
+    const response = await axios.post(
+      `${AUTH_API_URL}/change-password`, 
+      data,
+      {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      }
+    );
+    
+    console.log('Password changed successfully');
+    return response.data;
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+    }
+    throw error;
+  }
+};
+
 const authService = {
   register,
   login,
@@ -181,7 +217,8 @@ const authService = {
   githubLogin,
   logout,
   getCurrentUser,
-  checkAuthStatus, // Add the new function to the exported service
+  checkAuthStatus,
+  changePassword,
 };
 
 export default authService; 

@@ -25,9 +25,6 @@ public class StudentProfile extends Profile {
     @Column(name = "graduation_year")
     private Integer graduationYear;
 
-    @Column(name = "bio", columnDefinition = "TEXT")
-    private String bio;
-
     @Column(name = "skills")
     private String skills;
 
@@ -119,8 +116,7 @@ public class StudentProfile extends Profile {
     public Integer getGraduationYear() { return graduationYear; }
     public void setGraduationYear(Integer graduationYear) { this.graduationYear = graduationYear; }
 
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
+    // Bio getter/setter inherited from Profile parent class
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

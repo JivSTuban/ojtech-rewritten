@@ -140,6 +140,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 Role adminRole = getOrCreateRole(ERole.ROLE_ADMIN);
                 adminUser.getRoles().add(adminRole);
                 adminUser.setEmailVerified(true);
+                adminUser.setRequiresPasswordReset(true); // Force password reset on first login
                 userRepository.save(adminUser);
 
                 // Create student users
@@ -168,6 +169,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Create employer user
                 User employerUser = new User("employer", "employer@ojtech.com", passwordEncoder.encode("password"));
                 employerUser.setEmailVerified(true);
+                employerUser.setRequiresPasswordReset(true); // Force password reset on first login
                 Role employerRole = getOrCreateRole(ERole.ROLE_EMPLOYER);
                 employerUser.getRoles().add(employerRole);
                 userRepository.save(employerUser);

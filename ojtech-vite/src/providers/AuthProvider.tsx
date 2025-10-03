@@ -19,7 +19,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   profile: any;
   needsOnboarding: boolean;
+  requiresPasswordReset: boolean;
   fetchUserProfile: () => Promise<void>; // Added to manually refresh profile
+  updateProfile: (profile: any) => void; // Added to update user/profile
 }
 
 // Create context outside of any component
@@ -35,6 +37,7 @@ interface AuthProviderState {
   isAuthenticated: boolean;
   profile: any | null;
   needsOnboarding: boolean;
+  requiresPasswordReset: boolean;
 }
 
 // Export the class component separately
@@ -50,6 +53,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       isAuthenticated: false,
       profile: null,
       needsOnboarding: true,
+      requiresPasswordReset: false,
     };
   }
 
@@ -187,7 +191,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
       // Explicitly check onboarding status
       const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
-      console.log('Login complete. Onboarding status:', hasCompletedOnboarding);
+      
+      // Check password reset requirement
+      const requiresPasswordReset = fullUser.requiresPasswordReset === true;
+      
+      console.log('Login complete. Onboarding status:', hasCompletedOnboarding, 'Password Reset:', requiresPasswordReset);
 
       this.setState({
         isLoading: false,
@@ -195,6 +203,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
         user: fullUser,
         profile: fullUser.profile,
         needsOnboarding: !hasCompletedOnboarding,
+        requiresPasswordReset: requiresPasswordReset,
       });
 
       return fullUser;
@@ -341,8 +350,8 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       isLoading: false
     });
     
-    // Prioritize redirection to home page after logout
-    window.location.href = '/';
+    // Use replace instead of href to avoid adding to history
+    window.location.replace('/');
   };
 
   fetchUserProfile = async () => {
@@ -370,12 +379,23 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
           isLoading: false,
           profile: fullUser.profile || null,
           needsOnboarding: fullUser.hasCompletedOnboarding !== true,
+          requiresPasswordReset: fullUser.requiresPasswordReset === true,
         });
       } catch (error) {
         console.error('Error refreshing user profile:', error);
         this.setState({ isLoading: false });
       }
     }
+  };
+
+  updateProfile = (updatedData: any) => {
+    this.setState((prevState) => ({
+      user: prevState.user ? { ...prevState.user, ...updatedData } : null,
+      profile: updatedData.profile || prevState.profile,
+      requiresPasswordReset: updatedData.requiresPasswordReset !== undefined 
+        ? updatedData.requiresPasswordReset 
+        : prevState.requiresPasswordReset,
+    }));
   };
 
   render() {
@@ -391,7 +411,9 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       isAuthenticated: this.state.isAuthenticated,
       profile: this.state.profile,
       needsOnboarding: this.state.needsOnboarding,
+      requiresPasswordReset: this.state.requiresPasswordReset,
       fetchUserProfile: this.fetchUserProfile,
+      updateProfile: this.updateProfile,
     };
 
     return <AuthContext.Provider value={value}>{this.props.children}</AuthContext.Provider>;

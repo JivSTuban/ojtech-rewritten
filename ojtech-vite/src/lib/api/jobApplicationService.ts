@@ -130,7 +130,7 @@ const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }
 
 // Find jobs using simple search endpoint
 const findJobs = async (): Promise<JobDetails[]> => {
-  const response = await apiClient.get('/api/simple-findjobs');
+  const response = await apiClient.get('/simple-findjobs');
   return response.data;
 };
 

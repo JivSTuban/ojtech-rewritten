@@ -256,11 +256,11 @@ public class StudentProfileController {
                 profile.setPortfolioUrl(contact.get("portfolioUrl"));
             }
             
-            // Handle bio (ensure both child and parent Profile.bio are kept in sync)
+            // Handle bio
             if (completeData.containsKey("bio")) {
                 String bio = (String) completeData.get("bio");
-                profile.setBio(bio); // StudentProfile.bio
-                ((Profile) profile).setBio(bio); // Parent Profile.bio
+                profile.setBio(bio);
+                logger.info("Set bio: {}", bio != null && bio.length() > 50 ? bio.substring(0, 50) + "..." : bio);
             }
             
             // Process GitHub projects
@@ -655,7 +655,7 @@ public class StudentProfileController {
         if (data.containsKey("bio")) {
             String bio = (String) data.get("bio");
             profile.setBio(bio);
-            ((Profile) profile).setBio(bio);
+            logger.info("Updated bio: {}", bio != null && bio.length() > 50 ? bio.substring(0, 50) + "..." : bio);
         }
         
         if (data.containsKey("hasCompletedOnboarding")) {

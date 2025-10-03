@@ -599,27 +599,51 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           </div>
         )}
         
-        {/* How matching works tooltip */}
-        <div className="mb-8">
-          <div className="text-sm text-primary flex items-center gap-1 hover:underline cursor-help">
-            <HelpCircle size={14} />
-            <span>How matching works</span>
-          </div>
-          <div className="hidden">
-            <h4 className="font-bold mb-2">How Job Matching Works</h4>
-            <p className="text-sm text-gray-600 mb-2">
-              Our AI-powered system matches your skills and experience with job requirements.
+        {/* Block job viewing if not verified */}
+        {studentProfile && (!studentProfile.preojtOrientationUrl || !studentProfile.verified) ? (
+          <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
+            <Info className="h-12 w-12 text-gray-400 mb-4" />
+            <h2 className="text-2xl font-semibold mb-2">
+              {!studentProfile.preojtOrientationUrl 
+                ? "Action Required" 
+                : "Verification Pending"}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {!studentProfile.preojtOrientationUrl 
+                ? "You need to upload your Pre-OJT Orientation Document before you can view job opportunities." 
+                : "Your account is currently under review. You'll be able to view job opportunities once your account is verified by admin."}
             </p>
-            <ul className="text-xs space-y-1 list-disc pl-4">
-              <li><span className="text-green-500 font-bold">80%+</span>: Strong match to your skills</li>
-              <li><span className="text-blue-500 font-bold">60-79%</span>: Good match with some skill alignment</li>
-              <li><span className="text-yellow-500 font-bold">40-59%</span>: Potential match worth exploring</li>
-              <li><span className="text-red-500 font-bold">&lt;40%</span>: Limited match but still might be interesting</li>
-            </ul>
+            {!studentProfile.preojtOrientationUrl && (
+              <Link to="/profile">
+                <Button>
+                  Go to Profile
+                </Button>
+              </Link>
+            )}
           </div>
-        </div>
-        
-        {jobs.length === 0 ? (
+        ) : (
+          <>
+            {/* How matching works tooltip */}
+            <div className="mb-8">
+              <div className="text-sm text-primary flex items-center gap-1 hover:underline cursor-help">
+                <HelpCircle size={14} />
+                <span>How matching works</span>
+              </div>
+              <div className="hidden">
+                <h4 className="font-bold mb-2">How Job Matching Works</h4>
+                <p className="text-sm text-gray-600 mb-2">
+                  Our AI-powered system matches your skills and experience with job requirements.
+                </p>
+                <ul className="text-xs space-y-1 list-disc pl-4">
+                  <li><span className="text-green-500 font-bold">80%+</span>: Strong match to your skills</li>
+                  <li><span className="text-blue-500 font-bold">60-79%</span>: Good match with some skill alignment</li>
+                  <li><span className="text-yellow-500 font-bold">40-59%</span>: Potential match worth exploring</li>
+                  <li><span className="text-red-500 font-bold">&lt;40%</span>: Limited match but still might be interesting</li>
+                </ul>
+              </div>
+            </div>
+            
+            {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
             <Info className="h-12 w-12 text-gray-400 mb-4" />
             <h2 className="text-2xl font-semibold mb-2">No New Job Matches</h2>
@@ -770,6 +794,8 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             jobTitle={currentJobForEmail.title}
             companyName={currentJobForEmail.company_name || 'Unknown Company'}
           />
+        )}
+          </>
         )}
       </main>
     );

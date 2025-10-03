@@ -8,6 +8,7 @@ import { Footer } from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
@@ -37,97 +38,58 @@ import './index.css';
 
 // Main layout with navigation for all non-auth pages
 const MainLayout: React.FC = () => {
-  const { user, isLoading, fetchUserProfile } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
-  const initialLoadRef = React.useRef(false);
-  const lastPathRef = React.useRef(location.pathname);
-  
-  // Create a stable callback reference to avoid dependency issues
-  const stableFetchUserProfile = React.useCallback(() => {
-    if (!isLoading && user) {
-      fetchUserProfile();
-    }
-  }, [fetchUserProfile, isLoading, user]);
 
-  // Refresh auth context only when the component mounts
+  // Check onboarding status ONLY - don't fetch profile here as it's already done by AuthProvider
   React.useEffect(() => {
-    if (!initialLoadRef.current && !isLoading && user) {
-      initialLoadRef.current = true;
-     
-      stableFetchUserProfile();
+    // Don't do anything while loading or if no user
+    if (isLoading || !user) {
+      return;
     }
-  }, [isLoading, user, stableFetchUserProfile]);
-  
-  // Track path changes separately
-  React.useEffect(() => {
-    // Only refresh on actual path changes, not just re-renders
-    if (lastPathRef.current !== location.pathname && !isLoading && user) {
-      lastPathRef.current = location.pathname;
+
+    // Safe paths that should be accessible regardless of onboarding status
+    const safePaths = [
+      '/profile',
+      '/resume', 
+      '/onboarding', 
+      '/login', 
+      '/register', 
+      '/auth',
+      '/privacy',
+      '/terms',
+      '/admin',
+      '/change-password',
+      '/track',
+      '/opportunities',
+      '/application',
+      '/employer',
+      '/'
+    ];
+    
+    // Check if current path is in safe paths
+    const isOnSafePath = safePaths.some(path => location.pathname.startsWith(path));
+    
+    // Check if user is an admin - admins don't need onboarding
+    const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+    
+    // Only redirect if onboarding isn't complete AND we're not on a safe path AND not an admin
+    if (user.hasCompletedOnboarding === false && !isOnSafePath && !isAdmin) {
+      // User has NOT completed onboarding, redirect to appropriate onboarding page
+      const studentOnboardingPath = '/onboarding/student';
+      const employerOnboardingPath = '/onboarding/employer';
       
-      
-      // Skip profile refresh on certain paths
-      const skipRefreshPaths = ['/onboarding/student', '/onboarding/employer'];
-      if (!skipRefreshPaths.includes(location.pathname)) {
-        stableFetchUserProfile();
+      if (user?.roles?.includes('ROLE_STUDENT') && 
+          location.pathname !== studentOnboardingPath) {
+        console.log('Redirecting to student onboarding from:', location.pathname);
+        window.location.replace(studentOnboardingPath);
+      } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
+                location.pathname !== employerOnboardingPath) {
+        console.log('Redirecting to employer onboarding from:', location.pathname);
+        window.location.replace(employerOnboardingPath);
       }
     }
-  }, [location.pathname, stableFetchUserProfile, isLoading, user]);
-
-  // Check onboarding status on route change
-  React.useEffect(() => {
-    if (!isLoading && user) {
-      // Debug log onboarding status
-  
-
-      // Safe paths that should be accessible regardless of onboarding status
-      const safePaths = [
-        '/profile', 
-        '/onboarding', 
-        '/login', 
-        '/register', 
-        '/auth',
-        '/privacy',
-        '/terms',
-        '/admin',
-        '/'
-      ];
-      
-      // Check if current path is in safe paths
-      const isOnSafePath = safePaths.some(path => location.pathname.startsWith(path));
-      
-      // Check if user is an admin - admins don't need onboarding
-      const isAdmin = user?.roles?.includes('ROLE_ADMIN');
-      
-      // Only redirect if onboarding isn't complete AND we're not on a safe path AND not an admin
-      if (user.hasCompletedOnboarding === false && !isOnSafePath && !isAdmin) {
-        // User has NOT completed onboarding, redirect to appropriate onboarding page
-        if (user?.roles?.includes('ROLE_STUDENT') && 
-            location.pathname !== '/onboarding/student') {
-          console.log('Redirecting to student onboarding from:', location.pathname);
-          window.location.href = '/onboarding/student';
-        } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
-                  location.pathname !== '/onboarding/employer') {
-          console.log('Redirecting to employer onboarding from:', location.pathname);
-          window.location.href = '/onboarding/employer';
-        }
-      } 
-      // Only redirect away from onboarding if it's complete AND we're on an onboarding page
-      else if (user.hasCompletedOnboarding === true) {
-        const isOnboardingRoute = location.pathname.startsWith('/onboarding');
-        
-        if (isOnboardingRoute) {
-          // Redirect to appropriate page based on role
-          if (user?.roles?.includes('ROLE_STUDENT')) {
-            console.log('Redirecting to track page from onboarding - already completed');
-            window.location.href = '/track';
-          } else if (user?.roles?.includes('ROLE_EMPLOYER')) {
-            console.log('Redirecting to employer jobs from onboarding - already completed');
-            window.location.href = '/employer/jobs';
-          }
-        }
-      }
-    }
-  }, [user, isLoading, location.pathname]);
+  }, [user?.hasCompletedOnboarding, user?.roles, isLoading, location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
@@ -190,6 +152,9 @@ export const App: React.FC = () => {
           
           {/* All non-auth routes with the main layout and navbar */}
           <Route element={<MainLayout />}>
+            {/* Password change route - accessible to all authenticated users */}
+            <Route path="/change-password" element={<ChangePasswordPage />} />
+            
             {/* For Pre Testing mockdata */}
               <Route path="/" element={<HomePage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />

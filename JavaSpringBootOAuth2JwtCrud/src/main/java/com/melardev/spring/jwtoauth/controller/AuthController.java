@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,6 +34,7 @@ import com.melardev.spring.jwtoauth.dtos.requests.LoginDto;
 import com.melardev.spring.jwtoauth.dtos.requests.LoginRequest;
 import com.melardev.spring.jwtoauth.dtos.requests.SignupDto;
 import com.melardev.spring.jwtoauth.dtos.requests.SignupRequest;
+import com.melardev.spring.jwtoauth.dtos.requests.ChangePasswordRequest;
 import com.melardev.spring.jwtoauth.dtos.responses.JwtResponse;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.ERole;
@@ -217,28 +219,36 @@ public class AuthController {
                         .map(item -> item.getAuthority())
                         .collect(Collectors.toList());
                 
-                // Check if user has completed onboarding
+                // Check if user has completed onboarding and requires password reset
                 boolean hasCompletedOnboarding = false;
+                boolean requiresPasswordReset = false;
                 try {
                     // Use repository directly instead of loading user again
                     User user = userRepository.findById(userDetails.getId())
                             .orElse(null);
                     
-                    if (user != null && user.getProfile() != null) {
-                        hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                    if (user != null) {
+                        // Check password reset requirement
+                        requiresPasswordReset = user.isRequiresPasswordReset();
+                        
+                        // Check onboarding status
+                        if (user.getProfile() != null) {
+                            hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                        }
                     }
                 } catch (Exception e) {
                     // Log the error but continue with login
-                    System.out.println("Error checking onboarding status: " + e.getMessage());
+                    System.out.println("Error checking user status: " + e.getMessage());
                 }
                 
-                // Return JWT response
+                // Return JWT response with password reset flag
                 return ResponseEntity.ok(new JwtResponse(jwt,
                         userDetails.getId(),
                         userDetails.getUsername(),
                         userDetails.getEmail(),
                         roles,
-                        hasCompletedOnboarding));
+                        hasCompletedOnboarding,
+                        requiresPasswordReset));
             } catch (Exception e) {
                 e.printStackTrace();
                 return ResponseEntity.status(401).body(new MessageResponse("Error: Invalid username or password"));
@@ -842,5 +852,59 @@ public class AuthController {
         }
         
         return sb.toString();
+    }
+    
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            // Get current authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            
+            // Validate password confirmation
+            if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("New password and confirmation do not match"));
+            }
+            
+            // Find user
+            Optional<User> userOpt = userRepository.findById(userDetails.getId());
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("User not found"));
+            }
+            
+            User user = userOpt.get();
+            
+            // Verify current password (skip for OAuth users or if they're doing first-time reset)
+            if (user.getProvider() == null || user.getProvider().isEmpty()) {
+                if (!encoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new MessageResponse("Current password is incorrect"));
+                }
+            }
+            
+            // Validate new password is different from current
+            if (encoder.matches(request.getNewPassword(), user.getPassword())) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("New password must be different from current password"));
+            }
+            
+            // Update password
+            user.setPassword(encoder.encode(request.getNewPassword()));
+            
+            // Clear password reset flag
+            user.setRequiresPasswordReset(false);
+            
+            userRepository.save(user);
+            
+            return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Error changing password: " + e.getMessage()));
+        }
     }
 }

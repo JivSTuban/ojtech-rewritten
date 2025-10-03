@@ -22,6 +22,7 @@ export default class BioStep extends Component<BioStepProps> {
           }
         } as ChangeEvent<HTMLTextAreaElement>;
         this.props.onChange(mockEvent);
+        localStorageManager.saveStepData('bio', this.props.bio);
       }
     }
   }
