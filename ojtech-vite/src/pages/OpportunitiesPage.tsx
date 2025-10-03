@@ -465,32 +465,32 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     }
 
     return (
-      <main className="min-h-screen container mx-auto py-8 flex flex-col items-center relative overflow-hidden">
-        <h1 className="text-4xl font-bold mb-6 text-center">New Job Matches</h1>
-        <p className="text-gray-600 mb-2 text-center">Swipe right to apply, left to pass.</p>
+      <main className="min-h-screen container mx-auto py-4 sm:py-6 md:py-8 px-4 flex flex-col items-center relative overflow-hidden">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-center">New Job Matches</h1>
+        <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 text-center px-2">Swipe right to apply, left to pass.</p>
         
         {/* Action Buttons */}
-        <div className="flex gap-4 mb-6">
-          <Button onClick={this.fetchJobs}>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6 w-full sm:w-auto px-2 sm:px-0">
+          <Button onClick={this.fetchJobs} className="w-full sm:w-auto text-sm sm:text-base">
             Find Matched Jobs
           </Button>
-          <Button onClick={this.findJobs} variant="outline">
+          <Button onClick={this.findJobs} variant="outline" className="w-full sm:w-auto text-sm sm:text-base">
             Find More Jobs
           </Button>
         </div>
         
         {/* Error Banner - Show inline instead of full screen */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 flex items-start gap-3 max-w-xl w-full">
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-red-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
+            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
               <p className="font-semibold mb-1">Error Loading Jobs</p>
-              <p className="mb-3">{error}</p>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={this.fetchJobs} variant="default">
+              <p className="mb-2 sm:mb-3">{error}</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button size="sm" onClick={this.fetchJobs} variant="default" className="text-xs sm:text-sm">
                   Retry Matched Jobs
                 </Button>
-                <Button size="sm" onClick={this.findJobs} variant="outline">
+                <Button size="sm" onClick={this.findJobs} variant="outline" className="text-xs sm:text-sm">
                   Try Find More Jobs
                 </Button>
               </div>
@@ -500,9 +500,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         
         {/* CV Processing Warning */}
         {isProcessingCV && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800 flex items-center gap-2 max-w-xl">
-            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-            <div>
+          <div className="mb-4 sm:mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-yellow-800 flex items-center gap-2 max-w-xl w-full mx-2 sm:mx-0">
+            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+            <div className="min-w-0">
               <p className="font-medium">Your CV is still being processed</p>
               <p className="mt-1">
                 Matches may not be fully accurate until processing is complete. Check back soon!
@@ -513,15 +513,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         
         {/* Warning: Missing Pre-OJT Orientation Document */}
         {studentProfile && !studentProfile.preojtOrientationUrl && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 flex items-start gap-3 max-w-xl w-full">
-            <FileText className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
+          <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-red-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
               <p className="font-semibold mb-1">Pre-OJT Orientation Document Required</p>
-              <p className="mb-3">
+              <p className="mb-2 sm:mb-3">
                 You need to upload your Pre-OJT Orientation Document to find a job. This document is required for verification.
               </p>
               <Link to="/profile">
-                <Button size="sm" variant="default">
+                <Button size="sm" variant="default" className="text-xs sm:text-sm">
                   Upload Document
                 </Button>
               </Link>
@@ -531,9 +531,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         
         {/* Warning: Pending Admin Verification */}
         {studentProfile && studentProfile.preojtOrientationUrl && !studentProfile.verified && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-3 max-w-xl w-full">
-            <Clock className="h-5 w-5 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
+          <div className="mb-4 sm:mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-blue-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
               <p className="font-semibold mb-1">Account Verification in Progress</p>
               <p>
                 Admin is verifying your account. Please wait while we review your Pre-OJT Orientation Document. 
@@ -575,18 +575,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             </Button>
           </div>
         ) : (
-          <div className="relative h-[480px] w-full max-w-md">
+          <div className="relative h-[480px] sm:h-[520px] w-full max-w-[90vw] sm:max-w-md">
             {jobs.map((job, index) => (
               <div className="absolute" key={`${job.id}-${index}`}>
                 <TinderCard
                   ref={this.childRefs[index]}
-                  className="absolute cursor-grab"
+                  className="absolute cursor-grab active:cursor-grabbing touch-none"
                   onSwipe={(dir) => this.handleSwipe(dir, job, index)}
                   onCardLeftScreen={() => this.outOfFrame(job.title, index)}
                   preventSwipe={["up", "down"]}
                 >
                   <div 
-                    className={`bg-gray-900 p-6 w-[360px] h-[500px] rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${
+                    className={`bg-gray-900 p-4 sm:p-6 w-[85vw] sm:w-[360px] max-w-[400px] h-[480px] sm:h-[500px] rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${
                       expandedJobId === job.id ? 'max-h-none overflow-y-auto' : ''
                     }`}
                   >

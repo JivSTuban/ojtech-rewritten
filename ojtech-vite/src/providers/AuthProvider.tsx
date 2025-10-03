@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (usernameOrEmail: string, password: string) => Promise<AppUser>;
   register: (data: any) => Promise<any>;
   googleLogin: (tokenId: string) => Promise<AppUser>;
+  githubLogin: (code: string) => Promise<AppUser>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -239,6 +240,33 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
     }
   };
 
+  githubLogin = async (code: string) => {
+    try {
+      this.setState({ isLoading: true });
+      const userData = await authService.githubLogin(code);
+
+      console.log('GitHub login successful, fetching user profile');
+      const fullUser = await this.fetchUserProfileData(userData);
+
+      // Check onboarding status from the backend response
+      const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
+      console.log('GitHub login complete. Onboarding status:', hasCompletedOnboarding);
+
+      this.setState({
+        isLoading: false,
+        isAuthenticated: true,
+        user: fullUser,
+        profile: fullUser.profile,
+        needsOnboarding: !hasCompletedOnboarding,
+      });
+
+      return fullUser;
+    } catch (error: any) {
+      this.setState({ isLoading: false });
+      throw error;
+    }
+  };
+
   register = async (data: any) => {
     try {
       // Register the user
@@ -357,6 +385,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       login: this.login,
       register: this.register,
       googleLogin: this.googleLogin,
+      githubLogin: this.githubLogin,
       logout: this.logout,
       isLoading,
       isAuthenticated: this.state.isAuthenticated,

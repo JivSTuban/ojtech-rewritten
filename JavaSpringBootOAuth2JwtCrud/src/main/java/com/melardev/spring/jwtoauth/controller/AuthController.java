@@ -92,6 +92,12 @@ public class AuthController {
     
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
+    
+    @Value("${spring.security.oauth2.client.registration.github.client-id}")
+    private String githubClientId;
+    
+    @Value("${spring.security.oauth2.client.registration.github.client-secret}")
+    private String githubClientSecret;
 
     @PostMapping({"/signin", "/login"})
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody Object loginRequest) {
@@ -358,6 +364,198 @@ public class AuthController {
             // Return user ID in the response to allow for email verification
             return ResponseEntity.ok(new MessageResponse("User registered successfully! Please verify your email.", savedUser.getId().toString()));
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/github")
+    public ResponseEntity<?> authenticateWithGitHub(@RequestBody Map<String, String> request) {
+        try {
+            String code = request.get("code");
+            if (code == null) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Authorization code is required"));
+            }
+            
+            // Log the code format (first few characters)
+            System.out.println("Received GitHub code (first 10 chars): " + (code.length() > 10 ? code.substring(0, 10) + "..." : code));
+            System.out.println("GitHub Client ID from env: " + githubClientId);
+            
+            // Exchange code for access token
+            try {
+                // Prepare the request to exchange code for access token
+                Map<String, String> tokenRequestBody = new java.util.HashMap<>();
+                tokenRequestBody.put("client_id", githubClientId);
+                tokenRequestBody.put("client_secret", githubClientSecret);
+                tokenRequestBody.put("code", code);
+                
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                headers.setAccept(Collections.singletonList(org.springframework.http.MediaType.APPLICATION_JSON));
+                
+                org.springframework.http.HttpEntity<Map<String, String>> entity = 
+                    new org.springframework.http.HttpEntity<>(tokenRequestBody, headers);
+                
+                // Make the request to GitHub
+                ResponseEntity<Map> tokenResponse = restTemplate.postForEntity(
+                    "https://github.com/login/oauth/access_token",
+                    entity,
+                    Map.class
+                );
+                
+                Map<String, Object> tokenData = tokenResponse.getBody();
+                
+                if (tokenData == null || !tokenData.containsKey("access_token")) {
+                    System.out.println("Failed to get access token from GitHub: " + tokenData);
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: Unable to get access token from GitHub"));
+                }
+                
+                String accessToken = (String) tokenData.get("access_token");
+                System.out.println("Successfully obtained GitHub access token");
+                
+                // Use access token to get user info
+                org.springframework.http.HttpHeaders userHeaders = new org.springframework.http.HttpHeaders();
+                userHeaders.setBearerAuth(accessToken);
+                userHeaders.setAccept(Collections.singletonList(org.springframework.http.MediaType.APPLICATION_JSON));
+                
+                org.springframework.http.HttpEntity<String> userEntity = 
+                    new org.springframework.http.HttpEntity<>(userHeaders);
+                
+                ResponseEntity<Map> userResponse = restTemplate.exchange(
+                    "https://api.github.com/user",
+                    org.springframework.http.HttpMethod.GET,
+                    userEntity,
+                    Map.class
+                );
+                
+                Map<String, Object> githubUser = userResponse.getBody();
+                
+                if (githubUser == null) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: Unable to get user info from GitHub"));
+                }
+                
+                System.out.println("GitHub user data: " + githubUser);
+                
+                // Extract user information
+                String email = (String) githubUser.get("email");
+                String login = (String) githubUser.get("login");
+                String name = (String) githubUser.get("name");
+                Integer githubId = (Integer) githubUser.get("id");
+                
+                // If email is null, fetch it from the emails endpoint
+                if (email == null) {
+                    ResponseEntity<java.util.List> emailsResponse = restTemplate.exchange(
+                        "https://api.github.com/user/emails",
+                        org.springframework.http.HttpMethod.GET,
+                        userEntity,
+                        java.util.List.class
+                    );
+                    
+                    java.util.List<Map<String, Object>> emails = emailsResponse.getBody();
+                    if (emails != null && !emails.isEmpty()) {
+                        // Find primary verified email
+                        for (Map<String, Object> emailData : emails) {
+                            if ((Boolean) emailData.get("primary") && (Boolean) emailData.get("verified")) {
+                                email = (String) emailData.get("email");
+                                break;
+                            }
+                        }
+                        // If no primary verified email, use the first verified one
+                        if (email == null) {
+                            for (Map<String, Object> emailData : emails) {
+                                if ((Boolean) emailData.get("verified")) {
+                                    email = (String) emailData.get("email");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (email == null) {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Error: Unable to get email from GitHub. Please make sure your GitHub account has a verified email."));
+                }
+                
+                // Check if user exists
+                User user = userRepository.findByEmail(email).orElse(null);
+                
+                if (user == null) {
+                    // Create a new user
+                    String username = login + UUID.randomUUID().toString().substring(0, 8);
+                    
+                    // Generate a random password for GitHub users
+                    String randomPassword = UUID.randomUUID().toString();
+                    String encodedPassword = encoder.encode(randomPassword);
+                    
+                    user = new User(username, email, encodedPassword);
+                    user.setProvider("github");
+                    user.setProviderId(githubId != null ? githubId.toString() : null);
+                    user.setEmailVerified(true);
+                    
+                    // Assign ROLE_STUDENT by default
+                    Role userRole = roleRepository.findByName(ERole.ROLE_STUDENT)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    user.setRoles(Collections.singleton(userRole));
+                    
+                    userRepository.save(user);
+                }
+                
+                // Check if user has admin role
+                boolean isAdmin = user.getRoles().stream()
+                        .anyMatch(role -> role.getName() == ERole.ROLE_ADMIN);
+                
+                if (isAdmin && user.getProfile() == null) {
+                    // Create admin profile with hasCompletedOnboarding set to true
+                    AdminProfile adminProfile = new AdminProfile();
+                    adminProfile.setUser(user);
+                    adminProfile.setHasCompletedOnboarding(true);
+                    adminProfileRepository.save(adminProfile);
+                }
+                
+                // Create user details for authentication
+                UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+                
+                // Create authentication token directly without using authentication manager
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                
+                // Set authentication in security context
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                // Generate JWT token
+                String jwt = jwtUtils.generateJwtToken(authentication);
+                
+                // Get roles
+                List<String> roles = userDetails.getAuthorities().stream()
+                        .map(item -> item.getAuthority())
+                        .collect(Collectors.toList());
+                
+                // Check if user has completed onboarding
+                boolean hasCompletedOnboarding = false;
+                try {
+                    if (user.getProfile() != null) {
+                        hasCompletedOnboarding = user.getProfile().isHasCompletedOnboarding();
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error checking onboarding status: " + e.getMessage());
+                    // Ignore this error
+                }
+                
+                // Return JWT response
+                return ResponseEntity.ok(new JwtResponse(jwt,
+                        userDetails.getId(),
+                        userDetails.getUsername(),
+                        userDetails.getEmail(),
+                        roles,
+                        hasCompletedOnboarding));
+                    
+            } catch (Exception e) {
+                System.out.println("Error authenticating with GitHub: " + e.getMessage());
+                e.printStackTrace();
+                return ResponseEntity.badRequest().body(new MessageResponse("Error authenticating with GitHub: " + e.getMessage()));
+            }
+        } catch (Exception e) {
+            System.out.println("GitHub auth error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
     }

@@ -41,7 +41,7 @@ export interface AdminJobMetadata {
   id: string;
   jobId: string;
   adminNotes?: string;
-  internalTags: string[];
+  internalTags?: string[];
   qualityScore: number;
   flagReason?: string;
   isHighPriority: boolean;
@@ -268,7 +268,7 @@ export interface AdminJobFormData {
   featuredUntil?: string;
   priority: number;
   adminNotes?: string;
-  internalTags: string[];
+  internalTags?: string[];
   qualityScore: number;
   isHighPriority: boolean;
   sourceChannel?: string;

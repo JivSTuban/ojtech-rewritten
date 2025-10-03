@@ -150,7 +150,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
     this.setState({ loading: true, error: null });
     
     try {
-      const response = await apiClient.get(`/api/jobs/${jobId}`);
+      const response = await apiClient.get(`/jobs/${jobId}`);
       
       if (response.data) {
         const jobData = response.data;

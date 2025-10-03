@@ -108,6 +108,27 @@ const googleLogin = async (tokenId: string) => {
   }
 };
 
+const githubLogin = async (code: string) => {
+  console.log('GitHub login function called with code (first 10 chars):', code.substring(0, 10) + '...');
+  
+  try {
+    const response = await axios.post(`${AUTH_API_URL}/github`, { code });
+    
+    console.log('GitHub auth backend response:', response.data);
+    
+    if (response.data && response.data.accessToken) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    } else {
+      throw new Error('Invalid response from backend OAuth endpoint');
+    }
+  } catch (error: any) {
+    console.error('GitHub authentication error:', error);
+    let errorMessage = error.response?.data?.message || 'Failed to authenticate with GitHub';
+    throw new Error(errorMessage);
+  }
+};
+
 const logout = () => {
   localStorage.removeItem('user');
   console.log('User logged out, localStorage user data cleared');
@@ -157,6 +178,7 @@ const authService = {
   register,
   login,
   googleLogin,
+  githubLogin,
   logout,
   getCurrentUser,
   checkAuthStatus, // Add the new function to the exported service

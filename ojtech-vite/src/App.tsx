@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
 import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
@@ -183,6 +184,9 @@ export const App: React.FC = () => {
               <Route path="/verify-email" element={<EmailVerificationRedirect />} />
             </Route>
           </Route>
+          
+          {/* GitHub OAuth Callback - doesn't need PublicOnlyRoute as it handles auth */}
+          <Route path="/auth/github/callback" element={<GitHubCallbackPage />} />
           
           {/* All non-auth routes with the main layout and navbar */}
           <Route element={<MainLayout />}>

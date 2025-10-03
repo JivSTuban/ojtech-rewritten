@@ -227,7 +227,7 @@ export const AdminJobDetailsPage: React.FC = () => {
                   </div>
                 )}
                 
-                {metadata.internalTags.length > 0 && (
+                {metadata.internalTags && metadata.internalTags.length > 0 && (
                   <div>
                     <h3 className="font-semibold mb-2">Internal Tags</h3>
                     <div className="flex flex-wrap gap-2">

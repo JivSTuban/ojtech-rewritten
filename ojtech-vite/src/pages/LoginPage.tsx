@@ -30,6 +30,10 @@ export class LoginPage extends Component<{}, LoginPageState> {
   // API base URL
   private API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   
+  // GitHub OAuth Configuration
+  private GITHUB_CLIENT_ID = 'Ov23li4gxkGK900aEkLs';
+  private GITHUB_REDIRECT_URI = `${window.location.origin}/auth/github/callback`;
+  
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -282,6 +286,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
       showPassword: !prevState.showPassword
     }));
   };
+
+  handleGitHubLogin = () => {
+    // Construct GitHub OAuth URL
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${this.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(this.GITHUB_REDIRECT_URI)}&scope=user:email`;
+    
+    // Redirect to GitHub for authorization
+    window.location.href = githubAuthUrl;
+  };
   
   render() {
     const { email, password, error, isLoading, isGoogleLoading, redirectTo, showPassword } = this.state;
@@ -399,7 +411,12 @@ export class LoginPage extends Component<{}, LoginPageState> {
                 />
               )}
             </div>
-            <Button variant="outline" className="w-full flex items-center justify-center">
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center"
+              onClick={this.handleGitHubLogin}
+              type="button"
+            >
               <Github className="h-5 w-5 mr-2" />
               GitHub
             </Button>
