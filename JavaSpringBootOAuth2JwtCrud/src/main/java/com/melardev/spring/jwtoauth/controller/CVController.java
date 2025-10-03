@@ -11,6 +11,7 @@ import com.melardev.spring.jwtoauth.repositories.WorkExperienceRepository;
 import com.melardev.spring.jwtoauth.security.CurrentUser;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.services.JobMatchService;
+import com.melardev.spring.jwtoauth.services.ResumeHtmlGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -33,18 +34,21 @@ public class CVController {
     private final CertificationRepository certificationRepository;
     private final WorkExperienceRepository workExperienceRepository;
     private final JobMatchService jobMatchService;
+    private final ResumeHtmlGeneratorService resumeHtmlGeneratorService;
 
     @Autowired
     public CVController(CVRepository cvRepository, 
                         StudentProfileRepository studentProfileRepository,
                         CertificationRepository certificationRepository,
                         WorkExperienceRepository workExperienceRepository,
-                        JobMatchService jobMatchService) {
+                        JobMatchService jobMatchService,
+                        ResumeHtmlGeneratorService resumeHtmlGeneratorService) {
         this.cvRepository = cvRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.certificationRepository = certificationRepository;
         this.workExperienceRepository = workExperienceRepository;
         this.jobMatchService = jobMatchService;
+        this.resumeHtmlGeneratorService = resumeHtmlGeneratorService;
     }
 
     @GetMapping
@@ -74,7 +78,51 @@ public class CVController {
         
         return ResponseEntity.ok(cv);
     }
-
+    
+    /**
+     * PUBLIC endpoint for anyone to view a student's CV by ID (used in emails)
+     * No authentication required - allows employers to view CV from email links
+     */
+    @GetMapping("/{id}/view")
+    public ResponseEntity<String> getPublicCVView(@PathVariable UUID id) {
+        Optional<CV> cvOpt = cvRepository.findById(id);
+        if (cvOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        
+        CV cv = cvOpt.get();
+        
+        // Only return active CVs publicly
+        if (!cv.isActive()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not available");
+        }
+        
+        // 1. Try HTML content if available (already formatted)
+        if (cv.getHtmlContent() != null && !cv.getHtmlContent().trim().isEmpty()) {
+            return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(cv.getHtmlContent());
+        }
+        
+        // 2. Try parsed resume (JSON) - convert to HTML
+        if (cv.getParsedResume() != null && !cv.getParsedResume().trim().isEmpty()) {
+            try {
+                String htmlContent = resumeHtmlGeneratorService.generateResumeHtml(cv.getParsedResume());
+                return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(htmlContent);
+            } catch (Exception e) {
+                System.err.println("Error generating HTML from resume JSON: " + e.getMessage());
+                // Fall back to returning JSON if HTML generation fails
+                return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(cv.getParsedResume());
+            }
+        }
+        
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not available");
+    }
+    
     /**
      * Endpoint for employers to view a student's CV by ID
      */

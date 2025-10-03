@@ -133,6 +133,7 @@ public class SecurityConfig {
                                 .requestMatchers("/uploads/**").permitAll()
                                 .requestMatchers("/api/public/cloudinary/**").permitAll()
                                 .requestMatchers("/api/public/**").permitAll()
+                                .requestMatchers("/api/cvs/*/view").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

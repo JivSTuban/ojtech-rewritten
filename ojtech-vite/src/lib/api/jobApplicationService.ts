@@ -123,7 +123,6 @@ const getEmployerCVDetails = async (cvId: string): Promise<CV> => {
   return response.data;
 };
 
-// Mark a job match as viewed
 const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }> => {
   const response = await apiClient.put(`/api/student/job-matches/${matchId}/viewed`);
   return response.data;
@@ -132,6 +131,54 @@ const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }
 // Find jobs using simple search endpoint
 const findJobs = async (): Promise<JobDetails[]> => {
   const response = await apiClient.get('/api/simple-findjobs');
+  return response.data;
+};
+
+// Email draft interface
+export interface EmailDraft {
+  to: string;
+  toName: string;
+  subject: string;
+  body: string;
+  cvUrl: string;
+  studentName: string;
+  studentEmail: string;
+  studentPhone: string;
+  studentUniversity: string;
+  studentMajor: string;
+}
+
+// Prepare email draft for sending application
+const prepareApplicationEmail = async (applicationId: string): Promise<EmailDraft> => {
+  const response = await apiClient.get(`${API_URL}/${applicationId}/prepare-email`);
+  return response.data;
+};
+
+// Send application email to employer
+const sendApplicationEmail = async (
+  applicationId: string,
+  emailData: {
+    subject: string;
+    emailBody: string;
+  },
+  attachments?: File[]
+): Promise<{ success: boolean; message: string; emailsSentToday: number; emailsRemaining: number }> => {
+  const formData = new FormData();
+  formData.append('subject', emailData.subject);
+  formData.append('emailBody', emailData.emailBody);
+  
+  // Add file attachments if any
+  if (attachments && attachments.length > 0) {
+    attachments.forEach((file) => {
+      formData.append('attachments', file);
+    });
+  }
+  
+  const response = await apiClient.post(`${API_URL}/${applicationId}/send-email`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 
@@ -147,6 +194,8 @@ const jobApplicationService = {
   markJobMatchViewed,
   findJobs,
   getApplicationDetails,
+  prepareApplicationEmail,
+  sendApplicationEmail,
 };
 
-export default jobApplicationService; 
+export default jobApplicationService;

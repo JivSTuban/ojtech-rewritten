@@ -275,7 +275,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Add contact person information
                 employerProfile.setContactPersonName("John Smith");
                 employerProfile.setContactPersonPosition("HR Manager");
-                employerProfile.setContactPersonEmail("hr@techcompany.com");
+                employerProfile.setContactPersonEmail("moronaldrin3@gmail.com");
                 employerProfile.setContactPersonPhone("555-123-4567");
                 
                 employerProfileRepository.save(employerProfile);

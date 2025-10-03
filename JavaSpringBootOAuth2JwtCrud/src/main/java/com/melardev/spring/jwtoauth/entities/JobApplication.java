@@ -31,7 +31,6 @@ public class JobApplication extends BaseEntity {
     @Column(name = "status", nullable = false)
     private ApplicationStatus status = ApplicationStatus.PENDING;
     
-    @Column(name = "applied_at")
     private LocalDateTime appliedAt;
     
     @Column(name = "last_updated_at")
@@ -39,6 +38,18 @@ public class JobApplication extends BaseEntity {
     
     @Column(name = "feedback", length = 1000)
     private String feedback;
+    
+    @Column(name = "email_sent")
+    private Boolean emailSent = false;
+    
+    @Column(name = "email_sent_at")
+    private LocalDateTime emailSentAt;
+    
+    @Column(name = "email_body", columnDefinition = "TEXT")
+    private String emailBody;
+    
+    @Column(name = "email_subject")
+    private String emailSubject;
     
     public JobApplication() {
         appliedAt = LocalDateTime.now();
@@ -108,5 +119,37 @@ public class JobApplication extends BaseEntity {
     
     public void setFeedback(String feedback) {
         this.feedback = feedback;
+    }
+    
+    public Boolean getEmailSent() {
+        return emailSent;
+    }
+    
+    public void setEmailSent(Boolean emailSent) {
+        this.emailSent = emailSent;
+    }
+    
+    public LocalDateTime getEmailSentAt() {
+        return emailSentAt;
+    }
+    
+    public void setEmailSentAt(LocalDateTime emailSentAt) {
+        this.emailSentAt = emailSentAt;
+    }
+    
+    public String getEmailBody() {
+        return emailBody;
+    }
+    
+    public void setEmailBody(String emailBody) {
+        this.emailBody = emailBody;
+    }
+    
+    public String getEmailSubject() {
+        return emailSubject;
+    }
+    
+    public void setEmailSubject(String emailSubject) {
+        this.emailSubject = emailSubject;
     }
 } 

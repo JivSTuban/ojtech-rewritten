@@ -3,7 +3,8 @@ import TinderCard from "react-tinder-card";
 import { Loader2, Briefcase, MapPin, Calendar, DollarSign, Info, HelpCircle, ChevronRight, AlertTriangle, FileText, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import jobApplicationService from "../lib/api/jobApplicationService";
+import { EmailDraftModal } from "../components/EmailDraftModal";
+import jobApplicationService, { EmailDraft } from "../lib/api/jobApplicationService";
 import profileService from "../lib/api/profileService";
 
 // Job types
@@ -60,6 +61,10 @@ interface OpportunitiesPageState {
   isProcessingCV: boolean;
   studentProfile: StudentProfile | null;
   profileLoading: boolean;
+  emailModalOpen: boolean;
+  emailDraft: EmailDraft | null;
+  pendingApplicationId: string | null;
+  currentJobForEmail: JobWithMatchScore | null;
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
@@ -77,7 +82,11 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       expandedJobId: null,
       isProcessingCV: false,
       studentProfile: null,
-      profileLoading: true
+      profileLoading: true,
+      emailModalOpen: false,
+      emailDraft: null,
+      pendingApplicationId: null,
+      currentJobForEmail: null
     };
   }
   
@@ -295,10 +304,61 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
       const response = await jobApplicationService.applyForJob(apiJobId, {});
       console.log("Job application submitted successfully:", response);
-      return { success: true, data: { letterGenerated: true } };
+      return { success: true, data: response };
     } catch (error) {
       console.error("Error applying for job:", error);
       return { success: false, error: "Failed to apply for job" };
+    }
+  };
+  
+  // Open email modal with draft
+  openEmailModal = async (applicationId: string, job: JobWithMatchScore) => {
+    try {
+      const emailDraft = await jobApplicationService.prepareApplicationEmail(applicationId);
+      this.setState({
+        emailModalOpen: true,
+        emailDraft,
+        pendingApplicationId: applicationId,
+        currentJobForEmail: job
+      });
+    } catch (error) {
+      console.error("Error preparing email:", error);
+      this.toast({
+        title: "Error",
+        description: "Failed to prepare email. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Send application email
+  sendApplicationEmail = async (emailBody: string, subject: string, attachments?: File[]) => {
+    const { pendingApplicationId } = this.state;
+    if (!pendingApplicationId) return;
+    
+    try {
+      const result = await jobApplicationService.sendApplicationEmail(
+        pendingApplicationId, 
+        {
+          subject,
+          emailBody
+        },
+        attachments
+      );
+      
+      this.toast({
+        title: "Email Sent Successfully!",
+        description: `${result.message}. Emails sent today: ${result.emailsSentToday}/10`
+      });
+      
+      this.setState({
+        emailModalOpen: false,
+        emailDraft: null,
+        pendingApplicationId: null,
+        currentJobForEmail: null
+      });
+    } catch (error: any) {
+      throw error; // Re-throw to be handled by modal
     }
   };
   
@@ -338,13 +398,9 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       
       if (direction === 'right') {
         const result = await this.applyForJob(job.id);
-        if (result.success) {
-          this.toast({
-            title: `Applying for ${job.title}...`,
-            description: result.data?.letterGenerated 
-              ? "Generated recommendation and submitted application."
-              : "Application submitted."
-          });
+        if (result.success && result.data) {
+          // Show email modal after successful application
+          await this.openEmailModal(result.data.id, job as JobWithMatchScore);
         } else {
           this.toast({
             title: "Application Failed",
@@ -454,7 +510,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   };
   
   render() {
-    const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading } = this.state;
+    const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading, emailModalOpen, emailDraft, currentJobForEmail } = this.state;
     
     if (loading || profileLoading) {
       return (
@@ -698,7 +754,24 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             ))}
           </div>
         )}
+        
+        {/* Email Draft Modal */}
+        {emailModalOpen && emailDraft && currentJobForEmail && (
+          <EmailDraftModal
+            isOpen={emailModalOpen}
+            onClose={() => this.setState({ 
+              emailModalOpen: false, 
+              emailDraft: null, 
+              pendingApplicationId: null,
+              currentJobForEmail: null 
+            })}
+            emailDraft={emailDraft}
+            onSend={this.sendApplicationEmail}
+            jobTitle={currentJobForEmail.title}
+            companyName={currentJobForEmail.company_name || 'Unknown Company'}
+          />
+        )}
       </main>
     );
   }
-} 
+}
