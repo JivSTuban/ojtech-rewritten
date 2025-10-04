@@ -31,6 +31,7 @@ public class JobApplication extends BaseEntity {
     @Column(name = "status", nullable = false)
     private ApplicationStatus status = ApplicationStatus.PENDING;
     
+    @Column(name = "applied_at")
     private LocalDateTime appliedAt;
     
     @Column(name = "last_updated_at")

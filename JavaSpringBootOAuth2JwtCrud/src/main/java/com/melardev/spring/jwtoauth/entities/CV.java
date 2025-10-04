@@ -14,7 +14,7 @@ import java.util.Set;
 @Table(name = "cvs")
 public class CV extends BaseEntity {
 
-    @Column(name = "parsed_resume", columnDefinition = "jsonb")
+    @Column(name = "parsed_resume", columnDefinition = "text")
     private String parsedResume;
     
     @Column(name = "html_content", columnDefinition = "text")
