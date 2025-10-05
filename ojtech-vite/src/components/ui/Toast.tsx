@@ -1,10 +1,8 @@
-import React, { Component, createRef, RefObject } from 'react';
+import { Component, createRef, RefObject } from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { ToastProps } from './use-toast.tsx';
-import { ToastContext } from '../../providers/ToastContext';
 
 // Provider component
 export class ToastProvider extends Component<ToastPrimitives.ToastProviderProps> {

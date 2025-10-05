@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { Link } from "react-router-dom";
-import { Job } from "../../../lib/types/employer";
+import { Job } from '@/lib/types';
 import { cn } from "../../../lib/utils";
-import { Badge } from "../../../components/ui/Badge";
+import { Badge } from '@/components/ui/badge';
 import { Button } from "../../../components/ui/Button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../../components/ui/DropdownMenu";
-import { Briefcase, MapPin, MoreVertical, Eye, Edit, Trash2, Users, Clock, ExternalLink, AlertCircle, CheckCircle2, XCircle, Building } from "lucide-react";
+import { Briefcase, MapPin, MoreVertical, Eye, Edit, Trash2, Users, Clock, AlertCircle, CheckCircle2, XCircle, Building } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 
 interface EmployerJobCardProps {
@@ -13,6 +13,8 @@ interface EmployerJobCardProps {
   onViewApplications: (jobId: string) => void;
   onEditJob: (jobId: string) => void;
   onDeleteJob: (jobId: string) => void;
+  company_logo: string;
+  createdAt: Date;
   isDeleting: boolean;
 }
 
@@ -63,7 +65,7 @@ export class EmployerJobCard extends Component<EmployerJobCardProps> {
 
   render() {
     const { job, onViewApplications, onEditJob, onDeleteJob, isDeleting } = this.props;
-    const createdDate = new Date(job.created_at);
+    const createdDate = new Date(job.createdAt);
     const formattedDate = formatDistanceToNow(createdDate, { addSuffix: true });
 
     return (
@@ -72,9 +74,9 @@ export class EmployerJobCard extends Component<EmployerJobCardProps> {
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <div className="h-12 w-12 rounded-md bg-muted/50 flex items-center justify-center">
-                {job.company_logo ? (
+                {job.companyLogo ? (
                   <img 
-                    src={job.company_logo} 
+                    src={job.companyLogo} 
                     alt={job.company} 
                     className="h-10 w-10 object-contain" 
                   />
