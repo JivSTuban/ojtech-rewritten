@@ -1,18 +1,25 @@
-import { toast, dismissToast } from "../components/ui/toast-utils";
-import type { ToasterToastProps } from "../components/ui/Toast";
+import { toast } from "../components/ui/toast-utils";
+
+export interface UseToastProps {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive" | "success" | "warning";
+}
 
 export interface UseToastType {
-  toast: (props: Omit<ToasterToastProps, 'id'>) => {
-    id: string;
-    dismiss: () => void;
-    update: (props: ToasterToastProps) => void;
-  };
-  dismiss: (toastId?: string) => void;
+  toast: (props: UseToastProps) => void;
+  success: (props: UseToastProps) => void;
+  error: (props: UseToastProps) => void;
+  warning: (props: UseToastProps) => void;
+  dismiss: () => void;
 }
 
 export const useToast = (): UseToastType => {
   return {
-    toast,
-    dismiss: dismissToast,
+    toast: (props: UseToastProps) => toast.toast({ ...props, variant: props.variant || "default" }),
+    success: (props: UseToastProps) => toast.success(props),
+    error: (props: UseToastProps) => toast.destructive(props),
+    warning: (props: UseToastProps) => toast.warning(props),
+    dismiss: () => toast.dismissAll(),
   };
 }; 

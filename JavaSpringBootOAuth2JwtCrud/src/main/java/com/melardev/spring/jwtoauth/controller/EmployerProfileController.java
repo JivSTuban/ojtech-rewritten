@@ -215,7 +215,16 @@ public class EmployerProfileController {
         }
         
         if (data.containsKey("hasCompletedOnboarding")) {
-            profile.setHasCompletedOnboarding((Boolean) data.get("hasCompletedOnboarding"));
+            Object onboardingObj = data.get("hasCompletedOnboarding");
+            boolean requestedValue = false;
+            if (onboardingObj instanceof Boolean) {
+                requestedValue = (Boolean) onboardingObj;
+            } else if (onboardingObj != null) {
+                requestedValue = Boolean.parseBoolean(String.valueOf(onboardingObj));
+            }
+            if (requestedValue) {
+                profile.setHasCompletedOnboarding(true);
+            }
         }
         
         // New contact person fields

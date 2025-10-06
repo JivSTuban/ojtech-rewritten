@@ -4,6 +4,7 @@ import axios from 'axios';
 import { AuthContext } from '../providers/AuthProvider';
 import { Button } from '../components/ui/Button';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import VerificationBanner from '../components/student/VerificationBanner';
 
 // Interface for the job details
 interface Job {
@@ -38,7 +39,6 @@ class JobApplicationPageClass extends Component<JobApplicationPageProps, JobAppl
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
   
-  // API base URL
   private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
   
   constructor(props: JobApplicationPageProps) {
@@ -60,37 +60,19 @@ class JobApplicationPageClass extends Component<JobApplicationPageProps, JobAppl
   }
   
   componentDidMount() {
-    // Check if user is logged in
-    const authContext = this.context;
-    const { user } = authContext;
+    this.fetchJobDetails();
     
-    // If not authenticated, redirect to login
-    if (!user) {
-      this.props.navigate('/login');
-      return;
-    }
-    
-    // Check if user is a student
-    if (!user.roles?.includes('ROLE_STUDENT')) {
-      this.setState({
-        loading: false,
-        error: "Only students can apply for jobs"
-      });
-      return;
-    }
-    
-    // Prefill form with user data
+    // Try to pre-fill form with user data if available
+    const { user } = this.context || {};
     if (user) {
       this.setState(prevState => ({
         formData: {
           ...prevState.formData,
-          fullName: user?.fullName || '',
-          email: user?.email || ''
+          fullName: user.username || '',
+          email: user.email || ''
         }
       }));
     }
-    
-    this.fetchJobDetails();
   }
   
   fetchJobDetails = async () => {
@@ -153,31 +135,20 @@ class JobApplicationPageClass extends Component<JobApplicationPageProps, JobAppl
   handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { jobId } = this.props;
-    const { formData } = this.state;
-    
     this.setState({ submitting: true, submitError: null });
     
     try {
-      const token = localStorage.getItem('token');
+      const { jobId } = this.props;
+      const { formData } = this.state;
       
+      const token = localStorage.getItem('token');
       if (!token) {
-        this.setState({
-          submitError: "You must be logged in to apply",
-          submitting: false
-        });
-        return;
+        throw new Error("You must be logged in to apply");
       }
       
-      // Send application data to the API
       const response = await axios.post(
-        `${this.API_BASE_URL}/job-applications/apply`,
-        {
-          jobId,
-          coverLetter: formData.coverLetter,
-          contactPhone: formData.phone,
-          yearsOfExperience: Number(formData.experience) || 0
-        },
+        `${this.API_BASE_URL}/applications/apply/${jobId}`,
+        formData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -186,12 +157,27 @@ class JobApplicationPageClass extends Component<JobApplicationPageProps, JobAppl
         }
       );
       
-      // Navigate to application tracking page
-      this.props.navigate('/track');
+      if (response.status === 200 || response.status === 201) {
+        // Success! Redirect to applications tracking page
+        this.props.navigate('/track');
+      } else {
+        this.setState({
+          submitError: "Failed to submit application. Please try again.",
+          submitting: false
+        });
+      }
     } catch (err: any) {
-      console.error("Error submitting application:", err);
+      console.error("Application submission error:", err);
+      
+      let errorMessage = "Failed to submit application. Please try again.";
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       this.setState({
-        submitError: err.response?.data?.message || "Failed to submit application",
+        submitError: errorMessage,
         submitting: false
       });
     }
@@ -202,47 +188,55 @@ class JobApplicationPageClass extends Component<JobApplicationPageProps, JobAppl
     
     if (loading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <div className="flex justify-center items-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
     }
     
     if (error) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
-          <Link to="/opportunities" className="absolute top-8 left-8">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 max-w-2xl mx-auto my-8">
+          <h2 className="text-xl font-bold mb-2">Error</h2>
+          <p>{error}</p>
+          <Link to="/opportunities" className="text-blue-600 hover:underline mt-4 inline-block">
+            Browse other opportunities
           </Link>
-          <h2 className="text-2xl font-semibold text-red-500 mb-4">Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => this.props.navigate('/opportunities')}>
-            Back to Opportunities
-          </Button>
+        </div>
+      );
+    }
+    
+    if (!job) {
+      return (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 max-w-2xl mx-auto my-8">
+          <h2 className="text-xl font-bold mb-2">Job Not Found</h2>
+          <p>The job you're looking for could not be found.</p>
+          <Link to="/opportunities" className="text-blue-600 hover:underline mt-4 inline-block">
+            Browse other opportunities
+          </Link>
         </div>
       );
     }
     
     return (
-      <main className="min-h-screen py-8 md:py-12 flex flex-col items-center">
-        <div className="container max-w-2xl px-4">
-          <div className="mb-6">
-            <Link to={`/opportunities/${this.props.jobId}`}>
-              <Button variant="outline" className="flex items-center gap-2">
+      <main className="max-w-4xl mx-auto py-8 px-4">
+        <div className="space-y-6">
+          <div className="flex items-center">
+            <Link to={`/opportunities/${job.id}`} className="inline-flex">
+              <Button variant="ghost" size="sm" className="gap-1">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Job Details</span>
               </Button>
             </Link>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden w-full p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Apply for Position</h1>
-            <p className="text-gray-600 mb-6">
-              {job?.title} at {job?.company_name || 'Company'}
-            </p>
+          <div className="flex flex-col space-y-6 p-4 md:p-6 bg-white rounded-lg shadow-sm">
+            <VerificationBanner onlyShowIfUnverified={true} />
+            
+            <div className="flex flex-col space-y-2">
+              <h1 className="text-2xl font-bold">{job.title}</h1>
+              <p className="text-gray-600">{job.company_name}</p>
+            </div>
             
             {submitError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">

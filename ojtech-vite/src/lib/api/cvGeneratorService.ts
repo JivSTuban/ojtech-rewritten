@@ -2,12 +2,12 @@ import axios from 'axios';
 import html2pdf from 'html2pdf.js';
 import { CV_TEMPLATE } from '../templates/cvTemplate';
 import authService from './authService';
+import { API_BASE_URL } from '../../apiConfig';
 
 // Constants
 const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const MODEL = 'gemini-2.5-flash-preview-05-20';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // Add these interfaces at the top of the file
 interface ResumeData {
@@ -791,13 +791,13 @@ export async function callGeminiAPI(profileData: any): Promise<any> {
  * Saves HTML content to the CV record
  */
 export const saveResumeHtml = async (cvId: string, htmlContent: string): Promise<boolean> => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  // Use the API_BASE_URL constant defined at the top of the file
   
   try {
     console.log(`Saving HTML content for CV ID: ${cvId}, content length: ${htmlContent.length}`);
     
     const response = await axios.put(
-      `${apiUrl}/cvs/${cvId}/html`,
+      `${API_BASE_URL}/cvs/${cvId}/html`,
       htmlContent,
       {
         headers: {
@@ -824,15 +824,13 @@ export const saveResumeHtml = async (cvId: string, htmlContent: string): Promise
  * Generates a CV using the student's profile data
  */
 export const generateCV = async (profileData: any): Promise<any> => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-  
   try {
     console.log('Generating CV with profile data:', profileData);
     
     // Step 1: Create a placeholder CV entity
     console.log('Creating placeholder CV entity');
     const createResponse = await axios.post(
-      `${apiUrl}/cvs/generate`,
+      `${API_BASE_URL}/cvs/generate`,
       {},
       {
         headers: {
@@ -861,7 +859,7 @@ export const generateCV = async (profileData: any): Promise<any> => {
     // Step 3: Update the CV entity with the generated content
     console.log('Updating CV entity with generated content');
     await axios.put(
-      `${apiUrl}/cvs/${cvId}/content`,
+      `${API_BASE_URL}/cvs/${cvId}/content`,
       jsonContentStr,
       {
         headers: {
@@ -916,11 +914,11 @@ function formatDate(dateString: string): string {
  * Gets CV content by ID with retries
  */
 export async function getCVContent(cvId: string, token: string, retries = 3): Promise<string> {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  // Use the API_BASE_URL constant defined at the top of the file
 
   try {
     console.log(`Getting CV content for ID: ${cvId}`);
-    const response = await axios.get(`${apiUrl}/cvs/${cvId}/content`, {
+    const response = await axios.get(`${API_BASE_URL}/cvs/${cvId}/content`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         'Accept': 'application/json, text/html'
@@ -1004,11 +1002,11 @@ export async function getCVContent(cvId: string, token: string, retries = 3): Pr
  * Gets current user's CV content
  */
 export async function getCurrentUserCVContent(token: string): Promise<string> {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  // Use the API_BASE_URL constant defined at the top of the file
   
   try {
     console.log('Getting current user CV content');
-    const response = await axios.get(`${apiUrl}/cvs/me/content`, {
+    const response = await axios.get(`${API_BASE_URL}/cvs/me/content`, {
         headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'text/html'

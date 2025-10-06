@@ -1,4 +1,4 @@
-import { ToastProps } from "./use-toast.tsx";
+import { ToastProps } from "./use-toast";
 import { ToastHelper } from "../../providers/ToastContext";
 
 // Toast manager class
@@ -15,7 +15,7 @@ export class ToastManager {
     try {
       // First try the ToastHelper from ToastContext
       if (ToastHelper.currentContext) {
-        return ToastHelper.toast(props);
+        return (ToastHelper as any).toast(props);
     }
       
       // Fall back to the registered function
@@ -34,7 +34,7 @@ export class ToastManager {
     try {
       // Try ToastHelper first
       if (ToastHelper.currentContext) {
-        ToastHelper.dismiss();
+        (ToastHelper as any).dismiss();
         return;
   }
 

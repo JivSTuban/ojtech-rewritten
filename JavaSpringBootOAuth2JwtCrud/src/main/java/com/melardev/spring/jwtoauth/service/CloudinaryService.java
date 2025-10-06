@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.Map;
 
 public interface CloudinaryService {
-    Map upload(MultipartFile file, String folder) throws IOException;
+    Map<String, Object> upload(MultipartFile file, String folder) throws IOException;
+    Map<String, Object> uploadWithPreset(MultipartFile file, String folder, String preset) throws IOException;
+    String uploadImage(MultipartFile file) throws IOException;
+    String uploadPdf(MultipartFile file, String preset) throws IOException;
     void delete(String publicId) throws IOException;
-} 
+}

@@ -28,7 +28,11 @@ export class LoginPage extends Component<{}, LoginPageState> {
   declare context: React.ContextType<typeof AuthContext>;
   
   // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  
+  // GitHub OAuth Configuration
+  private GITHUB_CLIENT_ID = 'Ov23li4gxkGK900aEkLs';
+  private GITHUB_REDIRECT_URI = `${window.location.origin}/auth/github/callback`;
   
   constructor(props: {}) {
     super(props);
@@ -151,21 +155,32 @@ export class LoginPage extends Component<{}, LoginPageState> {
       if (this.context && this.context.user) {
         const { user } = this.context;
         
-        // Redirect based on user role and onboarding status
+        // PRIORITY CHECK: Password reset requirement (highest priority)
+        if (this.context.requiresPasswordReset) {
+          this.setState({ redirectTo: '/change-password' });
+          return;
+        }
+        
+        // SECOND PRIORITY: Onboarding requirement
+        if (this.context.needsOnboarding) {
+          if (user.roles?.includes('ROLE_EMPLOYER')) {
+            this.setState({ redirectTo: '/onboarding/employer' });
+          } else if (user.roles?.includes('ROLE_STUDENT')) {
+            this.setState({ redirectTo: '/onboarding/student' });
+          } else {
+            this.setState({ redirectTo: '/onboarding' });
+          }
+          return;
+        }
+        
+        // FINAL: Role-based redirect after onboarding is complete
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
-          this.setState({ redirectTo: '/onboarding/employer' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
-          this.setState({ redirectTo: '/onboarding/student' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
-          // Redirect students with completed onboarding to track page
-          this.setState({ redirectTo: '/track' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
-          // Redirect employers with completed onboarding to jobs page
+        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
           this.setState({ redirectTo: '/employer/jobs' });
+        } else if (user.roles?.includes('ROLE_STUDENT')) {
+          this.setState({ redirectTo: '/track' });
         } else {
-          // Default fallback
           this.setState({ redirectTo: '/' });
         }
       } else {
@@ -281,6 +296,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
     this.setState(prevState => ({
       showPassword: !prevState.showPassword
     }));
+  };
+
+  handleGitHubLogin = () => {
+    // Construct GitHub OAuth URL
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${this.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(this.GITHUB_REDIRECT_URI)}&scope=user:email`;
+    
+    // Redirect to GitHub for authorization
+    window.location.href = githubAuthUrl;
   };
   
   render() {
@@ -399,7 +422,12 @@ export class LoginPage extends Component<{}, LoginPageState> {
                 />
               )}
             </div>
-            <Button variant="outline" className="w-full flex items-center justify-center">
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center"
+              onClick={this.handleGitHubLogin}
+              type="button"
+            >
               <Github className="h-5 w-5 mr-2" />
               GitHub
             </Button>

@@ -11,6 +11,7 @@ import { AuthLayout } from '../components/layouts/AuthLayout';
 import { toast } from '../components/ui/toast-utils';
 import { GoogleLogin } from '@react-oauth/google';
 import emailjs from '@emailjs/browser';
+import { normalizedApiBaseUrl } from '../apiConfig';
 
 interface RegisterPageState {
   fullName: string;
@@ -36,11 +37,15 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
   declare context: React.ContextType<typeof AuthContext>;
   
   // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  private API_BASE_URL = normalizedApiBaseUrl;
   // EmailJS credentials
   private EMAIL_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_gzgua2e';
   private EMAIL_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'yhRZXtxm7JWqyq2ep';
   private EMAIL_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'yhRZXtxm7JWqyq2ep';
+  
+  // GitHub OAuth Configuration
+  private GITHUB_CLIENT_ID = 'Ov23li4gxkGK900aEkLs';
+  private GITHUB_REDIRECT_URI = `${window.location.origin}/auth/github/callback`;
   
   constructor(props: {}) {
     super(props);
@@ -396,6 +401,14 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       showConfirmPassword: !prevState.showConfirmPassword
     }));
   };
+
+  handleGitHubLogin = () => {
+    // Construct GitHub OAuth URL
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${this.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(this.GITHUB_REDIRECT_URI)}&scope=user:email`;
+    
+    // Redirect to GitHub for authorization
+    window.location.href = githubAuthUrl;
+  };
   
   render() {
     const { 
@@ -582,7 +595,12 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
                 />
               )}
             </div>
-            <Button variant="outline" className="w-full flex items-center justify-center">
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center"
+              onClick={this.handleGitHubLogin}
+              type="button"
+            >
               <Github className="h-5 w-5 mr-2" />
               GitHub
             </Button>

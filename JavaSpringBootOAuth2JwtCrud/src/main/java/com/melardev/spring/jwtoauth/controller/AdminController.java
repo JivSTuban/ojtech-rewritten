@@ -37,6 +37,12 @@ import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
 import com.melardev.spring.jwtoauth.service.UserService;
+import com.melardev.spring.jwtoauth.service.interfaces.AdminJobService;
+import com.melardev.spring.jwtoauth.dtos.admin.*;
+import com.melardev.spring.jwtoauth.entities.*;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -60,6 +66,12 @@ public class AdminController {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private AdminJobService adminJobService;
+    
+    @Autowired
+    private com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository employerProfileRepository;
     
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -310,23 +322,6 @@ public class AdminController {
     }
     
     // Jobs Management
-    @GetMapping("/jobs")
-    public ResponseEntity<?> getAllJobs(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Job> jobsPage = jobRepository.findAll(pageable);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("jobs", jobsPage.getContent());
-        response.put("currentPage", jobsPage.getNumber());
-        response.put("totalItems", jobsPage.getTotalElements());
-        response.put("totalPages", jobsPage.getTotalPages());
-        
-        return ResponseEntity.ok(response);
-    }
-    
     @DeleteMapping("/jobs/{id}")
     public ResponseEntity<?> deleteJob(@PathVariable UUID id) {
         if (!jobRepository.existsById(id)) {
@@ -421,5 +416,347 @@ public class AdminController {
             
             return ResponseEntity.ok(response);
         }
+    }
+
+    // ==============================================
+    // Admin Job Management Endpoints
+    // ==============================================
+
+    /**
+     * Get all jobs with admin metadata (paginated)
+     */
+    @GetMapping("/jobs")
+    public ResponseEntity<?> getAllJobsWithAdminData(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "postedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        Page<Job> jobsPage = adminJobService.getAllJobsWithAdminMetadata(pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("jobs", jobsPage.getContent());
+        response.put("currentPage", jobsPage.getNumber());
+        response.put("totalItems", jobsPage.getTotalElements());
+        response.put("totalPages", jobsPage.getTotalPages());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Search jobs with admin filters
+     */
+    @PostMapping("/jobs/search")
+    public ResponseEntity<?> searchJobsWithFilters(
+            @RequestBody AdminJobSearchDto searchDto,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Job> jobsPage = adminJobService.searchJobsWithAdminFilters(searchDto, pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("jobs", jobsPage.getContent());
+        response.put("currentPage", jobsPage.getNumber());
+        response.put("totalItems", jobsPage.getTotalElements());
+        response.put("totalPages", jobsPage.getTotalPages());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get job with admin details
+     */
+    @GetMapping("/jobs/{jobId}")
+    public ResponseEntity<?> getJobWithAdminDetails(@PathVariable UUID jobId) {
+        try {
+            Job job = adminJobService.getJobWithAdminDetails(jobId);
+            AdminJobMetadata metadata = adminJobService.getOrCreateJobMetadata(jobId, getCurrentAdminId());
+            JobPerformanceMetrics metrics = adminJobService.getJobPerformanceMetrics(jobId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("job", job);
+            response.put("metadata", metadata);
+            response.put("metrics", metrics);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Create job as admin
+     */
+    @PostMapping("/jobs")
+    public ResponseEntity<?> createJobAsAdmin(@RequestBody Map<String, Object> jobData) {
+        try {
+            UUID employerId = UUID.fromString((String) jobData.get("employerId"));
+            UUID adminId = getCurrentAdminId();
+            
+            Job job = adminJobService.createJobAsAdmin(jobData, employerId, adminId);
+            return ResponseEntity.ok(job);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update job as admin
+     */
+    @PutMapping("/jobs/{jobId}")
+    public ResponseEntity<?> updateJobAsAdmin(@PathVariable UUID jobId, @RequestBody Map<String, Object> jobData) {
+        try {
+            UUID adminId = getCurrentAdminId();
+            Job job = adminJobService.updateJobAsAdmin(jobId, jobData, adminId);
+            return ResponseEntity.ok(job);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete job as admin
+     */
+    @DeleteMapping("/jobs/{jobId}")
+    public ResponseEntity<?> deleteJobAsAdmin(@PathVariable UUID jobId) {
+        try {
+            UUID adminId = getCurrentAdminId();
+            boolean deleted = adminJobService.deleteJobAsAdmin(jobId, adminId);
+            if (deleted) {
+                return ResponseEntity.ok(new MessageResponse("Job deleted successfully"));
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("Failed to delete job"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Bulk operations on jobs
+     */
+    @PostMapping("/jobs/bulk/{operation}")
+    public ResponseEntity<?> performBulkOperation(
+            @PathVariable String operation,
+            @RequestBody Map<String, Object> operationData) {
+        try {
+            UUID adminId = getCurrentAdminId();
+            @SuppressWarnings("unchecked")
+            List<String> jobIdStrings = (List<String>) operationData.get("jobIds");
+            List<UUID> jobIds = jobIdStrings.stream().map(UUID::fromString).toList();
+            
+            BulkOperationResult result;
+            
+            switch (operation.toLowerCase()) {
+                case "delete":
+                    result = adminJobService.bulkDeleteJobs(jobIds, adminId);
+                    break;
+                case "activate":
+                    result = adminJobService.bulkUpdateJobStatus(jobIds, true, adminId);
+                    break;
+                case "deactivate":
+                    result = adminJobService.bulkUpdateJobStatus(jobIds, false, adminId);
+                    break;
+                case "feature":
+                    LocalDateTime featuredUntil = operationData.containsKey("featuredUntil") ? 
+                        LocalDateTime.parse((String) operationData.get("featuredUntil")) : null;
+                    result = adminJobService.bulkSetFeatured(jobIds, true, featuredUntil, adminId);
+                    break;
+                case "unfeature":
+                    result = adminJobService.bulkSetFeatured(jobIds, false, null, adminId);
+                    break;
+                case "priority":
+                    Integer priority = (Integer) operationData.get("priority");
+                    result = adminJobService.bulkUpdatePriority(jobIds, priority, adminId);
+                    break;
+                default:
+                    return ResponseEntity.badRequest().body(new MessageResponse("Invalid operation: " + operation));
+            }
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Moderate job
+     */
+    @PostMapping("/jobs/{jobId}/moderate")
+    public ResponseEntity<?> moderateJob(
+            @PathVariable UUID jobId,
+            @RequestBody Map<String, Object> moderationData) {
+        try {
+            UUID adminId = getCurrentAdminId();
+            String actionStr = (String) moderationData.get("action");
+            String notes = (String) moderationData.get("notes");
+            
+            JobModeration.ModerationAction action = JobModeration.ModerationAction.valueOf(actionStr.toUpperCase());
+            JobModeration moderation = adminJobService.moderateJob(jobId, action, notes, adminId);
+            
+            return ResponseEntity.ok(moderation);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get job moderation history
+     */
+    @GetMapping("/jobs/{jobId}/moderation-history")
+    public ResponseEntity<?> getModerationHistory(@PathVariable UUID jobId) {
+        try {
+            List<JobModeration> history = adminJobService.getModerationHistory(jobId);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get pending moderation jobs
+     */
+    @GetMapping("/jobs/pending-moderation")
+    public ResponseEntity<?> getPendingModerationJobs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<JobModeration> moderationsPage = adminJobService.getPendingModerationJobs(pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("moderations", moderationsPage.getContent());
+        response.put("currentPage", moderationsPage.getNumber());
+        response.put("totalItems", moderationsPage.getTotalElements());
+        response.put("totalPages", moderationsPage.getTotalPages());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get job statistics
+     */
+    @GetMapping("/statistics/jobs")
+    public ResponseEntity<?> getJobStatistics(@RequestParam(defaultValue = "monthly") String period) {
+        try {
+            AdminJobStatisticsDto stats = adminJobService.getSystemJobStatistics(period);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get employer job statistics
+     */
+    @GetMapping("/statistics/employers/{employerId}/jobs")
+    public ResponseEntity<?> getEmployerJobStatistics(
+            @PathVariable UUID employerId,
+            @RequestParam(defaultValue = "monthly") String period) {
+        try {
+            AdminJobStatisticsDto stats = adminJobService.getEmployerJobStatistics(employerId, period);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get job categories
+     */
+    @GetMapping("/job-categories")
+    public ResponseEntity<?> getJobCategories() {
+        try {
+            List<JobCategory> categories = adminJobService.getAllJobCategories();
+            return ResponseEntity.ok(categories);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Create job category
+     */
+    @PostMapping("/job-categories")
+    public ResponseEntity<?> createJobCategory(@RequestBody Map<String, Object> categoryData) {
+        try {
+            UUID adminId = getCurrentAdminId();
+            String name = (String) categoryData.get("name");
+            String description = (String) categoryData.get("description");
+            UUID parentCategoryId = categoryData.containsKey("parentCategoryId") ? 
+                UUID.fromString((String) categoryData.get("parentCategoryId")) : null;
+            
+            JobCategory category = adminJobService.createJobCategory(name, description, parentCategoryId, adminId);
+            return ResponseEntity.ok(category);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get system health metrics
+     */
+    @GetMapping("/system/health")
+    public ResponseEntity<?> getSystemHealthMetrics() {
+        try {
+            Map<String, Object> metrics = adminJobService.getSystemHealthMetrics();
+            return ResponseEntity.ok(metrics);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get job filters for admin interface
+     */
+    @GetMapping("/jobs/filters")
+    public ResponseEntity<?> getJobFilters() {
+        try {
+            AdminJobFilterDto filters = adminJobService.getJobFilters();
+            return ResponseEntity.ok(filters);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get all employers for dropdown/form selection
+     */
+    @GetMapping("/employers")
+    public ResponseEntity<?> getAllEmployers() {
+        try {
+            List<com.melardev.spring.jwtoauth.entities.EmployerProfile> employers = employerProfileRepository.findAll();
+            
+            // Map to simpler DTO for frontend
+            List<Map<String, Object>> employerList = employers.stream()
+                    .map(emp -> {
+                        Map<String, Object> employerData = new HashMap<>();
+                        employerData.put("id", emp.getId().toString());
+                        employerData.put("name", emp.getCompanyName());
+                        return employerData;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(employerList);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    // ==============================================
+    // Helper Methods
+    // ==============================================
+
+    /**
+     * Get current admin user ID from security context
+     * In a real implementation, this would extract from JWT/Security context
+     */
+    private UUID getCurrentAdminId() {
+        // Placeholder implementation - in production this would extract from SecurityContext
+        // For now, returning a default admin ID for testing
+        return UUID.randomUUID(); // This should be replaced with actual security context extraction
     }
 } 

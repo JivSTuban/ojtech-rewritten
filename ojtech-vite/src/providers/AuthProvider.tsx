@@ -1,7 +1,6 @@
 import React, { Component, createContext, useContext, ReactNode } from 'react';
 import authService, { UserData } from '@/lib/api/authService';
 import profileService from '@/lib/api/profileService'; // Import profile service
-import axios from 'axios';
 
 export interface AppUser extends UserData {
   // Add profile specific fields here, or a nested profile object
@@ -14,12 +13,15 @@ interface AuthContextType {
   login: (usernameOrEmail: string, password: string) => Promise<AppUser>;
   register: (data: any) => Promise<any>;
   googleLogin: (tokenId: string) => Promise<AppUser>;
+  githubLogin: (code: string) => Promise<AppUser>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
   profile: any;
   needsOnboarding: boolean;
+  requiresPasswordReset: boolean;
   fetchUserProfile: () => Promise<void>; // Added to manually refresh profile
+  updateProfile: (profile: any) => void; // Added to update user/profile
 }
 
 // Create context outside of any component
@@ -35,6 +37,7 @@ interface AuthProviderState {
   isAuthenticated: boolean;
   profile: any | null;
   needsOnboarding: boolean;
+  requiresPasswordReset: boolean;
 }
 
 // Export the class component separately
@@ -50,6 +53,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       isAuthenticated: false,
       profile: null,
       needsOnboarding: true,
+      requiresPasswordReset: false,
     };
   }
 
@@ -187,7 +191,11 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
       // Explicitly check onboarding status
       const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
-      console.log('Login complete. Onboarding status:', hasCompletedOnboarding);
+      
+      // Check password reset requirement
+      const requiresPasswordReset = fullUser.requiresPasswordReset === true;
+      
+      console.log('Login complete. Onboarding status:', hasCompletedOnboarding, 'Password Reset:', requiresPasswordReset);
 
       this.setState({
         isLoading: false,
@@ -195,6 +203,7 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
         user: fullUser,
         profile: fullUser.profile,
         needsOnboarding: !hasCompletedOnboarding,
+        requiresPasswordReset: requiresPasswordReset,
       });
 
       return fullUser;
@@ -234,6 +243,33 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       });
 
       return user;
+    } catch (error: any) {
+      this.setState({ isLoading: false });
+      throw error;
+    }
+  };
+
+  githubLogin = async (code: string) => {
+    try {
+      this.setState({ isLoading: true });
+      const userData = await authService.githubLogin(code);
+
+      console.log('GitHub login successful, fetching user profile');
+      const fullUser = await this.fetchUserProfileData(userData);
+
+      // Check onboarding status from the backend response
+      const hasCompletedOnboarding = fullUser.hasCompletedOnboarding === true;
+      console.log('GitHub login complete. Onboarding status:', hasCompletedOnboarding);
+
+      this.setState({
+        isLoading: false,
+        isAuthenticated: true,
+        user: fullUser,
+        profile: fullUser.profile,
+        needsOnboarding: !hasCompletedOnboarding,
+      });
+
+      return fullUser;
     } catch (error: any) {
       this.setState({ isLoading: false });
       throw error;
@@ -306,7 +342,16 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
   logout = () => {
     authService.logout();
-    this.setState({ user: null });
+    this.setState({ 
+      user: null,
+      isAuthenticated: false,
+      profile: null,
+      needsOnboarding: true,
+      isLoading: false
+    });
+    
+    // Use replace instead of href to avoid adding to history
+    window.location.replace('/');
   };
 
   fetchUserProfile = async () => {
@@ -334,12 +379,23 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
           isLoading: false,
           profile: fullUser.profile || null,
           needsOnboarding: fullUser.hasCompletedOnboarding !== true,
+          requiresPasswordReset: fullUser.requiresPasswordReset === true,
         });
       } catch (error) {
         console.error('Error refreshing user profile:', error);
         this.setState({ isLoading: false });
       }
     }
+  };
+
+  updateProfile = (updatedData: any) => {
+    this.setState((prevState) => ({
+      user: prevState.user ? { ...prevState.user, ...updatedData } : null,
+      profile: updatedData.profile || prevState.profile,
+      requiresPasswordReset: updatedData.requiresPasswordReset !== undefined 
+        ? updatedData.requiresPasswordReset 
+        : prevState.requiresPasswordReset,
+    }));
   };
 
   render() {
@@ -349,12 +405,15 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       login: this.login,
       register: this.register,
       googleLogin: this.googleLogin,
+      githubLogin: this.githubLogin,
       logout: this.logout,
       isLoading,
       isAuthenticated: this.state.isAuthenticated,
       profile: this.state.profile,
       needsOnboarding: this.state.needsOnboarding,
+      requiresPasswordReset: this.state.requiresPasswordReset,
       fetchUserProfile: this.fetchUserProfile,
+      updateProfile: this.updateProfile,
     };
 
     return <AuthContext.Provider value={value}>{this.props.children}</AuthContext.Provider>;

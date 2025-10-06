@@ -13,6 +13,7 @@ public class EmployerProfileDto {
     private String companyDescription;
     private String websiteUrl;
     private String logoUrl;
+    private String email;
     
     public EmployerProfileDto() {
     }
@@ -26,12 +27,13 @@ public class EmployerProfileDto {
         this.companyDescription = employerProfile.getCompanyDescription();
         this.websiteUrl = employerProfile.getWebsiteUrl();
         this.logoUrl = employerProfile.getLogoUrl();
+        this.email = employerProfile.getContactPersonEmail();
     }
     
     public UUID getId() {
         return id;
     }
-    
+
     public void setId(UUID id) {
         this.id = id;
     }
@@ -90,6 +92,14 @@ public class EmployerProfileDto {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
     }
     
     // For compatibility with JobDto

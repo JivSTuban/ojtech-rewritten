@@ -140,6 +140,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 Role adminRole = getOrCreateRole(ERole.ROLE_ADMIN);
                 adminUser.getRoles().add(adminRole);
                 adminUser.setEmailVerified(true);
+                adminUser.setRequiresPasswordReset(true); // Force password reset on first login
                 userRepository.save(adminUser);
 
                 // Create student users
@@ -168,6 +169,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Create employer user
                 User employerUser = new User("employer", "employer@ojtech.com", passwordEncoder.encode("password"));
                 employerUser.setEmailVerified(true);
+                employerUser.setRequiresPasswordReset(true); // Force password reset on first login
                 Role employerRole = getOrCreateRole(ERole.ROLE_EMPLOYER);
                 employerUser.getRoles().add(employerRole);
                 userRepository.save(employerUser);
@@ -275,7 +277,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Add contact person information
                 employerProfile.setContactPersonName("John Smith");
                 employerProfile.setContactPersonPosition("HR Manager");
-                employerProfile.setContactPersonEmail("hr@techcompany.com");
+                employerProfile.setContactPersonEmail("moronaldrin3@gmail.com");
                 employerProfile.setContactPersonPhone("555-123-4567");
                 
                 employerProfileRepository.save(employerProfile);
@@ -357,71 +359,71 @@ public class DatabaseSeeder implements CommandLineRunner {
                     return; // Skip if no employers exist
                 }
                 
-                // EmployerProfile employer = employers.get(0);
+                EmployerProfile employer = employers.get(0);
 
-                // Job job1 = new Job();
-                // job1.setEmployer(employer);
-                // job1.setTitle("Software Engineer");
-                // job1.setDescription("We are looking for a skilled software engineer to join our team. " +
-                //                    "The ideal candidate will have experience with Java, Spring Boot, and React. " +
-                //                    "Responsibilities include developing new features, maintaining existing code, " +
-                //                    "and collaborating with the product team.");
-                // job1.setLocation("San Francisco, CA");
-                // job1.setRequiredSkills("Java,Spring Boot,React");
-                // job1.setEmploymentType("Full-time");
-                // job1.setMinSalary(80000.0);
-                // job1.setMaxSalary(120000.0);
-                // job1.setCurrency("USD");
-                // job1.setPostedAt(LocalDateTime.now());
-                // job1.setActive(true);
-                // jobRepository.save(job1);
+                Job job1 = new Job();
+                job1.setEmployer(employer);
+                job1.setTitle("Software Engineer");
+                job1.setDescription("We are looking for a skilled software engineer to join our team. " +
+                                   "The ideal candidate will have experience with Java, Spring Boot, and React. " +
+                                   "Responsibilities include developing new features, maintaining existing code, " +
+                                   "and collaborating with the product team.");
+                job1.setLocation("San Francisco, CA");
+                job1.setRequiredSkills("Java,Spring Boot,React");
+                job1.setEmploymentType("Full-time");
+                job1.setMinSalary(80000.0);
+                job1.setMaxSalary(120000.0);
+                job1.setCurrency("USD");
+                job1.setPostedAt(LocalDateTime.now());
+                job1.setActive(true);
+                jobRepository.save(job1);
 
-                // Job job2 = new Job();
-                // job2.setEmployer(employer);
-                // job2.setTitle("Frontend Developer");
-                // job2.setDescription("Join our team as a frontend developer working with React. " +
-                //                    "You will be responsible for implementing visual elements and user interactions " +
-                //                    "that users see and interact with in a web application.");
-                // job2.setLocation("Remote");
-                // job2.setRequiredSkills("HTML,CSS,JavaScript,React");
-                // job2.setEmploymentType("Full-time");
-                // job2.setMinSalary(70000.0);
-                // job2.setMaxSalary(100000.0);
-                // job2.setCurrency("USD");
-                // job2.setPostedAt(LocalDateTime.now().minusDays(5));
-                // job2.setActive(true);
-                // jobRepository.save(job2);
+                Job job2 = new Job();
+                job2.setEmployer(employer);
+                job2.setTitle("Frontend Developer");
+                job2.setDescription("Join our team as a frontend developer working with React. " +
+                                   "You will be responsible for implementing visual elements and user interactions " +
+                                   "that users see and interact with in a web application.");
+                job2.setLocation("Remote");
+                job2.setRequiredSkills("HTML,CSS,JavaScript,React");
+                job2.setEmploymentType("Full-time");
+                job2.setMinSalary(70000.0);
+                job2.setMaxSalary(100000.0);
+                job2.setCurrency("USD");
+                job2.setPostedAt(LocalDateTime.now().minusDays(5));
+                job2.setActive(true);
+                jobRepository.save(job2);
                 
-                // Job job3 = new Job();
-                // job3.setEmployer(employer);
-                // job3.setTitle("Data Scientist");
-                // job3.setDescription("We're seeking a data scientist to help us make data-driven decisions. " +
-                //                    "You'll work with large datasets, build machine learning models, and " +
-                //                    "communicate insights to stakeholders.");
-                // job3.setLocation("New York, NY");
-                // job3.setRequiredSkills("Python,R,SQL,Machine Learning,Statistics");
-                // job3.setEmploymentType("Full-time");
-                // job3.setMinSalary(90000.0);
-                // job3.setMaxSalary(130000.0);
-                // job3.setCurrency("USD");
-                // job3.setPostedAt(LocalDateTime.now().minusDays(3));
-                // job3.setActive(true);
-                // jobRepository.save(job3);
+                Job job3 = new Job();
+                job3.setEmployer(employer);
+                job3.setTitle("Data Scientist");
+                job3.setDescription("We're seeking a data scientist to help us make data-driven decisions. " +
+                                   "You'll work with large datasets, build machine learning models, and " +
+                                   "communicate insights to stakeholders.");
+                job3.setLocation("New York, NY");
+                job3.setRequiredSkills("Python,R,SQL,Machine Learning,Statistics");
+                job3.setEmploymentType("Full-time");
+                job3.setMinSalary(90000.0);
+                job3.setMaxSalary(130000.0);
+                job3.setCurrency("USD");
+                job3.setPostedAt(LocalDateTime.now().minusDays(3));
+                job3.setActive(true);
+                jobRepository.save(job3);
                 
-                // Job job4 = new Job();
-                // job4.setEmployer(employer);
-                // job4.setTitle("DevOps Engineer");
-                // job4.setDescription("Looking for a DevOps engineer to help us build and maintain our " +
-                //                    "cloud infrastructure. Experience with AWS, Docker, and Kubernetes required.");
-                // job4.setLocation("Remote");
-                // job4.setRequiredSkills("AWS,Docker,Kubernetes,CI/CD,Linux");
-                // job4.setEmploymentType("Full-time");
-                // job4.setMinSalary(85000.0);
-                // job4.setMaxSalary(125000.0);
-                // job4.setCurrency("USD");
-                // job4.setPostedAt(LocalDateTime.now().minusDays(7));
-                // job4.setActive(true);
-                // jobRepository.save(job4);
+                Job job4 = new Job();
+                job4.setEmployer(employer);
+                job4.setTitle("DevOps Engineer");
+                job4.setDescription("Looking for a DevOps engineer to help us build and maintain our " +
+                                   "cloud infrastructure. Experience with AWS, Docker, and Kubernetes required.");
+                job4.setLocation("Remote");
+                job4.setRequiredSkills("AWS,Docker,Kubernetes,CI/CD,Linux");
+                job4.setEmploymentType("Full-time");
+                job4.setMinSalary(85000.0);
+                job4.setMaxSalary(125000.0);
+                job4.setCurrency("USD");
+                job4.setPostedAt(LocalDateTime.now().minusDays(7));
+                job4.setActive(true);
+                jobRepository.save(job4);
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed jobs: {}", e.getMessage());

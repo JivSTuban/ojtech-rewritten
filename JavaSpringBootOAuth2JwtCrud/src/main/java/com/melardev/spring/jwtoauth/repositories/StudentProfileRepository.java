@@ -14,4 +14,5 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     Optional<StudentProfile> findByUserId(UUID userId);
     @Query("SELECT s FROM StudentProfile s WHERE s.activeCvId IS NOT NULL")
     List<StudentProfile> findAllWithActiveCVs();
-} 
+    List<StudentProfile> findByVerified(boolean verified);
+}

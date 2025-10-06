@@ -139,4 +139,97 @@ public class EmailService {
             throw new MessagingException("Failed to send user creation email: " + e.getMessage());
         }
     }
-} 
+    
+    public void sendJobApplicationEmail(String recipientEmail, String recipientName, 
+                                       String studentName, String studentEmail, String studentPhone,
+                                       String studentUniversity, String studentMajor,
+                                       String jobTitle, String companyName,
+                                       String coverLetter, String cvUrl,
+                                       String customEmailBody,
+                                       org.springframework.web.multipart.MultipartFile[] attachments) throws MessagingException {
+        try {
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail, "OJTech - Student Applications");
+            helper.setTo(recipientEmail);
+            helper.setReplyTo(studentEmail, studentName); // HR replies go directly to student
+            helper.setSubject("Job Application for " + jobTitle + " - " + studentName);
+            
+            String emailBodyContent = customEmailBody != null && !customEmailBody.trim().isEmpty() 
+                ? customEmailBody 
+                : generateDefaultEmailBody(studentName, jobTitle, coverLetter);
+            
+            String emailContent = String.format("""
+                <html>
+                    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                        <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <div style="background-color:rgb(0, 0, 0); width: 64px; height: 64px; border-radius: 50%%; margin: 0 auto 20px;">
+                                    <img src="https://res.cloudinary.com/df7wrezta/image/upload/v1748160270/dbe6m8ajpudgn6veyopz.png" style="width: 64px; height: 64px;"/>
+                                </div>
+                                <h2 style="color: #333333; margin: 0;">New Job Application</h2>
+                                <p style="color: #666666; margin: 5px 0;">via OJTech Platform</p>
+                            </div>
+                            <p style="color: #333333; font-size: 16px; margin-bottom: 20px;">Dear %s,</p>
+                            <div style="color: #333333; font-size: 14px; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap;">%s</div>
+                            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                <h3 style="color: #333333; margin: 0 0 15px; font-size: 16px;">Applicant Information</h3>
+                                <table style="width: 100%%; border-collapse: collapse;">
+                                    <tr><td style="padding: 8px 0; color: #666666; font-weight: 500;">Name:</td><td style="padding: 8px 0; color: #333333;">%s</td></tr>
+                                    <tr><td style="padding: 8px 0; color: #666666; font-weight: 500;">Email:</td><td style="padding: 8px 0;"><a href="mailto:%s" style="color: #007bff;">%s</a></td></tr>
+                                    <tr><td style="padding: 8px 0; color: #666666; font-weight: 500;">Phone:</td><td style="padding: 8px 0; color: #333333;">%s</td></tr>
+                                    <tr><td style="padding: 8px 0; color: #666666; font-weight: 500;">University:</td><td style="padding: 8px 0; color: #333333;">%s</td></tr>
+                                    <tr><td style="padding: 8px 0; color: #666666; font-weight: 500;">Major:</td><td style="padding: 8px 0; color: #333333;">%s</td></tr>
+                                </table>
+                            </div>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="%s" style="background-color:rgb(0, 0, 0); color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: 500;">Download CV/Resume</a>
+                            </div>
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #999999; font-size: 12px; text-align: center;">
+                                <p style="margin: 0 0 8px;">This application was submitted through OJTech.</p>
+                                <p style="margin: 0 0 8px;"><strong style="color: #666666;">Click "Reply" to respond directly to %s (%s)</strong></p>
+                                <p style="margin: 0;">Your reply will automatically go to the applicant's email address.</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
+                """, 
+                recipientName != null ? recipientName : "Hiring Manager",
+                emailBodyContent, studentName, studentEmail, studentEmail,
+                studentPhone != null ? studentPhone : "Not provided",
+                studentUniversity != null ? studentUniversity : "Not provided",
+                studentMajor != null ? studentMajor : "Not provided",
+                cvUrl != null ? cvUrl : "#",
+                studentName, studentEmail);
+            
+            helper.setText(emailContent, true);
+            
+            // Attach additional files if provided
+            if (attachments != null && attachments.length > 0) {
+                for (org.springframework.web.multipart.MultipartFile file : attachments) {
+                    if (file != null && !file.isEmpty()) {
+                        helper.addAttachment(file.getOriginalFilename(), file);
+                    }
+                }
+            }
+            
+            emailSender.send(message);
+            System.out.println("Job application email sent to: " + recipientEmail + 
+                             (attachments != null ? " with " + attachments.length + " attachment(s)" : ""));
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            System.err.println("Failed to send job application email: " + e.getMessage());
+            e.printStackTrace();
+            throw new MessagingException("Failed to send job application email: " + e.getMessage());
+        }
+    }
+    
+    private String generateDefaultEmailBody(String studentName, String jobTitle, String coverLetter) {
+        return String.format(
+            "I am writing to express my interest in the %s position.\n\n%s\n\n" +
+            "I have attached my CV for your review. I would welcome the opportunity to discuss how my skills align with your needs.\n\n" +
+            "Thank you for considering my application.\n\nBest regards,\n%s",
+            jobTitle, coverLetter != null ? coverLetter : "Please find my application materials attached.", studentName
+        );
+    }
+}

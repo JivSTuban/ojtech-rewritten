@@ -130,6 +130,12 @@ public class JobMatchController {
             StudentProfile studentProfile = studentProfileRepository.findByUserId(currentUser.getId())
                     .orElseThrow(() -> new RuntimeException("Student profile not found"));
             
+            // Note: Verification check removed - frontend handles warnings for unverified students
+            // Students can browse jobs but see warnings about uploading documents and verification status
+            // if(!studentProfile.isVerified()){
+            //     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            //         .body(Collections.singletonMap("error", "Student profile not verified"));
+            // }
             List<JobMatch> matches = jobMatchService.getStudentMatches(studentProfile.getId());
             List<JobMatchDto> matchDtos = matches.stream()
                     .map(JobMatchDto::new)
@@ -156,6 +162,9 @@ public class JobMatchController {
             
             StudentProfile studentProfile = studentProfileRepository.findByUserId(currentUser.getId())
                     .orElseThrow(() -> new RuntimeException("Student profile not found"));
+            
+            // Note: Verification check removed - frontend handles warnings for unverified students
+            // Students can browse jobs but see warnings about uploading documents and verification status
             
             JobMatch jobMatch = jobMatchService.markAsViewed(jobMatchId, studentProfile.getId());
             JobMatchDto jobMatchDto = new JobMatchDto(jobMatch);

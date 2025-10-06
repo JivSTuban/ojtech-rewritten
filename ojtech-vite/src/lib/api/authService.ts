@@ -22,6 +22,14 @@ export interface UserData {
   email: string;
   roles: string[];
   accessToken: string;
+  hasCompletedOnboarding?: boolean;
+  requiresPasswordReset?: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 interface GoogleAuthResponse {
@@ -108,6 +116,27 @@ const googleLogin = async (tokenId: string) => {
   }
 };
 
+const githubLogin = async (code: string) => {
+  console.log('GitHub login function called with code (first 10 chars):', code.substring(0, 10) + '...');
+  
+  try {
+    const response = await axios.post(`${AUTH_API_URL}/github`, { code });
+    
+    console.log('GitHub auth backend response:', response.data);
+    
+    if (response.data && response.data.accessToken) {
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    } else {
+      throw new Error('Invalid response from backend OAuth endpoint');
+    }
+  } catch (error: any) {
+    console.error('GitHub authentication error:', error);
+    let errorMessage = error.response?.data?.message || 'Failed to authenticate with GitHub';
+    throw new Error(errorMessage);
+  }
+};
+
 const logout = () => {
   localStorage.removeItem('user');
   console.log('User logged out, localStorage user data cleared');
@@ -153,13 +182,43 @@ const checkAuthStatus = () => {
   }
 };
 
+const changePassword = async (data: ChangePasswordRequest) => {
+  try {
+    const user = getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    
+    const response = await axios.post(
+      `${AUTH_API_URL}/change-password`, 
+      data,
+      {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`
+        }
+      }
+    );
+    
+    console.log('Password changed successfully');
+    return response.data;
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+    }
+    throw error;
+  }
+};
+
 const authService = {
   register,
   login,
   googleLogin,
+  githubLogin,
   logout,
   getCurrentUser,
-  checkAuthStatus, // Add the new function to the exported service
+  checkAuthStatus,
+  changePassword,
 };
 
 export default authService; 

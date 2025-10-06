@@ -130,7 +130,10 @@ public class SecurityConfig {
                                 .requestMatchers("/api-docs/**").permitAll()
                                 .requestMatchers("/swagger-ui/**").permitAll()
                                 .requestMatchers("/h2-console/**").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers("/api/public/cloudinary/**").permitAll()
                                 .requestMatchers("/api/public/**").permitAll()
+                                .requestMatchers("/api/cvs/*/view").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -166,9 +169,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:8080",
             "http://localhost:5173",
-            "http://localhost"
+            "http://localhost:3000", 
+            "https://ojtech-testing.netlify.app", 
+            "http://localhost:8080",
+            "https://ojtech.aetherrflare.org"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(

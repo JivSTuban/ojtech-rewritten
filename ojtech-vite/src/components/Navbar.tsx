@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { AuthContext } from '../providers/AuthProvider';
 import { useTheme } from 'next-themes';
+import { Menu, X } from 'lucide-react';
 
 interface NavbarState {
   isDropdownOpen: boolean;
+  isMobileMenuOpen: boolean;
 }
 
 // Class component for Navbar logic
@@ -13,11 +15,13 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
   private dropdownRef = React.createRef<HTMLDivElement>();
+  private mobileMenuRef = React.createRef<HTMLDivElement>();
 
   constructor(props: { setTheme: (theme: string) => void; theme?: string }) {
     super(props);
     this.state = {
-      isDropdownOpen: false
+      isDropdownOpen: false,
+      isMobileMenuOpen: false
     };
   }
 
@@ -33,6 +37,9 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
     if (this.dropdownRef.current && !this.dropdownRef.current.contains(event.target as Node)) {
       this.setState({ isDropdownOpen: false });
     }
+    if (this.mobileMenuRef.current && !this.mobileMenuRef.current.contains(event.target as Node)) {
+      this.setState({ isMobileMenuOpen: false });
+    }
   };
 
   toggleDropdown = () => {
@@ -41,10 +48,20 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
     }));
   };
 
+  toggleMobileMenu = () => {
+    this.setState(prevState => ({
+      isMobileMenuOpen: !prevState.isMobileMenuOpen
+    }));
+  };
+
+  closeMobileMenu = () => {
+    this.setState({ isMobileMenuOpen: false });
+  };
+
   render() {
     const { user, isLoading, logout } = this.context || {};
-    const { isDropdownOpen } = this.state;
-
+    const { isDropdownOpen, isMobileMenuOpen } = this.state;
+    
     // Don't render anything while checking auth
     if (isLoading) {
       return (
@@ -60,68 +77,79 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
     }
 
     return (
-      <nav className="w-full bg-black text-white border-b border-gray-800">
+      <nav className="w-full bg-black text-white border-b border-gray-800 relative">
         <div className="container mx-auto px-4 flex h-14 items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="font-bold text-lg mr-8">
+            <Link to="/" className="font-bold text-lg">
               OJTech
             </Link>
-            
-            {user && user.roles && (
-              <div className="flex space-x-6">
-                {/* Student-specific navigation */}
-                {user.roles.includes('ROLE_STUDENT') && (
-                  <>
-                    <Link to="/opportunities" className="text-gray-400 hover:text-white">
-                      Find Jobs
-                    </Link>
-                    <Link to="/track" className="text-gray-400 hover:text-white">
-                      Track Applications
-                    </Link>
-                  </>
-                )}
-                
-                {/* Employer-specific navigation */}
-                {user.roles.includes('ROLE_EMPLOYER') && (
-                  <>
-                    <Link to="/employer/jobs" className="text-gray-400 hover:text-white">
-                      Manage Jobs
-                    </Link>
-                  </>
-                )}
-                
-                {/* Admin-specific navigation */}
-                {user.roles.includes('ROLE_ADMIN') && (
-                  <>
-                    <Link to="/admin/dashboard" className="text-gray-400 hover:text-white">
-                      Dashboard
-                    </Link>
-                    <Link to="/admin/users" className="text-gray-400 hover:text-white">
-                      Users
-                    </Link>         
-                  </>
-                )}
-              </div>
-            )}
           </div>
+
+          {/* Desktop Navigation - Hidden on mobile */}
+          {user && user.roles && (
+            <div className="hidden md:flex space-x-6">
+              {/* Student-specific navigation */}
+              {user.roles.includes('ROLE_STUDENT') && (
+                <>
+                  <Link to="/opportunities" className="text-gray-400 hover:text-white transition-colors">
+                    Find Jobs
+                  </Link>
+                  <Link to="/track" className="text-gray-400 hover:text-white transition-colors">
+                    Track Applications
+                  </Link>
+                </>
+              )}
+              
+              {/* Employer-specific navigation */}
+              {user.roles.includes('ROLE_EMPLOYER') && (
+                <>
+                  <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
+                    Manage Jobs
+                  </Link>
+                </>
+              )}
+              
+              {/* Admin-specific navigation */}
+              {user.roles.includes('ROLE_ADMIN') && (
+                <>
+                  <Link to="/admin/dashboard" className="text-gray-400 hover:text-white transition-colors">
+                    Dashboard
+                  </Link>
+                  <Link to="/admin/jobs" className="text-gray-400 hover:text-white transition-colors">
+                    Manage Jobs
+                  </Link>
+                  <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
+                    Users
+                  </Link>         
+                  <Link to="/admin/students/verification" className="text-gray-400 hover:text-white transition-colors">
+                    Verify Profiles
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
           
-          <div className="flex items-center space-x-4">
+          {/* Right side controls */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {user ? (
               <>
+                {/* Role Badge - Hidden on very small screens */}
                 {user.roles && user.roles.length > 0 && (
-                  <span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
+                  <span className="hidden sm:block px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
                     {user.roles.includes('ROLE_ADMIN') 
                       ? 'Admin' 
                       : user.roles.includes('ROLE_EMPLOYER') 
                         ? 'Employer' 
-                        : 'Student'}
+                          : 'Student'}
                   </span>
                 )}
                 
+                {/* Profile Dropdown */}
                 <div className="relative z-50 pointer-events-auto" ref={this.dropdownRef}>
                   <button 
                     onClick={this.toggleDropdown}
-                    className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center overflow-hidden"
+                    className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-gray-600 transition-all"
                   >
                     {user.profile?.avatar_url ? (
                       <img 
@@ -130,8 +158,8 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="text-white">
-                        {user.firstName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      <span className="text-white text-sm">
+                        {user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                       </span>
                     )}
                   </button>
@@ -169,19 +197,105 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     </div>
                   )}
                 </div>
+
+                {/* Mobile Menu Button - Only show for logged in users */}
+                <button 
+                  onClick={this.toggleMobileMenu}
+                  className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Toggle mobile menu"
+                >
+                  {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <Button variant="ghost" className="text-white">Log In</Button>
+                <Link to="/login" className="hidden sm:block">
+                  <Button variant="ghost" className="text-white text-sm">Log In</Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-white text-black hover:bg-gray-200">Sign Up</Button>
+                  <Button className="bg-white text-black hover:bg-gray-200 text-sm px-3 sm:px-4">Sign Up</Button>
                 </Link>
               </>
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {user && isMobileMenuOpen && (
+          <div 
+            ref={this.mobileMenuRef}
+            className="md:hidden absolute top-14 left-0 right-0 bg-black border-b border-gray-800 shadow-lg z-40"
+          >
+            <div className="container mx-auto px-4 py-4 space-y-3">
+              {/* Student-specific navigation */}
+              {user.roles?.includes('ROLE_STUDENT') && (
+                <>
+                  <Link 
+                    to="/opportunities" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Find Jobs
+                  </Link>
+                  <Link 
+                    to="/track" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Track Applications
+                  </Link>
+                </>
+              )}
+              
+              {/* Employer-specific navigation */}
+              {user.roles?.includes('ROLE_EMPLOYER') && (
+                <>
+                  <Link 
+                    to="/employer/jobs" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Manage Jobs
+                  </Link>
+                </>
+              )}
+              
+              {/* Admin-specific navigation */}
+              {user.roles?.includes('ROLE_ADMIN') && (
+                <>
+                  <Link 
+                    to="/admin/dashboard" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
+                    to="/admin/jobs" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Manage Jobs
+                  </Link>
+                  <Link 
+                    to="/admin/users" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Users
+                  </Link>
+                  <Link 
+                    to="/admin/students/verification" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Verify Profiles
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
     );
   }

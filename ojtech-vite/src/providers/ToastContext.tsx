@@ -252,13 +252,13 @@ export class ToastHelper extends Component {
   
   // Update the context reference when the component mounts
   componentDidMount() {
-    ToastHelper.currentContext = this.context;
+    ToastHelper.currentContext = this.context as ToastContextValue;
    
   }
   
   // Update the context reference when the context changes
   componentDidUpdate() {
-    ToastHelper.currentContext = this.context;
+    ToastHelper.currentContext = this.context as ToastContextValue;
   }
   
   render() {
@@ -268,7 +268,7 @@ export class ToastHelper extends Component {
 }
 
 // Static helper methods
-ToastHelper.toast = function(props: Omit<ToasterToast, 'id'>) {
+(ToastHelper as any).toast = function(props: Omit<ToasterToast, 'id'>) {
   // Try to use the stored context reference
   if (ToastHelper.currentContext) {
     return ToastHelper.currentContext.toast(props);
@@ -294,7 +294,7 @@ ToastHelper.toast = function(props: Omit<ToasterToast, 'id'>) {
   };
 };
 
-ToastHelper.dismiss = function(toastId?: string) {
+(ToastHelper as any).dismiss = function(toastId?: string) {
   // Try to use the stored context reference
   if (ToastHelper.currentContext) {
     try {

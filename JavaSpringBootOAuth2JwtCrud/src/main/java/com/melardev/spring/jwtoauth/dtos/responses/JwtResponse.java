@@ -11,6 +11,7 @@ public class JwtResponse {
     private String email;
     private List<String> roles;
     private boolean hasCompletedOnboarding;
+    private boolean requiresPasswordReset;
 
     public JwtResponse(String token, UUID id, String username, String email, List<String> roles) {
         this.token = token;
@@ -28,6 +29,17 @@ public class JwtResponse {
         this.email = email;
         this.roles = roles;
         this.hasCompletedOnboarding = hasCompletedOnboarding;
+        this.requiresPasswordReset = false;
+    }
+    
+    public JwtResponse(String token, UUID id, String username, String email, List<String> roles, boolean hasCompletedOnboarding, boolean requiresPasswordReset) {
+        this.token = token;
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.roles = roles;
+        this.hasCompletedOnboarding = hasCompletedOnboarding;
+        this.requiresPasswordReset = requiresPasswordReset;
     }
 
     public String getToken() {
@@ -89,5 +101,13 @@ public class JwtResponse {
     
     public void setHasCompletedOnboarding(boolean hasCompletedOnboarding) {
         this.hasCompletedOnboarding = hasCompletedOnboarding;
+    }
+    
+    public boolean isRequiresPasswordReset() {
+        return requiresPasswordReset;
+    }
+    
+    public void setRequiresPasswordReset(boolean requiresPasswordReset) {
+        this.requiresPasswordReset = requiresPasswordReset;
     }
 } 

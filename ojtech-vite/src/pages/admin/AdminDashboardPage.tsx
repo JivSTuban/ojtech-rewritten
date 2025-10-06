@@ -188,6 +188,12 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
                 >
                   Manage Users & Employers
                 </Link>
+                <Link 
+                  to="/admin/students/verification" 
+                  className="block w-full py-3 px-4 bg-green-700 text-white rounded-md text-center hover:bg-green-600 transition-colors"
+                >
+                  Verify Student Profiles
+                </Link>
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,6 @@
 package com.melardev.spring.jwtoauth.controller;
 
+import com.melardev.spring.jwtoauth.dtos.EmailDraftDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.JobApplicationResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.*;
@@ -10,15 +11,19 @@ import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
 import com.melardev.spring.jwtoauth.repositories.JobMatchRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.StudentEmailTrackingRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.services.CoverLetterService;
+import com.melardev.spring.jwtoauth.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +53,12 @@ public class JobApplicationController {
     
     @Autowired
     private JobMatchRepository jobMatchRepository;
+    
+    @Autowired
+    private EmailService emailService;
+    
+    @Autowired
+    private StudentEmailTrackingRepository emailTrackingRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -108,6 +119,10 @@ public class JobApplicationController {
         }
 
         StudentProfile studentProfile = studentProfileOpt.get();
+        
+        // Note: Verification check removed - frontend handles warnings for unverified students
+        // Students can browse jobs but see warnings about uploading documents and verification status
+        // However, they should still be able to apply (admin will review applications from unverified students)
 
         Optional<Job> jobOpt = jobRepository.findById(jobId);
         if (jobOpt.isEmpty()) {
@@ -306,5 +321,167 @@ public class JobApplicationController {
         String coverLetter = coverLetterService.generateCoverLetter(studentProfile.getId(), jobId, cvId);
         
         return ResponseEntity.ok(Map.of("coverLetter", coverLetter));
+    }
+    
+    @GetMapping("/{applicationId}/prepare-email")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<EmailDraftDTO> prepareApplicationEmail(@PathVariable UUID applicationId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UUID userId = userDetails.getId();
+        
+        Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
+        if (applicationOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Application not found");
+        }
+        
+        JobApplication application = applicationOpt.get();
+        
+        // Check if the student owns the application
+        if (!application.getStudent().getUser().getId().equals(userId)) {
+            throw new BadRequestException("Unauthorized access to this application");
+        }
+        
+        StudentProfile student = application.getStudent();
+        Job job = application.getJob();
+        EmployerProfile employer = job.getEmployer();
+        CV cv = application.getCv();
+        
+        // Build email draft
+        String studentName = student.getFirstName() + " " + student.getLastName();
+        String emailBody = generateEmailBody(studentName, job.getTitle(), application.getCoverLetter());
+        String subject = "Job Application for " + job.getTitle() + " - " + studentName;
+        
+        // Generate CV view URL
+        String cvUrl = "http://localhost:8081/api/cvs/" + cv.getId() + "/view";
+        
+        // Get email from User entity (primary source) or fallback to StudentProfile email
+        String studentEmail = student.getUser() != null ? student.getUser().getEmail() : student.getEmail();
+        
+        // Get phone from Profile.phoneNumber (primary) or fallback to StudentProfile.phone
+        String studentPhone = student.getPhoneNumber() != null ? student.getPhoneNumber() : student.getPhone();
+        
+        EmailDraftDTO draft = new EmailDraftDTO(
+            employer.getContactPersonEmail(),
+            employer.getContactPersonName(),
+            subject,
+            emailBody,
+            cvUrl,
+            studentName,
+            studentEmail,
+            studentPhone,
+            student.getUniversity(),
+            student.getMajor()
+        );
+        
+        return ResponseEntity.ok(draft);
+    }
+    
+    @PostMapping(value = "/{applicationId}/send-email", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> sendApplicationEmail(
+            @PathVariable UUID applicationId, 
+            @RequestParam("subject") String subject,
+            @RequestParam("emailBody") String emailBody,
+            @RequestParam(value = "attachments", required = false) MultipartFile[] attachments) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        UUID userId = userDetails.getId();
+        
+        Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
+        if (applicationOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Application not found");
+        }
+        
+        JobApplication application = applicationOpt.get();
+        
+        // Check if the student owns the application
+        if (!application.getStudent().getUser().getId().equals(userId)) {
+            throw new BadRequestException("Unauthorized access to this application");
+        }
+        
+        StudentProfile student = application.getStudent();
+        
+        // Check rate limiting - max 10 emails per day
+        LocalDate today = LocalDate.now();
+        Optional<StudentEmailTracking> trackingOpt = emailTrackingRepository.findByStudentIdAndEmailDate(student.getId(), today);
+        
+        StudentEmailTracking tracking;
+        if (trackingOpt.isPresent()) {
+            tracking = trackingOpt.get();
+            if (tracking.getEmailCount() >= 10) {
+                throw new BadRequestException("Daily email limit reached (10 emails per day). Please try again tomorrow.");
+            }
+        } else {
+            tracking = new StudentEmailTracking(student.getId(), today);
+        }
+        
+        // Check if email already sent for this application
+        if (Boolean.TRUE.equals(application.getEmailSent())) {
+            throw new BadRequestException("Email already sent for this application");
+        }
+        
+        Job job = application.getJob();
+        EmployerProfile employer = job.getEmployer();
+        CV cv = application.getCv();
+        
+        String studentName = student.getFirstName() + " " + student.getLastName();
+        
+        // Generate CV view URL
+        String cvUrl = "http://localhost:8081/api/cvs/" + cv.getId() + "/view";
+        
+        // Get email from User entity (primary source) or fallback to StudentProfile email
+        String studentEmail = student.getUser() != null ? student.getUser().getEmail() : student.getEmail();
+        
+        // Get phone from Profile.phoneNumber (primary) or fallback to StudentProfile.phone
+        String studentPhone = student.getPhoneNumber() != null ? student.getPhoneNumber() : student.getPhone();
+        
+        try {
+            // Send email
+            emailService.sendJobApplicationEmail(
+                employer.getContactPersonEmail(),
+                employer.getContactPersonName(),
+                studentName,
+                studentEmail,
+                studentPhone,
+                student.getUniversity(),
+                student.getMajor(),
+                job.getTitle(),
+                employer.getCompanyName(),
+                application.getCoverLetter(),
+                cvUrl,
+                emailBody,
+                attachments
+            );
+            
+            // Update application with email details
+            application.setEmailSent(true);
+            application.setEmailSentAt(LocalDateTime.now());
+            application.setEmailBody(emailBody);
+            application.setEmailSubject(subject);
+            jobApplicationRepository.save(application);
+            
+            // Increment email count
+            tracking.incrementEmailCount();
+            emailTrackingRepository.save(tracking);
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Application email sent successfully",
+                "emailsSentToday", tracking.getEmailCount(),
+                "emailsRemaining", 10 - tracking.getEmailCount()
+            ));
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to send email: " + e.getMessage());
+        }
+    }
+    
+    private String generateEmailBody(String studentName, String jobTitle, String coverLetter) {
+        return String.format(
+            "I am writing to express my interest in the %s position.\n\n%s\n\n" +
+            "I have attached my CV for your review. I would welcome the opportunity to discuss how my skills align with your needs.\n\n" +
+            "Thank you for considering my application.\n\nBest regards,\n%s",
+            jobTitle, coverLetter != null ? coverLetter : "Please find my application materials attached.", studentName
+        );
     }
 } 
