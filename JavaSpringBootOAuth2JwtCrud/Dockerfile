@@ -9,5 +9,5 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
-EXPOSE ${PORT:-8080}
+EXPOSE ${PORT:-8082}
 CMD ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]
