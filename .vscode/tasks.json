@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "dev",
+			"path": "ojtech-vite",
+			"problemMatcher": [],
+			"label": "npm: dev - ojtech-vite",
+			"detail": "vite",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

@@ -1,7 +1,9 @@
 package com.melardev.spring.jwtoauth.seeds;
 
-import com.melardev.spring.jwtoauth.entities.*;
-import com.melardev.spring.jwtoauth.repositories.*;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +17,25 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import com.melardev.spring.jwtoauth.entities.ApplicationStatus;
+import com.melardev.spring.jwtoauth.entities.CV;
+import com.melardev.spring.jwtoauth.entities.Company;
+import com.melardev.spring.jwtoauth.entities.ERole;
+import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.Job;
+import com.melardev.spring.jwtoauth.entities.JobApplication;
+import com.melardev.spring.jwtoauth.entities.JobMatch;
+import com.melardev.spring.jwtoauth.entities.Role;
+import com.melardev.spring.jwtoauth.entities.StudentProfile;
+import com.melardev.spring.jwtoauth.entities.User;
+import com.melardev.spring.jwtoauth.repositories.CVRepository;
+import com.melardev.spring.jwtoauth.repositories.CompanyRepository;
+import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
+import com.melardev.spring.jwtoauth.repositories.JobRepository;
+import com.melardev.spring.jwtoauth.repositories.RoleRepository;
+import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.UserRepository;
 
 @Component
 @Profile("!test") // Don't run this seeder in test profile
@@ -136,10 +155,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             if (roleRepository.count() == 0) {
                 logger.info("Seeding roles");
                 Role studentRole = new Role(ERole.ROLE_STUDENT);
-                Role employerRole = new Role(ERole.ROLE_EMPLOYER);
+                Role nloRole = new Role(ERole.ROLE_NLO);
                 Role adminRole = new Role(ERole.ROLE_ADMIN);
 
-                roleRepository.saveAll(Arrays.asList(studentRole, employerRole, adminRole));
+                roleRepository.saveAll(Arrays.asList(studentRole, nloRole, adminRole));
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed roles: {}", e.getMessage());
@@ -181,12 +200,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                 student4.getRoles().add(studentRole);
                 userRepository.save(student4);
 
-                // Create NLO Staff user (using ROLE_EMPLOYER but displayed as "NLO Staff" in frontend)
+                // Create NLO Staff user (using ROLE_NLO for NLO Staff functionality)
                 User nloUser = new User("nlo_staff", "nlo@ojtech.com", passwordEncoder.encode("password"));
                 nloUser.setEmailVerified(true);
                 nloUser.setRequiresPasswordReset(false); // NLO staff don't need onboarding
-                Role employerRole = getOrCreateRole(ERole.ROLE_EMPLOYER);
-                nloUser.getRoles().add(employerRole);
+                Role nloRole = getOrCreateRole(ERole.ROLE_NLO);
+                nloUser.getRoles().add(nloRole);
                 userRepository.save(nloUser);
             }
         } catch (DataAccessException e) {

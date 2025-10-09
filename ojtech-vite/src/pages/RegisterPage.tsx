@@ -335,7 +335,7 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       if (user.hasCompletedOnboarding) {
         if (user.roles?.includes('ROLE_STUDENT')) {
           this.setState({ redirectTo: '/track' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+        } else if (user.roles?.includes('ROLE_NLO')) {
           this.setState({ redirectTo: '/employer/jobs' });
         } else if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
@@ -346,7 +346,7 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         // If they need to complete onboarding, send them to the appropriate page
         if (user.roles?.includes('ROLE_STUDENT')) {
           this.setState({ redirectTo: '/onboarding/student' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+        } else if (user.roles?.includes('ROLE_NLO')) {
           this.setState({ redirectTo: '/onboarding/employer' });
         } else {
           this.setState({ redirectTo: '/' });

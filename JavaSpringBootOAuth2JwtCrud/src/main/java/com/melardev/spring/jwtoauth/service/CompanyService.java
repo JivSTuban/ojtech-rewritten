@@ -74,6 +74,9 @@ public class CompanyService {
         company.setIndustry(request.getIndustry());
         company.setCompanySize(request.getCompanySize());
         company.setLogoUrl(request.getLogoUrl());
+        company.setHrName(request.getHrName());
+        company.setHrEmail(request.getHrEmail());
+        company.setHrPhone(request.getHrPhone());
         company.setCreatedByNLO(nloProfile);
         company.setActive(true);
         
@@ -109,6 +112,9 @@ public class CompanyService {
         company.setIndustry(request.getIndustry());
         company.setCompanySize(request.getCompanySize());
         company.setLogoUrl(request.getLogoUrl());
+        company.setHrName(request.getHrName());
+        company.setHrEmail(request.getHrEmail());
+        company.setHrPhone(request.getHrPhone());
         
         return companyRepository.save(company);
     }

@@ -235,7 +235,7 @@ const StudentVerificationPage: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col space-y-2">
-                    {student.verified ? (
+                    {/* {student.verified ? (
                       <Button
                         variant="outline"
                         onClick={() => handleUnverifyClick(student)}
@@ -252,7 +252,7 @@ const StudentVerificationPage: React.FC = () => {
                         <CheckCircle className="h-4 w-4" />
                         Verify
                       </Button>
-                    )}
+                    )} */}
                     <Button
                       variant="secondary"
                       className="flex items-center gap-1"

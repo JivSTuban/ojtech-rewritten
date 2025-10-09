@@ -136,7 +136,7 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
   fetchJobs = async (page: number) => {
     const { user } = this.context || {};
     
-    if (!user || !user.roles.includes('ROLE_EMPLOYER')) {
+    if (!user || !user.roles.includes('ROLE_NLO')) {
       this.setState({ redirectTo: '/login' });
       return;
     }

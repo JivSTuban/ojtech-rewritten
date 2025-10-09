@@ -51,7 +51,7 @@ export class ChangePasswordPage extends Component<{}, ChangePasswordPageState> {
     if (user && user.roles) {
       if (user.roles.includes('ROLE_ADMIN')) {
         this.setState({ redirectTo: '/admin/dashboard' });
-      } else if (user.roles.includes('ROLE_EMPLOYER')) {
+      } else if (user.roles.includes('ROLE_NLO')) {
         this.setState({ redirectTo: '/employer/dashboard' });
       } else {
         this.setState({ redirectTo: '/dashboard' });

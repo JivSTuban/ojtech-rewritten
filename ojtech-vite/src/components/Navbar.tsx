@@ -102,7 +102,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               )}
               
               {/* Employer-specific navigation */}
-              {user.roles.includes('ROLE_EMPLOYER') && (
+              {user.roles.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
                   <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
                     Manage Jobs
@@ -121,9 +121,21 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </Link>
                   <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
                     Users
-                  </Link>         
-                  <Link to="/admin/students/verification" className="text-gray-400 hover:text-white transition-colors">
-                    Verify Profiles
+                  </Link>
+                </>
+              )}
+
+              {/* NLO-specific navigation */}
+              {user.roles.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
+                <>
+                  <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
+                    Manage Jobs
+                  </Link>
+                  <Link to="/nlo/students/verification" className="text-gray-400 hover:text-white transition-colors">
+                    Student Verification
+                  </Link>
+                  <Link to="/nlo/companies" className="text-gray-400 hover:text-white transition-colors">
+                    Companies
                   </Link>
                 </>
               )}
@@ -139,7 +151,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <span className="hidden sm:block px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
                     {user.roles.includes('ROLE_ADMIN') 
                       ? 'Admin' 
-                      : user.roles.includes('ROLE_EMPLOYER') 
+                      : user.roles.includes('ROLE_NLO') 
                         ? 'Employer' 
                           : 'Student'}
                   </span>
@@ -171,7 +183,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                         onClick={this.toggleDropdown}
                       >
-                        {user.roles?.includes('ROLE_EMPLOYER') ? "Company Profile" : "My Profile"}
+                        {user.roles?.includes('ROLE_NLO') ? "Company Profile" : "My Profile"}
                       </Link>
                       
                       {/* Resume Management link for students only */}
@@ -248,7 +260,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               )}
               
               {/* Employer-specific navigation */}
-              {user.roles?.includes('ROLE_EMPLOYER') && (
+              {user.roles?.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
                   <Link 
                     to="/employer/jobs" 
@@ -284,12 +296,32 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   >
                     Users
                   </Link>
+                </>
+              )}
+
+              {/* NLO-specific navigation */}
+              {user.roles?.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
+                <>
                   <Link 
-                    to="/admin/students/verification" 
+                    to="/employer/jobs" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
-                    Verify Profiles
+                    Manage Jobs
+                  </Link>
+                  <Link 
+                    to="/nlo/students/verification" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Student Verification
+                  </Link>
+                  <Link 
+                    to="/nlo/companies" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Companies
                   </Link>
                 </>
               )}

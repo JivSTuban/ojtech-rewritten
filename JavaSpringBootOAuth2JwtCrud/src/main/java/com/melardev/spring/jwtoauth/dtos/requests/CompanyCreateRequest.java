@@ -33,6 +33,13 @@ public class CompanyCreateRequest {
     
     private String logoUrl;
     
+    private String hrName;
+    
+    @Email(message = "Invalid HR email format")
+    private String hrEmail;
+    
+    private String hrPhone;
+    
     // Getters and Setters
     
     public String getName() {
@@ -105,5 +112,29 @@ public class CompanyCreateRequest {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getHrName() {
+        return hrName;
+    }
+    
+    public void setHrName(String hrName) {
+        this.hrName = hrName;
+    }
+    
+    public String getHrEmail() {
+        return hrEmail;
+    }
+    
+    public void setHrEmail(String hrEmail) {
+        this.hrEmail = hrEmail;
+    }
+    
+    public String getHrPhone() {
+        return hrPhone;
+    }
+    
+    public void setHrPhone(String hrPhone) {
+        this.hrPhone = hrPhone;
     }
 }

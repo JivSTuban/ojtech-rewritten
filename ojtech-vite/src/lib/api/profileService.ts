@@ -30,7 +30,7 @@ const getUserRole = (): string | null => {
   if (user && user.roles && user.roles.length > 0) {
     // Return the first role, or check for specific role hierarchy
     if (user.roles.includes('ROLE_ADMIN')) return 'ADMIN';
-    if (user.roles.includes('ROLE_EMPLOYER')) return 'EMPLOYER';
+    if (user.roles.includes('ROLE_NLO')) return 'EMPLOYER';
     if (user.roles.includes('ROLE_STUDENT')) return 'STUDENT';
     return user.roles[0]; // fallback to first role
   }

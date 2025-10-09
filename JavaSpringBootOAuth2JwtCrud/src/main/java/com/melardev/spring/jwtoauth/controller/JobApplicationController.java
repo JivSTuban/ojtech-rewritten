@@ -81,7 +81,7 @@ public class JobApplicationController {
     }
 
     @GetMapping("/job/{jobId}")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasRole('NLO')")
     public ResponseEntity<List<JobApplicationResponseDTO>> getJobApplications(@PathVariable UUID jobId) {
         Optional<Job> jobOpt = jobRepository.findById(jobId);
         if (jobOpt.isEmpty()) {
@@ -187,7 +187,7 @@ public class JobApplicationController {
     }
 
     @PutMapping("/{applicationId}/status")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @PreAuthorize("hasRole('NLO')")
     public ResponseEntity<?> updateApplicationStatus(@PathVariable UUID applicationId, @RequestBody Map<String, String> statusData) {
         Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
         if (applicationOpt.isEmpty()) {
@@ -231,7 +231,7 @@ public class JobApplicationController {
     }
 
     @GetMapping("/{applicationId}")
-    @PreAuthorize("hasRole('STUDENT') or hasRole('EMPLOYER')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('NLO')")
     public ResponseEntity<JobApplicationResponseDTO> getApplicationById(@PathVariable UUID applicationId) {
         Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
         if (applicationOpt.isEmpty()) {
@@ -254,7 +254,7 @@ public class JobApplicationController {
         }
         
         // Employers can only view applications for their jobs
-        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYER"))) {
+        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NLO"))) {
             if (!application.getJob().getEmployer().getUser().getId().equals(userId)) {
                 return ResponseEntity.badRequest().build();
             }

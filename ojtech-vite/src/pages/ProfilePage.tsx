@@ -905,7 +905,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       // Determine if the user is a student or employer
       const currentUser = user || (this.context && this.context.user);
       const isStudent = currentUser?.roles?.includes('ROLE_STUDENT');
-      const isEmployer = currentUser?.roles?.includes('ROLE_EMPLOYER');
+      const isEmployer = currentUser?.roles?.includes('ROLE_NLO');
       
       if (isStudent) {
         try {
@@ -1755,7 +1755,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     }
     
     const isStudent = Array.isArray(user.roles) && user.roles.includes('ROLE_STUDENT');
-    const isEmployer = Array.isArray(user.roles) && user.roles.includes('ROLE_EMPLOYER');
+    const isEmployer = Array.isArray(user.roles) && user.roles.includes('ROLE_NLO');
     
     // For students, wait until student profile is loaded
     if (isStudent && !studentProfile) {

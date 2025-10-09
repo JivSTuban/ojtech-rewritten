@@ -28,8 +28,9 @@ import { AdminJobFormPage } from "./pages/admin/AdminJobFormPage";
 import { AdminJobDetailsPage } from "./pages/admin/AdminJobDetailsPage";
 import { AdminJobModeratePage } from "./pages/admin/AdminJobModeratePage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
-import { StudentVerificationPage } from "./pages/admin/StudentVerificationPage";
 import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
+import NLOStudentVerificationPage from "./components/nlo/StudentVerificationPage";
+import CompanyManagementPage from "./components/nlo/CompanyManagementPage";
 import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
@@ -59,6 +60,7 @@ const MainLayout: React.FC = () => {
       '/privacy',
       '/terms',
       '/admin',
+      '/nlo',
       '/change-password',
       '/track',
       '/opportunities',
@@ -83,7 +85,7 @@ const MainLayout: React.FC = () => {
           location.pathname !== studentOnboardingPath) {
         console.log('Redirecting to student onboarding from:', location.pathname);
         window.location.replace(studentOnboardingPath);
-      } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
+      } else if (user?.roles?.includes('ROLE_NLO') && 
                 location.pathname !== employerOnboardingPath) {
         console.log('Redirecting to employer onboarding from:', location.pathname);
         window.location.replace(employerOnboardingPath);
@@ -121,7 +123,7 @@ const EmailVerificationRedirect: React.FC = () => {
   if (user) {
     if (user.roles?.includes('ROLE_STUDENT')) {
       return <Navigate to="/onboarding/student" replace />;
-    } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+    } else if (user.roles?.includes('ROLE_NLO')) {
       return <Navigate to="/onboarding/employer" replace />;
     }
   }
@@ -179,8 +181,9 @@ export const App: React.FC = () => {
               <Route path="/admin/jobs/:jobId/moderate" element={<AdminJobModeratePage />} />
               <Route path="/admin/jobs/analytics" element={<div className="container mx-auto px-4 py-6"><h1 className="text-3xl font-bold mb-4">Job Analytics</h1><p className="text-gray-600">Analytics dashboard coming soon...</p></div>} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
-              <Route path="/admin/students/verification" element={<StudentVerificationPage />} />
-              <Route path="/admin/students/:id" element={<StudentDetailsPage />} />
+              <Route path="/nlo/students/verification" element={<NLOStudentVerificationPage />} />
+              <Route path="/nlo/students/:id" element={<StudentDetailsPage />} />
+              <Route path="/nlo/companies" element={<CompanyManagementPage />} />
               <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
           </Route>
           

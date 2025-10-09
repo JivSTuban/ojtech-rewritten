@@ -20,6 +20,9 @@ public class CompanyResponseDTO {
     private String industry;
     private String companySize;
     private String logoUrl;
+    private String hrName;
+    private String hrEmail;
+    private String hrPhone;
     private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -39,6 +42,9 @@ public class CompanyResponseDTO {
         this.industry = company.getIndustry();
         this.companySize = company.getCompanySize();
         this.logoUrl = company.getLogoUrl();
+        this.hrName = company.getHrName();
+        this.hrEmail = company.getHrEmail();
+        this.hrPhone = company.getHrPhone();
         this.active = company.isActive();
         this.createdAt = company.getCreatedAt();
         this.updatedAt = company.getUpdatedAt();
@@ -125,6 +131,30 @@ public class CompanyResponseDTO {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getHrName() {
+        return hrName;
+    }
+    
+    public void setHrName(String hrName) {
+        this.hrName = hrName;
+    }
+    
+    public String getHrEmail() {
+        return hrEmail;
+    }
+    
+    public void setHrEmail(String hrEmail) {
+        this.hrEmail = hrEmail;
+    }
+    
+    public String getHrPhone() {
+        return hrPhone;
+    }
+    
+    public void setHrPhone(String hrPhone) {
+        this.hrPhone = hrPhone;
     }
     
     public boolean isActive() {

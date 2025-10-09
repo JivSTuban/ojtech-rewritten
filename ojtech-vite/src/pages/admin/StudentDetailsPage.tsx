@@ -7,7 +7,7 @@ import Separator from "../../components/ui/Separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/Tabs";
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Mail, Phone, GraduationCap, Eye, MapPin, FileText, Github, Star, GitFork, ExternalLink, Award, Briefcase, X } from "lucide-react";
 import { useToast } from "../../components/ui/use-toast";
-import adminService from '../../lib/api/adminService';
+import nloService from '../../lib/api/nloService';
 import { formatDate } from '../../lib/utils';
 import PDFViewer from '../../components/pdf/PDFViewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
@@ -167,8 +167,8 @@ const StudentDetailsPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const studentData = await adminService.getStudentDetails(id);
-        setStudent(studentData);
+        const studentData = await nloService.getStudentDetails(id);
+        setStudent(studentData as StudentProfile);
       } catch (err) {
         console.error('Error fetching student details:', err);
         setError('Failed to load student details. Please try again later.');
@@ -203,7 +203,7 @@ const StudentDetailsPage: React.FC = () => {
 
     try {
       const notes = prompt('Add verification notes (optional):', student.verificationNotes || '');
-      await adminService.verifyStudent(id, notes || '');
+      await nloService.verifyStudent(id, notes || '');
       toast({
         title: 'Student Verified',
         description: `${student.fullName} has been verified successfully`,
@@ -230,7 +230,7 @@ const StudentDetailsPage: React.FC = () => {
 
     try {
       const notes = prompt('Add unverification reason (optional):', student.verificationNotes || '');
-      await adminService.unverifyStudent(id, notes || '');
+      await nloService.unverifyStudent(id, notes || '');
       toast({
         title: 'Student Unverified',
         description: `${student.fullName} has been unverified`,
@@ -292,7 +292,7 @@ const StudentDetailsPage: React.FC = () => {
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Link to="/admin/students/verification" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
+          <Link to="/nlo/students/verification" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Student List
           </Link>

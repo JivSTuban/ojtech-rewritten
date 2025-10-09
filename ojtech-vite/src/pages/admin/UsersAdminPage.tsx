@@ -158,7 +158,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     switch (role) {
       case 'ROLE_ADMIN':
         return <UserCheck className="h-5 w-5 text-gray-600" />;
-      case 'ROLE_EMPLOYER':
+      case 'ROLE_NLO':
         return <Briefcase className="h-5 w-5 text-gray-500" />;
       case 'ROLE_STUDENT':
         return <UserCircle className="h-5 w-5 text-gray-400" />;
@@ -373,7 +373,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
           >
             <option value="all">All Roles</option>
             <option value="ROLE_STUDENT">Students</option>
-            <option value="ROLE_EMPLOYER">Employers</option>
+            <option value="ROLE_NLO">Employers</option>
             <option value="ROLE_ADMIN">Admins</option>
           </select>
         </div>

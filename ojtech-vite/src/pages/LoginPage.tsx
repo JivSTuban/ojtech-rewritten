@@ -163,7 +163,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
         
         // SECOND PRIORITY: Onboarding requirement
         if (this.context.needsOnboarding) {
-          if (user.roles?.includes('ROLE_EMPLOYER')) {
+          if (user.roles?.includes('ROLE_NLO')) {
             this.setState({ redirectTo: '/onboarding/employer' });
           } else if (user.roles?.includes('ROLE_STUDENT')) {
             this.setState({ redirectTo: '/onboarding/student' });
@@ -176,7 +176,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
         // FINAL: Role-based redirect after onboarding is complete
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+        } else if (user.roles?.includes('ROLE_NLO')) {
           this.setState({ redirectTo: '/employer/jobs' });
         } else if (user.roles?.includes('ROLE_STUDENT')) {
           this.setState({ redirectTo: '/track' });
@@ -257,14 +257,14 @@ export class LoginPage extends Component<{}, LoginPageState> {
         // Redirect based on user role and onboarding status
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
+        } else if (user.roles?.includes('ROLE_NLO') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/employer' });
         } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/student' });
         } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
           // Redirect students with completed onboarding to track page
           this.setState({ redirectTo: '/track' });
-        } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
+        } else if (user.roles?.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
           // Redirect employers with completed onboarding to jobs page
           this.setState({ redirectTo: '/employer/jobs' });
         } else {

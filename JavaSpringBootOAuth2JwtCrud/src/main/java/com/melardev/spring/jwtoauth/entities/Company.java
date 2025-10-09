@@ -40,6 +40,15 @@ public class Company extends BaseEntity {
     @Column(name = "logo_url")
     private String logoUrl;
     
+    @Column(name = "hr_name")
+    private String hrName;
+    
+    @Column(name = "hr_email")
+    private String hrEmail;
+    
+    @Column(name = "hr_phone")
+    private String hrPhone;
+    
     @Column(name = "active")
     private boolean active = true;
     
@@ -135,6 +144,30 @@ public class Company extends BaseEntity {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getHrName() {
+        return hrName;
+    }
+    
+    public void setHrName(String hrName) {
+        this.hrName = hrName;
+    }
+    
+    public String getHrEmail() {
+        return hrEmail;
+    }
+    
+    public void setHrEmail(String hrEmail) {
+        this.hrEmail = hrEmail;
+    }
+    
+    public String getHrPhone() {
+        return hrPhone;
+    }
+    
+    public void setHrPhone(String hrPhone) {
+        this.hrPhone = hrPhone;
     }
     
     public boolean isActive() {

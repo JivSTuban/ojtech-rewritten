@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 
 interface ProtectedRouteProps {
-  allowedRoles?: string[]; // e.g. ['ROLE_ADMIN', 'ROLE_EMPLOYER']
+  allowedRoles?: string[]; // e.g. ['ROLE_ADMIN', 'ROLE_NLO']
   children?: React.ReactNode;
   isOnboardingPath?: boolean;
   requireOnboarding?: boolean;
@@ -44,7 +44,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (user.roles?.includes('ROLE_STUDENT')) {
       return <Navigate to="/onboarding/student" replace />;
     }
-    if (user.roles?.includes('ROLE_EMPLOYER')) {
+    if (user.roles?.includes('ROLE_NLO')) {
       return <Navigate to="/onboarding/employer" replace />;
     }
     // Fallback if role is unclear but onboarding needed (should ideally not happen)
@@ -79,7 +79,7 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
     if (!user.hasCompletedOnboarding) {
       if (user.roles?.includes('ROLE_STUDENT')) {
           return <Navigate to="/onboarding/student" replace />;
-      } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+      } else if (user.roles?.includes('ROLE_NLO')) {
           return <Navigate to="/onboarding/employer" replace />;
       } else if (user.roles?.includes('ROLE_ADMIN')) {
           return <Navigate to="/onboarding/admin" replace />;
@@ -88,7 +88,7 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
         // If onboarding is completed, redirect to the appropriate dashboard
       if (user.roles?.includes('ROLE_STUDENT')) {
           return <Navigate to="/track" replace />;
-      } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+      } else if (user.roles?.includes('ROLE_NLO')) {
           return <Navigate to="/employer/jobs" replace />;
       } else if (user.roles?.includes('ROLE_ADMIN')) {
           return <Navigate to="/admin/dashboard" replace />;
@@ -108,7 +108,7 @@ export const StudentRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> =
 };
 
 export const EmployerRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
-  return <ProtectedRoute {...props} allowedRoles={['ROLE_EMPLOYER']} />;
+  return <ProtectedRoute {...props} allowedRoles={['ROLE_NLO']} />;
 };
 
 export const AdminRoute: React.FC<Omit<ProtectedRouteProps, 'allowedRoles'>> = (props) => {
