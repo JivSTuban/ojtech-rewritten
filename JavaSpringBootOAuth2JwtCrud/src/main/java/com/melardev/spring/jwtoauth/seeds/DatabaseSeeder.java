@@ -311,7 +311,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Add contact person information
                 nloProfile.setContactPersonName("NLO Administrator");
                 nloProfile.setContactPersonPosition("Linkages Officer");
-                nloProfile.setContactPersonEmail("nlo@university.edu");
+                nloProfile.setContactPersonEmail("moronaldrin3@gmail.com");
                 nloProfile.setContactPersonPhone("555-123-4567");
                 
                 employerProfileRepository.save(nloProfile);

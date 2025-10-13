@@ -17,18 +17,26 @@ public class EmailService {
     @Autowired
     private JavaMailSender emailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.email}")
     private String fromEmail;
 
     @Value("${backend.base-url}")
     private String baseUrl;
 
+    @Value("${email.enabled:true}")
+    private boolean emailEnabled;
+
     public void sendVerificationEmail(String toEmail, String userId) throws MessagingException {
+        if (!emailEnabled) {
+            System.out.println("Email is disabled. Skipping verification email to: " + toEmail);
+            return;
+        }
+        
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail, "OJTech");
+            helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject("Welcome to OJTech!");
 
@@ -83,11 +91,16 @@ public class EmailService {
     }
     
     public void sendUserCreationEmail(String toEmail, String username, String password, String userId) throws MessagingException {
+        if (!emailEnabled) {
+            System.out.println("Email is disabled. Skipping user creation email to: " + toEmail);
+            return;
+        }
+        
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail, "OJTech");
+            helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject("Your OJTech Account Has Been Created");
 
@@ -148,6 +161,11 @@ public class EmailService {
                                        String coverLetter, String cvUrl,
                                        String customEmailBody,
                                        org.springframework.web.multipart.MultipartFile[] attachments) throws MessagingException {
+        if (!emailEnabled) {
+            System.out.println("Email is disabled. Skipping job application email to: " + recipientEmail);
+            return;
+        }
+        
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -232,5 +250,60 @@ public class EmailService {
             "Thank you for considering my application.\n\nBest regards,\n%s",
             jobTitle, coverLetter != null ? coverLetter : "Please find my application materials attached.", studentName
         );
+    }
+    
+    public void sendTestEmail(String toEmail, String subject, String body) throws MessagingException {
+        if (!emailEnabled) {
+            System.out.println("Email is disabled. Skipping test email to: " + toEmail);
+            System.out.println("Subject: " + (subject != null ? subject : "OJTech - Test Email"));
+            System.out.println("Body: " + (body != null ? body : "This is a test email to verify that the email service is configured correctly and working as expected."));
+            return;
+        }
+        
+        try {
+            MimeMessage message = emailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail, "OJTech Test");
+            helper.setTo(toEmail);
+            helper.setSubject(subject != null ? subject : "OJTech - Test Email");
+
+            String emailContent = String.format("""
+                <html>
+                    <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                        <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <!-- Email Icon -->
+                            <div style="background-color:rgb(0, 0, 0); width: 64px; height: 64px; border-radius: 50%%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                                <img src="https://res.cloudinary.com/df7wrezta/image/upload/v1748160270/dbe6m8ajpudgn6veyopz.png" style="width: 64px; height: 64px;"/>
+                            </div>
+                            
+                            <h2 style="color: #333333; margin: 0 0 10px; font-size: 24px;">Test Email</h2>
+                            <p style="color: #666666; margin: 0 0 5px; font-size: 14px;">✉️ Email Configuration Test</p>
+                            
+                            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: left;">
+                                <p style="color: #333333; margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">%s</p>
+                            </div>
+                            
+                            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #eee;">
+                                <p style="color: #28a745; font-size: 14px; margin: 0; font-weight: 500;">✓ Email service is working correctly!</p>
+                            </div>
+                            
+                            <div style="margin-top: 32px; color: #999999; font-size: 12px;">
+                                <p style="margin: 0 0 8px;">This is a test message from OJTech.</p>
+                                <p style="margin: 0; color: #999999;">Powered by <span style="color: #666666;">OJTech</span></p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
+                """, body != null ? body : "This is a test email to verify that the email service is configured correctly and working as expected.");
+
+            helper.setText(emailContent, true);
+            emailSender.send(message);
+            System.out.println("Test email sent successfully to: " + toEmail);
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            System.err.println("Failed to send test email to " + toEmail + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new MessagingException("Failed to send test email: " + e.getMessage());
+        }
     }
 }
