@@ -156,9 +156,9 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         const jobData = response.data;
         
         // Find the user's match score if available
+        // The backend filters jobMatches to only include the current student's match
         let userMatchScore = null;
         if (jobData.jobMatches && jobData.jobMatches.length > 0) {
-          // Get the first match score for now (could be filtered by current user ID in the future)
           userMatchScore = jobData.jobMatches[0].matchScore;
         }
         
@@ -226,8 +226,8 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
           { jobId: job.id }
         );
         
-        // Redirect to applications tracking page
-        navigate('/track');
+        // Redirect to applications page
+        navigate('/applications');
       } catch (err) {
         console.error("Error applying for job:", err);
         // Show error notification

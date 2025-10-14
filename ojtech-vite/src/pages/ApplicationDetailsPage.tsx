@@ -33,23 +33,6 @@ const ApplicationDetailsPage: React.FC = () => {
     fetchApplicationDetails();
   }, [id]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-500';
-      case 'REVIEWED':
-        return 'bg-blue-500';
-      case 'INTERVIEW':
-        return 'bg-purple-500';
-      case 'ACCEPTED':
-        return 'bg-green-500';
-      case 'REJECTED':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
   const formatSalary = (min: number, max: number, currency: string) => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -96,7 +79,7 @@ const ApplicationDetailsPage: React.FC = () => {
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/track">Back to Applications</Link>
+              <Link to="/applications">Back to Applications</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -116,7 +99,7 @@ const ApplicationDetailsPage: React.FC = () => {
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/track">Back to Applications</Link>
+              <Link to="/applications">Back to Applications</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -128,7 +111,7 @@ const ApplicationDetailsPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
         <Button variant="ghost" asChild className="mb-4">
-          <Link to="/track" className="flex items-center gap-2">
+          <Link to="/applications" className="flex items-center gap-2">
             <ArrowLeft size={16} />
             Back to Applications
           </Link>
@@ -258,12 +241,6 @@ const ApplicationDetailsPage: React.FC = () => {
               <CardTitle>Application Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <Badge className={`${getStatusColor(application.status)} text-white`}>
-                    {application.status}
-                  </Badge>
-              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Applied On</p>
                 <p className="font-medium">{formatDate(application.appliedAt)}</p>

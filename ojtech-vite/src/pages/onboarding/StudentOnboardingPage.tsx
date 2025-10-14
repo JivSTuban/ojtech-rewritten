@@ -272,12 +272,17 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
           });
         }
     
-        if (profileData.hasCompletedOnboarding) {
+        if (profileData.hasCompletedOnboarding === true) {
+          console.log('Student has already completed onboarding, redirecting to /track');
           ToastHelper.toast({
-            title: "Profile Successfully Loaded",
-            description: "Your profile is already complete. You can review and update your information as needed.",
+            title: "Profile Already Complete",
+            description: "Your onboarding is already complete. Redirecting to your dashboard.",
             variant: "success"
           });
+          
+          // Redirect to track page since onboarding is complete
+          this.setState({ redirectTo: '/track' });
+          return;
         }
         
         console.log('Final formData after API fetch:', this.state.formData);

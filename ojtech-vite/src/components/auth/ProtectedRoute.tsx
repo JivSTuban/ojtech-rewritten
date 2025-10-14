@@ -87,7 +87,7 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
       } else {
         // If onboarding is completed, redirect to the appropriate dashboard
       if (user.roles?.includes('ROLE_STUDENT')) {
-          return <Navigate to="/track" replace />;
+          return <Navigate to="/applications" replace />;
       } else if (user.roles?.includes('ROLE_NLO')) {
           return <Navigate to="/employer/jobs" replace />;
       } else if (user.roles?.includes('ROLE_ADMIN')) {

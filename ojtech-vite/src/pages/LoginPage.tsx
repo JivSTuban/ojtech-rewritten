@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { AuthContext } from '../providers/AuthProvider';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -26,9 +25,6 @@ interface LoginPageState {
 export class LoginPage extends Component<{}, LoginPageState> {
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
-  
-  // API base URL
-  private API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   
   // GitHub OAuth Configuration
   private GITHUB_CLIENT_ID = 'Ov23li4gxkGK900aEkLs';
@@ -155,6 +151,10 @@ export class LoginPage extends Component<{}, LoginPageState> {
       if (this.context && this.context.user) {
         const { user } = this.context;
         
+        console.log('Login redirect logic - User:', user);
+        console.log('hasCompletedOnboarding:', user.hasCompletedOnboarding);
+        console.log('needsOnboarding:', this.context.needsOnboarding);
+        
         // PRIORITY CHECK: Password reset requirement (highest priority)
         if (this.context.requiresPasswordReset) {
           this.setState({ redirectTo: '/change-password' });
@@ -162,7 +162,9 @@ export class LoginPage extends Component<{}, LoginPageState> {
         }
         
         // SECOND PRIORITY: Onboarding requirement
-        if (this.context.needsOnboarding) {
+        // Check BOTH needsOnboarding AND hasCompletedOnboarding to be safe
+        if (this.context.needsOnboarding && user.hasCompletedOnboarding !== true) {
+          console.log('User needs onboarding, redirecting...');
           if (user.roles?.includes('ROLE_NLO')) {
             this.setState({ redirectTo: '/onboarding/employer' });
           } else if (user.roles?.includes('ROLE_STUDENT')) {
@@ -174,12 +176,13 @@ export class LoginPage extends Component<{}, LoginPageState> {
         }
         
         // FINAL: Role-based redirect after onboarding is complete
+        console.log('User has completed onboarding, redirecting to role-based page...');
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
         } else if (user.roles?.includes('ROLE_NLO')) {
           this.setState({ redirectTo: '/employer/jobs' });
         } else if (user.roles?.includes('ROLE_STUDENT')) {
-          this.setState({ redirectTo: '/track' });
+          this.setState({ redirectTo: '/applications' });
         } else {
           this.setState({ redirectTo: '/' });
         }
@@ -262,8 +265,8 @@ export class LoginPage extends Component<{}, LoginPageState> {
         } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/student' });
         } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
-          // Redirect students with completed onboarding to track page
-          this.setState({ redirectTo: '/track' });
+          // Redirect students with completed onboarding to applications page
+          this.setState({ redirectTo: '/applications' });
         } else if (user.roles?.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
           // Redirect employers with completed onboarding to jobs page
           this.setState({ redirectTo: '/employer/jobs' });

@@ -334,7 +334,7 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
       // Redirect to the appropriate page based on onboarding status and role
       if (user.hasCompletedOnboarding) {
         if (user.roles?.includes('ROLE_STUDENT')) {
-          this.setState({ redirectTo: '/track' });
+          this.setState({ redirectTo: '/applications' });
         } else if (user.roles?.includes('ROLE_NLO')) {
           this.setState({ redirectTo: '/employer/jobs' });
         } else if (user.roles?.includes('ROLE_ADMIN')) {

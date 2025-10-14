@@ -5,7 +5,6 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Spinner } from '../components/ui/Spinner';
 import { Table } from '../components/ui/Table';
-import { Badge } from '../components/ui/Badge';
 import { ApplicationCard } from '../components/ui/ApplicationCard';
 import { toast } from '../components/ui/toast-utils';
 import jobApplicationService from '../lib/api/jobApplicationService';
@@ -40,7 +39,6 @@ interface TrackApplicationsPageState {
   applications: Application[];
   error: string | null;
   view: 'grid' | 'list';
-  filterStatus: string | null;
   searchTerm: string;
 }
 
@@ -55,7 +53,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
       applications: [],
       error: null,
       view: 'grid',
-      filterStatus: null,
       searchTerm: ''
     };
   }
@@ -94,29 +91,8 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
     this.setState({ view });
   };
 
-  handleStatusFilter = (status: string | null) => {
-    this.setState({ filterStatus: status });
-  };
-
   handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ searchTerm: e.target.value });
-  };
-
-  getStatusColor = (status: Application['status']) => {
-    switch (status) {
-      case 'PENDING':
-        return 'yellow';
-      case 'REVIEWED':
-        return 'gray';
-      case 'INTERVIEW':
-        return 'purple';
-      case 'REJECTED':
-        return 'red';
-      case 'ACCEPTED':
-        return 'green';
-      default:
-        return 'gray';
-    }
   };
 
   getInitialBgColor = (companyName: string) => {
@@ -169,14 +145,9 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
   };
 
   getFilteredApplications = () => {
-    const { applications, filterStatus, searchTerm } = this.state;
+    const { applications, searchTerm } = this.state;
     
     return applications.filter(app => {
-      // Apply status filter (convert to lowercase for comparison)
-      if (filterStatus && app.status.toLowerCase() !== filterStatus) {
-        return false;
-      }
-      
       // Apply search filter
       if (searchTerm && !app.jobTitle.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
@@ -184,24 +155,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
       
       return true;
     });
-  };
-
-  renderFilterButton = (label: string, value: string | null) => {
-    const { filterStatus } = this.state;
-    const isActive = filterStatus === value || (value === null && filterStatus === null);
-    
-    return (
-      <button
-        className={`px-4 py-2 text-sm font-medium ${
-          isActive 
-            ? 'bg-gray-800 text-white' 
-            : 'text-gray-300 hover:text-white'
-        }`}
-        onClick={() => this.handleStatusFilter(value)}
-      >
-        {label}
-      </button>
-    );
   };
 
   render() {
@@ -276,14 +229,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
           
           <div className="flex flex-col md:flex-row gap-4 items-start w-full">
             <div className="w-full">
-              <div className="flex bg-gray-900 rounded mb-4 overflow-hidden">
-                {this.renderFilterButton("All", null)}
-                {this.renderFilterButton("Pending", "pending")}
-                {this.renderFilterButton("Interview", "interview")}
-                {this.renderFilterButton("Accepted", "accepted")}
-                {this.renderFilterButton("Rejected", "rejected")}
-              </div>
-              
               <div className="w-full mb-6">
                 <div className="relative">
                   <input
@@ -330,17 +275,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                             <div className={`w-12 h-12 flex items-center justify-center rounded-md ${this.getInitialBgColor(application.jobTitle)}`}>
                               <span className="text-lg font-bold">{companyInitial}</span>
                             </div>
-                            <Badge variant={application.status === 'ACCEPTED' ? 'default' : 
-                                           application.status === 'REJECTED' ? 'destructive' : 
-                                           application.status === 'INTERVIEW' ? 'secondary' : 'outline'} 
-                                   className={`capitalize ${
-                                     application.status === 'ACCEPTED' ? 'bg-green-500' : 
-                                     application.status === 'REJECTED' ? 'bg-red-500' : 
-                                     application.status === 'INTERVIEW' ? 'bg-purple-500' : 
-                                     'bg-yellow-500 text-yellow-900'
-                                   }`}>
-                              {application.status.toLowerCase()}
-                            </Badge>
                           </div>
                           <h3 className="text-xl font-bold mb-1">{application.jobTitle}</h3>
                           
@@ -420,7 +354,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                       <tr>
                         <th className="text-left py-3 px-4">Position</th>
                         <th className="text-left py-3 px-4">Applied Date</th>
-                        <th className="text-left py-3 px-4">Status</th>
                         <th className="text-left py-3 px-4">Skills</th>
                         <th className="text-left py-3 px-4">Match Score</th>
                         <th className="text-left py-3 px-4">Last Updated</th>
@@ -434,19 +367,6 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
                           <tr key={application.id} className="border-b border-gray-800">
                             <td className="py-3 px-4 font-medium">{application.jobTitle}</td>
                             <td className="py-3 px-4 text-gray-400">{this.formatDate(application.appliedAt)}</td>
-                            <td className="py-3 px-4">
-                              <Badge variant={application.status === 'ACCEPTED' ? 'default' : 
-                                           application.status === 'REJECTED' ? 'destructive' : 
-                                           application.status === 'INTERVIEW' ? 'secondary' : 'outline'} 
-                                   className={`capitalize ${
-                                     application.status === 'ACCEPTED' ? 'bg-green-500' : 
-                                     application.status === 'REJECTED' ? 'bg-red-500' : 
-                                     application.status === 'INTERVIEW' ? 'bg-purple-500' : 
-                                     'bg-yellow-500 text-yellow-900'
-                                   }`}>
-                                {application.status.toLowerCase()}
-                              </Badge>
-                            </td>
                             <td className="py-3 px-4">
                               <div className="flex flex-wrap gap-1">
                                 {application.studentSkills.split(',').slice(0, 3).map((skill, index) => (

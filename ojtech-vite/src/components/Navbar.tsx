@@ -95,8 +95,8 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/opportunities" className="text-gray-400 hover:text-white transition-colors">
                     Find Jobs
                   </Link>
-                  <Link to="/track" className="text-gray-400 hover:text-white transition-colors">
-                    Track Applications
+                  <Link to="/applications" className="text-gray-400 hover:text-white transition-colors">
+                    My Applications
                   </Link>
                 </>
               )}
@@ -250,11 +250,11 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     Find Jobs
                   </Link>
                   <Link 
-                    to="/track" 
+                    to="/applications" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
-                    Track Applications
+                    My Applications
                   </Link>
                 </>
               )}

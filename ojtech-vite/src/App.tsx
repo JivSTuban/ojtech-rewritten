@@ -5,6 +5,7 @@ import { ToastProvider, ToastHelper } from './providers/ToastContext';
 import { Toaster } from './components/ui/Toaster';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { OnboardingLayout } from './components/layouts/OnboardingLayout';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
@@ -21,6 +22,7 @@ import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPag
 import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
 import { JobFormPage } from './pages/employer/JobFormPage';
 import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
+import { JobDetailsPage } from './pages/employer/JobDetailsPage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AdminJobsPage } from "./pages/admin/AdminJobsPage";
@@ -62,7 +64,7 @@ const MainLayout: React.FC = () => {
       '/admin',
       '/nlo',
       '/change-password',
-      '/track',
+      '/applications',
       '/opportunities',
       '/application',
       '/employer',
@@ -163,14 +165,13 @@ export const App: React.FC = () => {
               <Route path="/opportunities/:id" element={<JobDetailPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
-              <Route path="/track" element={<TrackApplicationsPage />} />
+              <Route path="/applications" element={<TrackApplicationsPage />} />
               <Route path="/application/:id" element={<ApplicationDetailsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/resume" element={<ResumeManagementPage />} />
-              <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
-              <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
               <Route path="/employer/jobs" element={<EmployerJobsPage />} />
               <Route path="/employer/jobs/create" element={<JobFormPage />} />
+              <Route path="/employer/jobs/:jobId" element={<JobDetailsPage />} />
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
               <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
@@ -185,6 +186,12 @@ export const App: React.FC = () => {
               <Route path="/nlo/students/:id" element={<StudentDetailsPage />} />
               <Route path="/nlo/companies" element={<CompanyManagementPage />} />
               <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
+          </Route>
+          
+          {/* Onboarding routes without navbar */}
+          <Route element={<OnboardingLayout />}>
+            <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
+            <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

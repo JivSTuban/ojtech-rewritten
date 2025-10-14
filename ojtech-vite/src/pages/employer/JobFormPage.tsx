@@ -207,6 +207,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
           skillsPreferred: job.skillsPreferred || [],
           closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '',
           active: job.active === undefined ? true : job.active,
+          companyId: job.company?.id || undefined,
         },
         requiredSkillInput: '',
         preferredSkillInput: ''

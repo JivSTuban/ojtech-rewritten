@@ -211,7 +211,7 @@ export class TrackApplicationsPage extends Component<{}, TrackApplicationsPageSt
     // If not authenticated, redirect to login
     const user = this.context?.user;
     if (!user) {
-      return <Navigate to="/login" state={{ returnTo: '/track' }} />;
+      return <Navigate to="/login" state={{ returnTo: '/applications' }} />;
     }
     
     if (isLoading) {

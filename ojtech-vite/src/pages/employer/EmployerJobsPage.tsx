@@ -3,8 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { AuthContext } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/toast-utils';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
-import { PlusCircle, Edit3, Trash2, Eye, MapPin, Briefcase, Calendar, Clock, X } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
+import { PlusCircle, Edit3, Eye, MapPin, Briefcase, Calendar, X, FileText } from 'lucide-react';
 import jobService from '@/lib/api/jobService';
 import AlertDialog from '@/components/ui/AlertDialog';
 
@@ -566,9 +566,14 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
                   <span className="text-sm"></span>
                 </div>
                 <div className="flex gap-2">
+                  <Link to={`/employer/jobs/${job.id}`}> 
+                    <Button variant="outline" size="sm">
+                      <FileText className="mr-1 h-4 w-4" /> Details
+                    </Button>
+                  </Link>
                   <Link to={`/employer/jobs/applications/${job.id}`}> 
                     <Button variant="outline" size="sm" className="flex items-center">
-                      <Eye className="mr-1 h-4 w-4" /> View Apps
+                      <Eye className="mr-1 h-4 w-4" /> Apps
                       <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs">
                         {job.applications?.length || 0}
                       </span>

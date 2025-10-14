@@ -2091,7 +2091,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                                       {showCvViewer ? 'Hide CV' : 'View CV'}
                                     </Button>
                                     <Link
-                                      to="/resume-management"
+                                      to="/resume"
                                       className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors"
                                     >
                                       <Pencil className="h-4 w-4" />
@@ -2110,7 +2110,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                                   <div className="mt-4 p-4 bg-gray-800/50 rounded-lg text-center">
                                     <p className="text-gray-400">No resume content available</p>
                                     <p className="text-gray-500 text-sm mt-1">
-                                      Visit the <Link to="/resume-management" className="text-indigo-400 hover:text-indigo-300">Resume Management</Link> page to generate your CV.
+                                      Visit the <Link to="/resume" className="text-indigo-400 hover:text-indigo-300">Resume Management</Link> page to generate your CV.
                                     </p>
                                   </div>
                                 )}

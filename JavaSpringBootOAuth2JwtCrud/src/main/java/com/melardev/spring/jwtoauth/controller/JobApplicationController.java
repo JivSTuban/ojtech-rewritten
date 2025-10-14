@@ -361,9 +361,23 @@ public class JobApplicationController {
         // Get phone from Profile.phoneNumber (primary) or fallback to StudentProfile.phone
         String studentPhone = student.getPhoneNumber() != null ? student.getPhoneNumber() : student.getPhone();
         
+        // Determine recipient email and name - prioritize company HR if available
+        String recipientEmail;
+        String recipientName;
+        
+        if (job.getCompany() != null && job.getCompany().getHrEmail() != null) {
+            // Use company HR contact if job is associated with a company
+            recipientEmail = job.getCompany().getHrEmail();
+            recipientName = job.getCompany().getHrName() != null ? job.getCompany().getHrName() : "Hiring Manager";
+        } else {
+            // Fallback to employer profile contact
+            recipientEmail = employer.getContactPersonEmail();
+            recipientName = employer.getContactPersonName();
+        }
+        
         EmailDraftDTO draft = new EmailDraftDTO(
-            employer.getContactPersonEmail(),
-            employer.getContactPersonName(),
+            recipientEmail,
+            recipientName,
             subject,
             emailBody,
             cvUrl,
@@ -436,18 +450,35 @@ public class JobApplicationController {
         // Get phone from Profile.phoneNumber (primary) or fallback to StudentProfile.phone
         String studentPhone = student.getPhoneNumber() != null ? student.getPhoneNumber() : student.getPhone();
         
+        // Determine recipient email and name - prioritize company HR if available
+        String recipientEmail;
+        String recipientName;
+        String companyName;
+        
+        if (job.getCompany() != null && job.getCompany().getHrEmail() != null) {
+            // Use company HR contact if job is associated with a company
+            recipientEmail = job.getCompany().getHrEmail();
+            recipientName = job.getCompany().getHrName() != null ? job.getCompany().getHrName() : "Hiring Manager";
+            companyName = job.getCompany().getName();
+        } else {
+            // Fallback to employer profile contact
+            recipientEmail = employer.getContactPersonEmail();
+            recipientName = employer.getContactPersonName();
+            companyName = employer.getCompanyName();
+        }
+        
         try {
             // Send email
             emailService.sendJobApplicationEmail(
-                employer.getContactPersonEmail(),
-                employer.getContactPersonName(),
+                recipientEmail,
+                recipientName,
                 studentName,
                 studentEmail,
                 studentPhone,
                 student.getUniversity(),
                 student.getMajor(),
                 job.getTitle(),
-                employer.getCompanyName(),
+                companyName,
                 application.getCoverLetter(),
                 cvUrl,
                 emailBody,
