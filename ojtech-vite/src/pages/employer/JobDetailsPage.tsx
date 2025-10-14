@@ -10,12 +10,9 @@ import {
   Briefcase, 
   Calendar, 
   DollarSign, 
-  Users, 
   Edit3,
-  Eye,
   CheckCircle,
   XCircle,
-  Clock,
   Building2,
   Globe,
   Mail,
@@ -52,19 +49,9 @@ interface Job {
   currency: string;
   postedAt: string;
   active: boolean;
-  applications: JobApplication[];
   closingDate?: string;
   skillsPreferred?: string;
   company?: Company;
-}
-
-interface JobApplication {
-  id: string;
-  coverLetter: string;
-  status: string;
-  appliedAt: string;
-  lastUpdatedAt: string;
-  active: boolean;
 }
 
 interface JobDetailsPageProps {
@@ -136,18 +123,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
     return `Up to ${currency} ${max.toLocaleString()}`;
   };
 
-  getApplicationStats = () => {
-    const { job } = this.state;
-    if (!job || !job.applications) return { total: 0, pending: 0, accepted: 0, rejected: 0 };
-
-    const total = job.applications.length;
-    const pending = job.applications.filter(app => app.status === 'PENDING').length;
-    const accepted = job.applications.filter(app => app.status === 'ACCEPTED').length;
-    const rejected = job.applications.filter(app => app.status === 'REJECTED').length;
-
-    return { total, pending, accepted, rejected };
-  };
-
   render() {
     const { job, isLoading, error, redirectTo } = this.state;
     const { navigate } = this.props;
@@ -182,8 +157,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
       );
     }
 
-    const stats = this.getApplicationStats();
-
     return (
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -217,12 +190,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
             
             <div className="flex gap-2">
               <Button 
-                variant="outline" 
-                onClick={() => navigate(`/employer/jobs/applications/${job.id}`)}
-              >
-                <Eye className="mr-2 h-4 w-4" /> View Applications
-              </Button>
-              <Button 
                 variant="default" 
                 onClick={() => navigate(`/employer/jobs/edit/${job.id}`)}
               >
@@ -230,57 +197,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* Application Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Applications</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-                </div>
-                <Users className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
-                </div>
-                <Clock className="h-8 w-8 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Accepted</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.accepted}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Rejected</p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rejected}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Job Details */}
@@ -498,13 +414,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate(`/employer/jobs/applications/${job.id}`)}
-                >
-                  <Eye className="mr-2 h-4 w-4" /> View All Applications
-                </Button>
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"

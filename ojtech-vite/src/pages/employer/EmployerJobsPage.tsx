@@ -4,7 +4,7 @@ import { AuthContext } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { toast } from '@/components/ui/toast-utils';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
-import { PlusCircle, Edit3, Eye, MapPin, Briefcase, Calendar, X, FileText } from 'lucide-react';
+import { PlusCircle, Edit3, MapPin, Briefcase, Calendar, X, FileText } from 'lucide-react';
 import jobService from '@/lib/api/jobService';
 import AlertDialog from '@/components/ui/AlertDialog';
 
@@ -20,16 +20,6 @@ interface Job {
   maxSalary: number;
   currency: string;
   postedAt: string;
-  active: boolean;
-  applications: JobApplication[];
-}
-
-interface JobApplication {
-  id: string;
-  coverLetter: string;
-  status: string;
-  appliedAt: string;
-  lastUpdatedAt: string;
   active: boolean;
 }
 
@@ -73,7 +63,7 @@ interface EmployerJobsPageState {
   filters: {
     status: 'ALL' | 'ACTIVE' | 'INACTIVE';
     searchTerm: string;
-    sortBy: 'postedAt' | 'title' | 'applications';
+    sortBy: 'postedAt' | 'title';
     sortDirection: 'asc' | 'desc';
   };
 }
@@ -252,7 +242,7 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
     this.handleFilterChange('status', status);
   };
 
-  handleSortChange = (sortBy: 'postedAt' | 'title' | 'applications') => {
+  handleSortChange = (sortBy: 'postedAt' | 'title') => {
     this.setState(prevState => ({
       filters: {
         ...prevState.filters,
@@ -307,9 +297,6 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
           break;
         case 'title':
           comparison = a.title.localeCompare(b.title);
-          break;
-        case 'applications':
-          comparison = (a.applications?.length || 0) - (b.applications?.length || 0);
           break;
       }
 
@@ -413,11 +400,10 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
               <select 
                 className="appearance-none bg-background border rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-primary"
                 value={this.state.filters.sortBy}
-                onChange={(e) => this.handleSortChange(e.target.value as 'postedAt' | 'title' | 'applications')}
+                onChange={(e) => this.handleSortChange(e.target.value as 'postedAt' | 'title')}
               >
                 <option value="postedAt">Sort by Date</option>
                 <option value="title">Sort by Title</option>
-                <option value="applications">Sort by Applications</option>
               </select>
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -569,14 +555,6 @@ export class EmployerJobsPage extends Component<{}, EmployerJobsPageState> {
                   <Link to={`/employer/jobs/${job.id}`}> 
                     <Button variant="outline" size="sm">
                       <FileText className="mr-1 h-4 w-4" /> Details
-                    </Button>
-                  </Link>
-                  <Link to={`/employer/jobs/applications/${job.id}`}> 
-                    <Button variant="outline" size="sm" className="flex items-center">
-                      <Eye className="mr-1 h-4 w-4" /> Apps
-                      <span className="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs">
-                        {job.applications?.length || 0}
-                      </span>
                     </Button>
                   </Link>
                   <Link to={`/employer/jobs/edit/${job.id}`}> 

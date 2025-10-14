@@ -21,7 +21,6 @@ import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage'
 import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
 import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
 import { JobFormPage } from './pages/employer/JobFormPage';
-import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
 import { JobDetailsPage } from './pages/employer/JobDetailsPage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
@@ -173,7 +172,6 @@ export const App: React.FC = () => {
               <Route path="/employer/jobs/create" element={<JobFormPage />} />
               <Route path="/employer/jobs/:jobId" element={<JobDetailsPage />} />
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
-              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/jobs" element={<AdminJobsPage />} />
               <Route path="/admin/jobs/new" element={<AdminJobFormPage />} />

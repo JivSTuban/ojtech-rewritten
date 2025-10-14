@@ -10,7 +10,6 @@ import { useToast } from "../../components/ui/use-toast";
 import nloService from '../../lib/api/nloService';
 import { formatDate } from '../../lib/utils';
 import PDFViewer from '../../components/pdf/PDFViewer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
 import resumeHtmlGenerator from '../../lib/api/resumeHtmlGenerator';
 
 interface GitHubProject {
@@ -752,35 +751,41 @@ const StudentDetailsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* CV Preview Modal */}
-      <Dialog open={showCvPreview} onOpenChange={setShowCvPreview}>
-        <DialogContent className="w-[95vw] max-w-[1600px] max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>CV Preview</DialogTitle>
+      {/* CV Preview Full-Screen Modal */}
+      {showCvPreview && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-6xl h-[95vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">CV Preview</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowCvPreview(false)}
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
-          </DialogHeader>
-          <div className="overflow-y-auto">
-            {selectedCv && selectedCv.htmlContent ? (
-              <ResumeHtmlView html={selectedCv.htmlContent} />
-            ) : selectedCv && selectedCv.parsedResume ? (
-              <ResumeHtmlView html={JSON.stringify(selectedCv.parsedResume)} />
-            ) : (
-              <div className="p-6 text-center">
-                <p className="text-muted-foreground">No resume content available</p>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-950">
+              <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+                {selectedCv && selectedCv.htmlContent ? (
+                  <ResumeHtmlView html={selectedCv.htmlContent} />
+                ) : selectedCv && selectedCv.parsedResume ? (
+                  <ResumeHtmlView html={JSON.stringify(selectedCv.parsedResume)} />
+                ) : (
+                  <div className="p-12 text-center">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500 dark:text-gray-400">No resume content available</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Building2, Mail, Phone, MapPin, Users, Globe, Edit, ToggleLeft, ToggleRight, Upload, X as XIcon } from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, MapPin, Users, Globe, Edit, ToggleLeft, ToggleRight, FileText, X as XIcon } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/Dialog';
 import { useToast } from '../../components/ui/use-toast';
 import nloService, { Company, CompanyCreateRequest } from '../../lib/api/nloService';
 import apiClient from '../../lib/api/apiClient';
@@ -39,6 +38,15 @@ const CompanyManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchCompanies();
+    // Load form data from localStorage on mount
+    const savedFormData = localStorage.getItem('companyFormDraft');
+    if (savedFormData) {
+      try {
+        setFormData(JSON.parse(savedFormData));
+      } catch (error) {
+        console.error('Error loading saved form data:', error);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -92,6 +100,16 @@ const CompanyManagementPage: React.FC = () => {
       hrEmail: '',
       hrPhone: '',
     });
+    // Clear localStorage when resetting form
+    localStorage.removeItem('companyFormDraft');
+  };
+
+  // Save form data to localStorage whenever it changes
+  const updateFormData = (updates: Partial<CompanyCreateRequest>) => {
+    const newFormData = { ...formData, ...updates };
+    setFormData(newFormData);
+    // Save to localStorage
+    localStorage.setItem('companyFormDraft', JSON.stringify(newFormData));
   };
 
   const handleCreateCompany = async (e: React.FormEvent) => {
@@ -100,7 +118,7 @@ const CompanyManagementPage: React.FC = () => {
       await nloService.createCompany(formData);
       toast({ title: 'Company created successfully', variant: 'success' });
       setIsCreateDialogOpen(false);
-      resetForm();
+      resetForm(); // This will also clear localStorage
       fetchCompanies();
     } catch (error) {
       console.error('Error creating company:', error);
@@ -207,142 +225,222 @@ const CompanyManagementPage: React.FC = () => {
   };
 
   const CompanyForm = ({ onSubmit, submitText }: { onSubmit: (e: React.FormEvent) => void; submitText: string }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Company Name *</label>
-          <Input
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
+    <form onSubmit={onSubmit} className="space-y-6">
+      {/* Company Information Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Building2 className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Information</h3>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Email *</label>
-          <Input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Phone</label>
-          <Input
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Website</label>
-          <Input
-            value={formData.website}
-            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Industry</label>
-          <Input
-            value={formData.industry}
-            onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Company Size</label>
-          <Input
-            value={formData.companySize}
-            onChange={(e) => setFormData({ ...formData, companySize: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Address</label>
-          <Input
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Company Logo</label>
-          <div className="space-y-2">
-            {formData.logoUrl && (
-              <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
-                <img src={formData.logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, logoUrl: '' })}
-                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                >
-                  <XIcon className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                disabled={uploadingLogo}
-                className="flex-1"
-              />
-              {uploadingLogo && <span className="text-sm text-gray-500">Uploading...</span>}
-            </div>
-            <p className="text-xs text-gray-500">Or enter logo URL manually:</p>
-            <Input
-              value={formData.logoUrl}
-              onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t pt-4">
-        <h4 className="text-lg font-medium mb-3">HR Contact Information</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">HR Name</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Company Name <span className="text-red-500">*</span>
+            </label>
             <Input
-              value={formData.hrName}
-              onChange={(e) => setFormData({ ...formData, hrName: e.target.value })}
+              value={formData.name}
+              onChange={(e) => updateFormData({ name: e.target.value })}
+              required
+              placeholder="Enter company name"
+              className="w-full"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">HR Email</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateFormData({ email: e.target.value })}
+                required
+                placeholder="company@example.com"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Phone</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={formData.phone}
+                onChange={(e) => updateFormData({ phone: e.target.value })}
+                placeholder="+1 (555) 000-0000"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Website</label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={formData.website}
+                onChange={(e) => updateFormData({ website: e.target.value })}
+                placeholder="https://example.com"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Industry</label>
             <Input
-              type="email"
-              value={formData.hrEmail}
-              onChange={(e) => setFormData({ ...formData, hrEmail: e.target.value })}
+              value={formData.industry}
+              onChange={(e) => updateFormData({ industry: e.target.value })}
+              placeholder="e.g., Technology, Finance"
+              className="w-full"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">HR Phone</label>
-            <Input
-              value={formData.hrPhone}
-              onChange={(e) => setFormData({ ...formData, hrPhone: e.target.value })}
-            />
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Company Size</label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={formData.companySize}
+                onChange={(e) => updateFormData({ companySize: e.target.value })}
+                placeholder="e.g., 50-100 employees"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Address</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={formData.location}
+                onChange={(e) => updateFormData({ location: e.target.value })}
+                placeholder="123 Main St, City, Country"
+                className="pl-10 w-full"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium mb-1">Description</label>
+      {/* Logo Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Building2 className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Logo</h3>
+        </div>
+        <div className="space-y-3">
+          {formData.logoUrl && (
+            <div className="relative w-32 h-32 border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white">
+              <img src={formData.logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => updateFormData({ logoUrl: '' })}
+                className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              disabled={uploadingLogo}
+              className="flex-1"
+            />
+            {uploadingLogo && (
+              <span className="text-sm text-blue-600 font-medium flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                Uploading...
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Or enter logo URL manually:</p>
+          <Input
+            value={formData.logoUrl}
+            onChange={(e) => updateFormData({ logoUrl: e.target.value })}
+            placeholder="https://example.com/logo.png"
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* HR Contact Information Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Mail className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">HR Contact Information</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Name</label>
+            <Input
+              value={formData.hrName}
+              onChange={(e) => updateFormData({ hrName: e.target.value })}
+              placeholder="John Doe"
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="email"
+                value={formData.hrEmail}
+                onChange={(e) => updateFormData({ hrEmail: e.target.value })}
+                placeholder="hr@company.com"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Phone</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={formData.hrPhone}
+                onChange={(e) => updateFormData({ hrPhone: e.target.value })}
+                placeholder="+1 (555) 000-0000"
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Description Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <FileText className="w-5 h-5 text-blue-600" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Description</h3>
+        </div>
         <textarea
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          rows={3}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white resize-none"
+          rows={4}
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) => updateFormData({ description: e.target.value })}
+          placeholder="Tell us about your company..."
         />
       </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={() => {
-          setIsCreateDialogOpen(false);
-          setIsEditDialogOpen(false);
-          resetForm();
-        }}>
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => {
+            setIsCreateDialogOpen(false);
+            setIsEditDialogOpen(false);
+            resetForm();
+          }}
+          className="px-6"
+        >
           Cancel
         </Button>
-        <Button type="submit">{submitText}</Button>
+        <Button type="submit" className="px-6 bg-blue-600 hover:bg-blue-700">
+          {submitText}
+        </Button>
       </div>
     </form>
   );
@@ -362,20 +460,10 @@ const CompanyManagementPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Company Management</h1>
           <p className="text-gray-600 dark:text-gray-400">Manage partner company profiles</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Company
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Company</DialogTitle>
-            </DialogHeader>
-            <CompanyForm onSubmit={handleCreateCompany} submitText="Create Company" />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Company
+        </Button>
       </div>
 
       {/* Filters */}
@@ -519,15 +607,62 @@ const CompanyManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Company</DialogTitle>
-          </DialogHeader>
-          <CompanyForm onSubmit={handleEditCompany} submitText="Update Company" />
-        </DialogContent>
-      </Dialog>
+      {/* Create Company Modal */}
+      {isCreateDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Company</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  resetForm();
+                }}
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <XIcon className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <CompanyForm onSubmit={handleCreateCompany} submitText="Create Company" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Company Modal */}
+      {isEditDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Company</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingCompany(null);
+                  resetForm();
+                }}
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <XIcon className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <CompanyForm onSubmit={handleEditCompany} submitText="Update Company" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

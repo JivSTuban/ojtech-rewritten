@@ -10,6 +10,7 @@ import profileService from '../lib/api/profileService';
 import { toast } from '../components/ui/toast-utils';
 import { ToastContext } from '../providers/ToastContext';
 import { ToastProps } from '../components/ui/use-toast';
+import AlertDialog from '../components/ui/AlertDialog';
 import resumeHtmlGenerator from '../lib/api/resumeHtmlGenerator';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
@@ -133,6 +134,7 @@ interface ResumeManagementPageState {
   uploadLoading: boolean;
   isEditMode: boolean;
   editableData: ResumeData | null;
+  showRegenerateConfirm: boolean;
 }
 
 // Student profile data structure
@@ -942,7 +944,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
       generatingCV: false,
       uploadLoading: false,
       isEditMode: false,
-      editableData: null
+      editableData: null,
+      showRegenerateConfirm: false
     };
   }
   
@@ -1398,6 +1401,19 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     }
   };
   
+  // Handle generate/regenerate CV button click
+  handleGenerateCVClick = () => {
+    const { resumeHtml } = this.state;
+    
+    // If CV already exists, show confirmation modal
+    if (resumeHtml) {
+      this.setState({ showRegenerateConfirm: true });
+    } else {
+      // If no CV exists, generate directly
+      this.handleGenerateCV();
+    }
+  };
+
   // Handle generating CV using Gemini API
   handleGenerateCV = async () => {
     const { studentProfile } = this.state;
@@ -2325,7 +2341,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
       cvPreviewVisible,
       generatingCV,
       isEditMode,
-      editableData
+      editableData,
+      showRegenerateConfirm
     } = this.state;
     
     const { user } = this.context || {};
@@ -2373,6 +2390,36 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     }
     
     return (
+      <>
+        {/* Full-screen loading overlay during CV generation */}
+        {generatingCV && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-8 max-w-md mx-4 text-center shadow-2xl">
+              <div className="mb-6">
+                <Loader2 className="h-16 w-16 animate-spin text-blue-500 mx-auto" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">Generating Your CV</h3>
+              <p className="text-gray-300 mb-2">Please wait while we create your professional resume...</p>
+              <p className="text-gray-400 text-sm">This may take a few moments. Do not close or navigate away from this page.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation modal for regenerating CV */}
+        <AlertDialog
+          open={showRegenerateConfirm}
+          onOpenChange={(open) => this.setState({ showRegenerateConfirm: open })}
+          title="Regenerate CV?"
+          description="Are you sure you want to regenerate your CV? This will replace your current CV with a new version based on your latest profile information."
+          cancelText="Cancel"
+          confirmText="Regenerate"
+          onCancel={() => this.setState({ showRegenerateConfirm: false })}
+          onConfirm={() => {
+            this.setState({ showRegenerateConfirm: false });
+            this.handleGenerateCV();
+          }}
+        />
+
       <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">CV Management</h1>
@@ -2392,7 +2439,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
             
             <div className="flex gap-2">
               <Button 
-                onClick={this.handleGenerateCV} 
+                onClick={this.handleGenerateCVClick} 
                 disabled={generatingCV}
                 className="bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center gap-2 hover:from-gray-700 hover:to-gray-900"
               >
@@ -2514,6 +2561,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
           </div>
         )}
       </div>
+      </>
     );
   }
 }

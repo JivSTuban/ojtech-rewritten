@@ -80,32 +80,6 @@ public class JobApplicationController {
         return ResponseEntity.ok(responseDTOs);
     }
 
-    @GetMapping("/job/{jobId}")
-    @PreAuthorize("hasRole('NLO')")
-    public ResponseEntity<List<JobApplicationResponseDTO>> getJobApplications(@PathVariable UUID jobId) {
-        Optional<Job> jobOpt = jobRepository.findById(jobId);
-        if (jobOpt.isEmpty()) {
-            throw new ResourceNotFoundException("Job not found");
-        }
-
-        Job job = jobOpt.get();
-        
-        // Check if the employer owns the job
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
-        
-        if (!job.getEmployer().getUser().getId().equals(userId)) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        List<JobApplication> applications = jobApplicationRepository.findByJob(job);
-        List<JobApplicationResponseDTO> responseDTOs = applications.stream()
-            .map(JobApplicationResponseDTO::new)
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(responseDTOs);
-    }
-
     @PostMapping("/apply/{jobId}")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> applyForJob(@PathVariable UUID jobId, @RequestBody(required = false) Map<String, String> applicationData) {
@@ -186,52 +160,8 @@ public class JobApplicationController {
         return ResponseEntity.ok(new JobApplicationResponseDTO(application));
     }
 
-    @PutMapping("/{applicationId}/status")
-    @PreAuthorize("hasRole('NLO')")
-    public ResponseEntity<?> updateApplicationStatus(@PathVariable UUID applicationId, @RequestBody Map<String, String> statusData) {
-        Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
-        if (applicationOpt.isEmpty()) {
-            throw new ResourceNotFoundException("Application not found");
-        }
-
-        JobApplication application = applicationOpt.get();
-        Job job = application.getJob();
-        
-        // Check if the employer owns the job
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UUID userId = userDetails.getId();
-        
-        if (!job.getEmployer().getUser().getId().equals(userId)) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        // Update status
-        String statusStr = statusData.get("status");
-        if (statusStr == null) {
-            throw new BadRequestException("Status is required");
-        }
-
-        try {
-            ApplicationStatus status = ApplicationStatus.valueOf(statusStr.toUpperCase());
-            application.setStatus(status);
-            
-            // Add feedback if provided
-            if (statusData.containsKey("feedback")) {
-                application.setFeedback(statusData.get("feedback"));
-            }
-            
-            application.setLastUpdatedAt(LocalDateTime.now());
-            application = jobApplicationRepository.save(application);
-            
-            return ResponseEntity.ok(new JobApplicationResponseDTO(application));
-        } catch (IllegalArgumentException e) {
-            throw new BadRequestException("Invalid status value");
-        }
-    }
-
     @GetMapping("/{applicationId}")
-    @PreAuthorize("hasRole('STUDENT') or hasRole('NLO')")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<JobApplicationResponseDTO> getApplicationById(@PathVariable UUID applicationId) {
         Optional<JobApplication> applicationOpt = jobApplicationRepository.findById(applicationId);
         if (applicationOpt.isEmpty()) {
@@ -246,18 +176,9 @@ public class JobApplicationController {
         UUID userId = userDetails.getId();
         
         // Students can only view their own applications
-        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
-            Optional<StudentProfile> studentProfileOpt = studentProfileRepository.findByUserId(userId);
-            if (studentProfileOpt.isEmpty() || !application.getStudent().getId().equals(studentProfileOpt.get().getId())) {
-                return ResponseEntity.badRequest().build();
-            }
-        }
-        
-        // Employers can only view applications for their jobs
-        if (userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_NLO"))) {
-            if (!application.getJob().getEmployer().getUser().getId().equals(userId)) {
-                return ResponseEntity.badRequest().build();
-            }
+        Optional<StudentProfile> studentProfileOpt = studentProfileRepository.findByUserId(userId);
+        if (studentProfileOpt.isEmpty() || !application.getStudent().getId().equals(studentProfileOpt.get().getId())) {
+            return ResponseEntity.badRequest().build();
         }
 
         return ResponseEntity.ok(new JobApplicationResponseDTO(application));

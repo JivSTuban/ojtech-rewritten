@@ -71,6 +71,8 @@ interface OpportunitiesPageState {
   pendingApplicationId: string | null;
   currentJobForEmail: JobWithMatchScore | null;
   showMatchingInfo: boolean;
+  appliedJobIds: Set<string>;
+  applicationsLoading: boolean;
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
@@ -93,15 +95,38 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       emailDraft: null,
       pendingApplicationId: null,
       currentJobForEmail: null,
-      showMatchingInfo: false
+      showMatchingInfo: false,
+      appliedJobIds: new Set<string>(),
+      applicationsLoading: true
     };
   }
   
   componentDidMount() {
     this.fetchStudentProfile();
     this.checkCVProcessingStatus();
+    this.fetchUserApplications();
     this.fetchJobs();
   }
+  
+  // Fetch user applications to track applied job IDs
+  fetchUserApplications = async () => {
+    try {
+      const applications = await jobApplicationService.getStudentApplications();
+      const appliedJobIds = new Set(applications.map(app => app.jobId));
+      this.setState({ 
+        appliedJobIds,
+        applicationsLoading: false 
+      });
+      console.log('Fetched applied job IDs:', Array.from(appliedJobIds));
+    } catch (error) {
+      console.error("Error fetching user applications:", error);
+      // Don't block the page if applications fetch fails
+      this.setState({ 
+        appliedJobIds: new Set<string>(),
+        applicationsLoading: false 
+      });
+    }
+  };
   
   // Fetch student profile to check verification status
   fetchStudentProfile = async () => {
@@ -162,6 +187,11 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         // Map API response to our JobWithMatchScore interface
         const matchedJobs: JobWithMatchScore[] = matchedJobsData
           .filter(match => !match.viewed) // Filter out viewed jobs
+          .filter(match => {
+            // Filter out jobs that user has already applied to
+            const jobId = match.job?.id;
+            return jobId && !this.state.appliedJobIds.has(jobId);
+          })
           .map((match: any) => {
             // Handle the nested structure from the API response
             const job = match.job || {};
@@ -240,8 +270,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       const jobsData = await jobApplicationService.findJobs();
       
       if (jobsData && Array.isArray(jobsData)) {
-        // Map API response to our JobWithMatchScore interface
-        const mappedJobs: JobWithMatchScore[] = jobsData.map((job: any) => {
+        // Filter out jobs that user has already applied to, then map to our interface
+        const mappedJobs: JobWithMatchScore[] = jobsData
+          .filter(job => {
+            // Filter out jobs that user has already applied to
+            const jobId = job.id;
+            return jobId && !this.state.appliedJobIds.has(jobId);
+          })
+          .map((job: any) => {
           const employer = job.employer || {};
           const jobId = job.id;
           
@@ -311,6 +347,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
       const response = await jobApplicationService.applyForJob(apiJobId, {});
       console.log("Job application submitted successfully:", response);
+      
+      // Add the job ID to applied jobs set to prevent showing it again
+      this.setState(prevState => ({
+        appliedJobIds: new Set([...prevState.appliedJobIds, apiJobId])
+      }));
+      
       return { success: true, data: response };
     } catch (error) {
       console.error("Error applying for job:", error);
@@ -519,7 +561,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   render() {
     const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading, emailModalOpen, emailDraft, currentJobForEmail } = this.state;
     
-    if (loading || profileLoading) {
+    if (loading || profileLoading || this.state.applicationsLoading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
