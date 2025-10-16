@@ -83,6 +83,15 @@ export default class CertificationsStep extends Component<CertificationsStepProp
         return value.trim() === '' ? 'Issuer is required' : '';
       case 'date':
         return value.trim() === '' ? 'Date received is required' : '';
+      case 'expiryDate':
+        if (value && this.state.currentCertification.date) {
+          const dateReceived = new Date(this.state.currentCertification.date);
+          const expiryDate = new Date(value);
+          if (expiryDate <= dateReceived) {
+            return 'Expiry date must be after the date received';
+          }
+        }
+        return '';
       case 'credentialUrl':
         if (value && !value.startsWith('http')) {
           return 'URL must start with http:// or https://';
@@ -95,15 +104,19 @@ export default class CertificationsStep extends Component<CertificationsStepProp
 
   // Validate the entire form
   validateForm = (): boolean => {
-    const { name, issuer, date } = this.state.currentCertification;
+    const { name, issuer, date, expiryDate, credentialUrl } = this.state.currentCertification;
     const errors: Record<string, string> = {};
     
     errors.name = this.validateField('name', name);
     errors.issuer = this.validateField('issuer', issuer);
     errors.date = this.validateField('date', date);
     
-    if (this.state.currentCertification.credentialUrl) {
-      errors.credentialUrl = this.validateField('credentialUrl', this.state.currentCertification.credentialUrl);
+    if (expiryDate) {
+      errors.expiryDate = this.validateField('expiryDate', expiryDate);
+    }
+    
+    if (credentialUrl) {
+      errors.credentialUrl = this.validateField('credentialUrl', credentialUrl);
     }
     
     this.setState({ formErrors: errors });
@@ -269,8 +282,11 @@ export default class CertificationsStep extends Component<CertificationsStepProp
                   name="expiryDate"
                   value={currentCertification.expiryDate || ''}
                   onChange={this.handleCertificationChange}
-                  className="w-full bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                  className={`w-full bg-black/80 border ${formErrors.expiryDate ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300`}
                 />
+                {formErrors.expiryDate && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.expiryDate}</p>
+                )}
               </div>
             </div>
             

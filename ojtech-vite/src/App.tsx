@@ -24,11 +24,8 @@ import { JobFormPage } from './pages/employer/JobFormPage';
 import { JobDetailsPage } from './pages/employer/JobDetailsPage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
-import { AdminJobsPage } from "./pages/admin/AdminJobsPage";
-import { AdminJobFormPage } from "./pages/admin/AdminJobFormPage";
-import { AdminJobDetailsPage } from "./pages/admin/AdminJobDetailsPage";
-import { AdminJobModeratePage } from "./pages/admin/AdminJobModeratePage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
 import NLOStudentVerificationPage from "./components/nlo/StudentVerificationPage";
 import CompanyManagementPage from "./components/nlo/CompanyManagementPage";
@@ -173,12 +170,7 @@ export const App: React.FC = () => {
               <Route path="/employer/jobs/:jobId" element={<JobDetailsPage />} />
               <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/admin/jobs" element={<AdminJobsPage />} />
-              <Route path="/admin/jobs/new" element={<AdminJobFormPage />} />
-              <Route path="/admin/jobs/:jobId" element={<AdminJobDetailsPage />} />
-              <Route path="/admin/jobs/:jobId/edit" element={<AdminJobFormPage />} />
-              <Route path="/admin/jobs/:jobId/moderate" element={<AdminJobModeratePage />} />
-              <Route path="/admin/jobs/analytics" element={<div className="container mx-auto px-4 py-6"><h1 className="text-3xl font-bold mb-4">Job Analytics</h1><p className="text-gray-600">Analytics dashboard coming soon...</p></div>} />
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
               <Route path="/nlo/students/verification" element={<NLOStudentVerificationPage />} />
               <Route path="/nlo/students/:id" element={<StudentDetailsPage />} />

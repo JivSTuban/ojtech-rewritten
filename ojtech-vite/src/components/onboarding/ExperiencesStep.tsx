@@ -105,6 +105,14 @@ export default class ExperiencesStep extends Component<ExperiencesStepProps, Exp
         if (!this.state.currentExperience.current && value.trim() === '') {
           return 'End date is required unless currently employed';
         }
+        // Validate that end date is after start date
+        if (value && this.state.currentExperience.startDate) {
+          const startDate = new Date(this.state.currentExperience.startDate);
+          const endDate = new Date(value);
+          if (endDate <= startDate) {
+            return 'End date must be after the start date';
+          }
+        }
         return '';
       case 'description':
         return value.trim() === '' ? 'Job description is required' : '';

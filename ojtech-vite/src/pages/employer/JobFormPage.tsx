@@ -85,6 +85,7 @@ interface Company {
   name: string;
   logoUrl?: string;
   active: boolean;
+  location?: string;
 }
 
 interface JobFormPageState {
@@ -444,11 +445,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
   };
 
   render() {
-    const { formData, requiredSkillInput, preferredSkillInput, isLoading, error, redirectTo, employer } = this.state;
+    const { formData, requiredSkillInput, preferredSkillInput, isLoading, error, redirectTo, employer, companies } = this.state;
     const isEditMode = Boolean(this.props.jobId);
     
-    // Use employer location or fallback to default
-    const officeLocation = employer?.profile?.location || " ";
+    // Get selected company location if a company is selected
+    const selectedCompany = companies.find(c => c.id === formData.companyId);
+    const officeLocation = selectedCompany?.location || employer?.profile?.location || "Office";
     
     if (redirectTo) {
       return <Navigate to={redirectTo} />;

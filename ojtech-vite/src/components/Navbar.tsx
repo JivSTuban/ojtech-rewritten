@@ -116,11 +116,11 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/admin/dashboard" className="text-gray-400 hover:text-white transition-colors">
                     Dashboard
                   </Link>
-                  <Link to="/admin/jobs" className="text-gray-400 hover:text-white transition-colors">
-                    Manage Jobs
-                  </Link>
                   <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
                     Users
+                  </Link>
+                  <Link to="/admin/profile" className="text-gray-400 hover:text-white transition-colors">
+                    Profile
                   </Link>
                 </>
               )}
@@ -283,18 +283,18 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     Dashboard
                   </Link>
                   <Link 
-                    to="/admin/jobs" 
-                    className="block text-gray-400 hover:text-white transition-colors py-2"
-                    onClick={this.closeMobileMenu}
-                  >
-                    Manage Jobs
-                  </Link>
-                  <Link 
                     to="/admin/users" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Users
+                  </Link>
+                  <Link 
+                    to="/admin/profile" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Profile
                   </Link>
                 </>
               )}

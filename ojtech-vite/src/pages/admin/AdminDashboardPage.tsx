@@ -44,7 +44,6 @@ interface DashboardStats {
     employer: number;
     student: number;
   };
-  totalJobs: number;
   totalApplications: number;
   loading: boolean;
 }
@@ -62,7 +61,6 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
         employer: 0,
         student: 0
       },
-      totalJobs: 0,
       totalApplications: 0,
       loading: true,
     };
@@ -79,7 +77,6 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
       this.setState({
         totalUsers: detailedStats.totalUsers,
         userDistribution: detailedStats.userDistribution,
-        totalJobs: detailedStats.totalJobs,
         totalApplications: detailedStats.totalApplications,
         loading: false,
       });
@@ -101,7 +98,7 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
       return <Navigate to="/" />;
     }
     
-    const { totalUsers, userDistribution, totalJobs, totalApplications, loading } = this.state;
+    const { totalUsers, userDistribution, totalApplications, loading } = this.state;
     
     return (
       <div className="container mx-auto py-6 space-y-6 min-h-screen">
@@ -136,12 +133,6 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
           <StatsCard 
             title="Applications" 
             value={totalApplications} 
-            icon={<FilePlus2 className="h-6 w-6" />} 
-            loading={loading} 
-          />
-          <StatsCard 
-            title="Job Listings" 
-            value={totalJobs} 
             icon={<FilePlus2 className="h-6 w-6" />} 
             loading={loading} 
           />
@@ -187,12 +178,6 @@ export class AdminDashboardPage extends Component<{}, DashboardStats> {
                   className="block w-full py-3 px-4 bg-gray-800 text-white rounded-md text-center hover:bg-gray-700 transition-colors"
                 >
                   Manage Users & Employers
-                </Link>
-                <Link 
-                  to="/admin/students/verification" 
-                  className="block w-full py-3 px-4 bg-green-700 text-white rounded-md text-center hover:bg-green-600 transition-colors"
-                >
-                  Verify Student Profiles
                 </Link>
               </div>
             </CardContent>

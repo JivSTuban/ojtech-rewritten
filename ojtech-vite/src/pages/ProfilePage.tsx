@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/Dialog';
 import { AuthContext } from '../providers/AuthProvider';
 import { Loader2, Upload, Download, Github, Linkedin, Globe, Pencil, Code, FileUp, Mail, Phone, FileText, Eye, Calendar, Star, GitFork, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -105,6 +106,9 @@ interface StudentProfileData {
   phoneNumber?: string;
   location?: string;
   address?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
   university?: string;
   major?: string;
   graduationYear?: number;
@@ -396,31 +400,23 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
 };
 
 // Component to display student profile
-const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: string, username: string }> = ({ profile, email, username }) => (
+const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: string, username: string }> = ({ profile, email, username }) => {
+  const [showResetPasswordModal, setShowResetPasswordModal] = React.useState(false);
+  
+  return (
   <div className="space-y-6">
     <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({username})</h3>
     <p><strong>Email:</strong> {email}</p>
     {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
-    {profile.location && (
+    {(profile.city || profile.province || profile.postalCode) && (
       <p className="flex items-center gap-2">
-        <strong>Location:</strong>
+        <strong>Address:</strong>
         <span className="flex items-center gap-1">
           <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          {profile.location}
-        </span>
-      </p>
-    )}
-    {profile.address && (
-      <p className="flex items-center gap-2">
-        <strong>Address:</strong>
-        <span className="flex items-center gap-1">
-          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          {profile.address}
+          {[profile.city, profile.province, profile.postalCode].filter(Boolean).join(', ')}
         </span>
       </p>
     )}
@@ -545,9 +541,41 @@ const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: stri
       )}
     </div>
     
-    <Link to="/onboarding/student" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-4">
+      <Link to="/onboarding/student" className="inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+      <button 
+        onClick={() => setShowResetPasswordModal(true)}
+        className="inline-block text-sm text-indigo-600 hover:text-indigo-500 flex items-center gap-1 cursor-pointer"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+        Reset Password
+      </button>
+    </div>
+    
+    {/* Reset Password Modal */}
+    <Dialog open={showResetPasswordModal} onOpenChange={setShowResetPasswordModal}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Reset Password</DialogTitle>
+          <DialogDescription>
+            You will be redirected to the password change page.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowResetPasswordModal(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => window.location.href = '/change-password'}>
+            Continue
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
-);
+  );
+};
 
 // Component to display employer profile
 const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: string, username: string, onEditClick: () => void }> = ({ profile, email, username, onEditClick }) => (
@@ -783,6 +811,26 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
           )}
         </div>
       </div>
+    </div>
+    
+    {/* Account Actions */}
+    <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 shadow-xl">
+      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Account Settings
+      </h3>
+      <Link 
+        to="/change-password" 
+        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+        Reset Password
+      </Link>
     </div>
   </div>
 );
@@ -2072,7 +2120,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                             <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6">
                               <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                                 <FileText className="h-5 w-5" />
-                                Resume/CV
+                                CV
                               </h3>
                               <div className="bg-black/40 rounded-lg p-4 border border-gray-800/30">
                                 <div className="flex items-center justify-between mb-4">

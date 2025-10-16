@@ -1,19 +1,20 @@
 package com.melardev.spring.jwtoauth.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Service;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.Transport;
 import jakarta.mail.Session;
-import java.util.concurrent.atomic.AtomicBoolean;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
