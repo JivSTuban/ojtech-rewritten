@@ -22,6 +22,7 @@ import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPag
 import { NLOJobsPage } from './pages/employer/NLOJobsPage';
 import { JobFormPage } from './pages/employer/JobFormPage';
 import { JobDetailsPage } from './pages/employer/JobDetailsPage';
+import NLOProfilePage from './pages/employer/NLOProfilePage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
@@ -168,6 +169,7 @@ export const App: React.FC = () => {
               <Route path="/nlo/jobs/create" element={<JobFormPage />} />
               <Route path="/nlo/jobs/:jobId" element={<JobDetailsPage />} />
               <Route path="/nlo/jobs/edit/:jobId" element={<JobFormPage />} />
+              <Route path="/nlo/profile" element={<NLOProfilePage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/profile" element={<AdminProfilePage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />

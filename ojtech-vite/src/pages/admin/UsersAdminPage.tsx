@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../..
 import { Button } from "../../components/ui/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../../components/ui/Table";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { UserCheck, UserX, Search, Briefcase, UserCircle, Plus } from "lucide-react";
+import { UserCheck, UserX, Search, Briefcase, UserCircle, Plus, AlertTriangle } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../../providers/AuthProvider";
 import adminService from "../../lib/api/adminService";
@@ -68,6 +68,10 @@ interface UsersAdminPageState {
     role: string;
   };
   createUserError: string | null;
+  isDeleteDialogOpen: boolean;
+  userToDelete: User | null;
+  deleteConfirmationEmail: string;
+  isDeleting: boolean;
 }
 
 export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
@@ -93,7 +97,11 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
         email: "",
         role: "employer"
       },
-      createUserError: null
+      createUserError: null,
+      isDeleteDialogOpen: false,
+      userToDelete: null,
+      deleteConfirmationEmail: "",
+      isDeleting: false
     };
   }
   
@@ -173,12 +181,50 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
     });
   }
   
-  handleUserDelete = async (userId: string) => {
+  handleDeleteDialogOpen = (user: User) => {
+    this.setState({
+      isDeleteDialogOpen: true,
+      userToDelete: user,
+      deleteConfirmationEmail: ""
+    });
+  }
+
+  handleDeleteDialogClose = () => {
+    this.setState({
+      isDeleteDialogOpen: false,
+      userToDelete: null,
+      deleteConfirmationEmail: ""
+    });
+  }
+
+  handleDeleteConfirmationEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ deleteConfirmationEmail: e.target.value });
+  }
+
+  handleUserDelete = async () => {
+    const { userToDelete, deleteConfirmationEmail } = this.state;
+    
+    if (!userToDelete) return;
+    
+    // Check if the confirmation email matches
+    if (deleteConfirmationEmail !== userToDelete.email) {
+      return; // Don't proceed if emails don't match
+    }
+    
+    this.setState({ isDeleting: true });
+    
     try {
-      await adminService.deleteUser(userId);
+      await adminService.deleteUser(userToDelete.id);
+      this.setState({ 
+        isDeleteDialogOpen: false, 
+        userToDelete: null, 
+        deleteConfirmationEmail: "",
+        isDeleting: false 
+      });
       await this.fetchUsers(); // Refresh the list
     } catch (error) {
       console.error("Error deleting user:", error);
+      this.setState({ isDeleting: false });
     }
   }
 
@@ -235,11 +281,17 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
   getFilteredUsers = () => {
     const { users, filterRole } = this.state;
     
+    // First, filter out users with ADMIN role
+    const nonAdminUsers = users.filter(user => 
+      !user.roles || !user.roles.some(role => role.name === 'ROLE_ADMIN')
+    );
+    
+    // Then apply the role filter
     if (filterRole === 'all') {
-      return users;
+      return nonAdminUsers;
     }
     
-    return users.filter(user => 
+    return nonAdminUsers.filter(user => 
       user.roles && user.roles.some(role => role.name === filterRole)
     );
   }
@@ -253,7 +305,11 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
       filterRole, 
       isCreateUserDialogOpen, 
       newUser, 
-      createUserError 
+      createUserError,
+      isDeleteDialogOpen,
+      userToDelete,
+      deleteConfirmationEmail,
+      isDeleting
     } = this.state;
     
     // Redirect if not logged in or not admin
@@ -351,6 +407,82 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete User Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={this.handleDeleteDialogClose}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Delete User
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-sm text-red-800 dark:text-red-200 font-medium">
+                  Warning: This action cannot be undone!
+                </p>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                  You are about to permanently delete this user account and all associated data.
+                </p>
+              </div>
+              
+              {userToDelete && (
+                <div className="space-y-2">
+                  <div className="text-sm">
+                    <span className="font-medium">Username:</span> {userToDelete.username}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Email:</span> {userToDelete.email}
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-medium">Role:</span> {userToDelete.roles && userToDelete.roles.length > 0 
+                      ? userToDelete.roles.map(r => r.name.replace('ROLE_', '')).join(', ')
+                      : 'No Role'}
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="confirmEmail" className="text-sm font-medium">
+                  To confirm deletion, type the user's email address:
+                </Label>
+                <Input
+                  id="confirmEmail"
+                  type="email"
+                  value={deleteConfirmationEmail}
+                  onChange={this.handleDeleteConfirmationEmailChange}
+                  placeholder="Enter user's email to confirm"
+                  className="font-mono text-sm"
+                  disabled={isDeleting}
+                />
+                {deleteConfirmationEmail && userToDelete && deleteConfirmationEmail !== userToDelete.email && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Email does not match. Please type exactly: {userToDelete.email}
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={this.handleDeleteDialogClose}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                variant="destructive"
+                onClick={this.handleUserDelete}
+                disabled={!userToDelete || deleteConfirmationEmail !== userToDelete.email || isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete User"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
         
@@ -477,7 +609,7 @@ export class UsersAdminPage extends Component<{}, UsersAdminPageState> {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => this.handleUserDelete(user.id)}
+                              onClick={() => this.handleDeleteDialogOpen(user)}
                               className="ml-2"
                               title="Delete User"
                             >

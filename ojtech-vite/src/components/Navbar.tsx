@@ -119,9 +119,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
                     Users
                   </Link>
-                  <Link to="/admin/profile" className="text-gray-400 hover:text-white transition-colors">
-                    Profile
-                  </Link>
+                
                 </>
               )}
 
@@ -179,11 +177,21 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 pointer-events-auto">
                       <Link 
-                        to="/profile" 
+                        to={
+                          user.roles?.includes('ROLE_ADMIN') 
+                            ? "/admin/profile" 
+                            : user.roles?.includes('ROLE_NLO') 
+                              ? "/nlo/profile" 
+                              : "/profile"
+                        }
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                         onClick={this.toggleDropdown}
                       >
-                        {user.roles?.includes('ROLE_NLO') ? "Company Profile" : "My Profile"}
+                        {user.roles?.includes('ROLE_ADMIN') 
+                          ? "Profile" 
+                          : user.roles?.includes('ROLE_NLO') 
+                            ? "Profile" 
+                            : "My Profile"}
                       </Link>
                       
                       {/* Resume Management link for students only */}
