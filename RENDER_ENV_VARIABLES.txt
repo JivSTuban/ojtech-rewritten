@@ -1,0 +1,73 @@
+# ============================================
+# OJTECH API - RENDER ENVIRONMENT VARIABLES
+# ============================================
+# Copy each line and paste into Render Dashboard → Environment tab
+# Format: KEY=VALUE (one per line in Render)
+# ⚠️ REPLACE ALL PLACEHOLDER VALUES WITH YOUR ACTUAL CREDENTIALS
+# ============================================
+
+# -------------------- DATABASE --------------------
+DATABASE_URL=jdbc:postgresql://your-postgres-host:5432/your-database?sslmode=require
+DATABASE_USERNAME=your_database_user
+DATABASE_PASSWORD=your_database_password
+
+# -------------------- JWT SECURITY --------------------
+# ⚠️ CRITICAL: Generate new secret using: openssl rand -base64 64
+JWT_SECRET=YourVeryLongAndSecureRandomSecretKeyForProductionAtLeast64Characters
+
+# -------------------- APPLICATION URLS --------------------
+# Update BACKEND_URL after Render assigns your service URL
+FRONTEND_URL=https://your-frontend-app.netlify.app
+BACKEND_URL=https://your-api.onrender.com
+
+# -------------------- CLOUDINARY (FILE STORAGE) --------------------
+# Get from: https://cloudinary.com/console
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_PRESET=your_upload_preset
+
+# -------------------- GOOGLE OAUTH2 --------------------
+# Get from: https://console.cloud.google.com/apis/credentials
+# Add redirect URI: https://your-api.onrender.com/login/oauth2/code/google
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# -------------------- GITHUB OAUTH2 --------------------
+# Get from: https://github.com/settings/developers
+# Set callback: https://your-frontend-app.netlify.app/auth/github/callback
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# -------------------- GEMINI AI API --------------------
+# Get from: https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=your_gemini_api_key
+
+# -------------------- EMAIL SERVICE (BREVO) --------------------
+# Get from: https://app.brevo.com/settings/keys/api
+# Set to false if you want to disable email functionality
+EMAIL_ENABLED=true
+BREVO_API_KEY=your_brevo_api_key
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+SPRING_MAIL_EMAIL=your-verified-sender@email.com
+
+# ============================================
+# TOTAL: 15 ENVIRONMENT VARIABLES
+# ============================================
+
+# -------------------- QUICK REFERENCE --------------------
+# 
+# REQUIRED (Must configure):
+# 1. DATABASE_URL, DATABASE_USERNAME, DATABASE_PASSWORD
+# 2. JWT_SECRET (generate new!)
+# 3. FRONTEND_URL, BACKEND_URL
+# 4. CLOUDINARY credentials (4 variables)
+# 5. GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# 6. GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+# 7. GEMINI_API_KEY
+# 
+# OPTIONAL (Can disable):
+# - EMAIL_ENABLED=false (to disable email)
+# - BREVO_API_KEY, BREVO_API_URL, SPRING_MAIL_EMAIL (if email disabled)
+# 
+# ============================================
