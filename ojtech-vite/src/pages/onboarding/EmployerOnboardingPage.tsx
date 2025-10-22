@@ -142,7 +142,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
           // If onboarding is completed, redirect to jobs page
           if (profileData.hasCompletedOnboarding) {
             console.log('Profile is complete, redirecting to jobs page');
-            this.setState({ redirectTo: '/employer/jobs' });
+            this.setState({ redirectTo: '/nlo/jobs' });
           }
         });
       }
@@ -215,7 +215,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       // Clear localStorage data since onboarding is complete
       this.clearLocalStorage();
       
-      this.setState({ redirectTo: '/employer/jobs' });
+      this.setState({ redirectTo: '/nlo/jobs' });
       
       ToastHelper.toast({
         title: "Profile Updated",

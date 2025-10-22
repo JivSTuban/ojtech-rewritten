@@ -19,7 +19,7 @@ import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import { PublicOnlyRoute } from './components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
 import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
-import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
+import { NLOJobsPage } from './pages/employer/NLOJobsPage';
 import { JobFormPage } from './pages/employer/JobFormPage';
 import { JobDetailsPage } from './pages/employer/JobDetailsPage';
 import { useAuth } from './providers/AuthProvider';
@@ -63,7 +63,6 @@ const MainLayout: React.FC = () => {
       '/applications',
       '/opportunities',
       '/application',
-      '/employer',
       '/'
     ];
     
@@ -165,10 +164,10 @@ export const App: React.FC = () => {
               <Route path="/application/:id" element={<ApplicationDetailsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/resume" element={<ResumeManagementPage />} />
-              <Route path="/employer/jobs" element={<EmployerJobsPage />} />
-              <Route path="/employer/jobs/create" element={<JobFormPage />} />
-              <Route path="/employer/jobs/:jobId" element={<JobDetailsPage />} />
-              <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
+              <Route path="/nlo/jobs" element={<NLOJobsPage />} />
+              <Route path="/nlo/jobs/create" element={<JobFormPage />} />
+              <Route path="/nlo/jobs/:jobId" element={<JobDetailsPage />} />
+              <Route path="/nlo/jobs/edit/:jobId" element={<JobFormPage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
               <Route path="/admin/profile" element={<AdminProfilePage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />

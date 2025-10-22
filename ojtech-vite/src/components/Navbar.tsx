@@ -104,7 +104,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {/* Employer-specific navigation */}
               {user.roles.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
-                  <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
+                  <Link to="/nlo/jobs" className="text-gray-400 hover:text-white transition-colors">
                     Manage Jobs
                   </Link>
                 </>
@@ -128,7 +128,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {/* NLO-specific navigation */}
               {user.roles.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
                 <>
-                  <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
+                  <Link to="/nlo/jobs" className="text-gray-400 hover:text-white transition-colors">
                     Manage Jobs
                   </Link>
                   <Link to="/nlo/students/verification" className="text-gray-400 hover:text-white transition-colors">
@@ -152,7 +152,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     {user.roles.includes('ROLE_ADMIN') 
                       ? 'Admin' 
                       : user.roles.includes('ROLE_NLO') 
-                        ? 'Employer' 
+                        ? 'NLO' 
                           : 'Student'}
                   </span>
                 )}
@@ -263,7 +263,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {user.roles?.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
                   <Link 
-                    to="/employer/jobs" 
+                    to="/nlo/jobs" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -303,7 +303,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {user.roles?.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
                 <>
                   <Link 
-                    to="/employer/jobs" 
+                    to="/nlo/jobs" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >

@@ -16,7 +16,8 @@ import {
   Building2,
   Globe,
   Mail,
-  Phone
+  Phone,
+  RotateCcw
 } from 'lucide-react';
 import jobService from '@/lib/api/jobService';
 
@@ -123,6 +124,23 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
     return `Up to ${currency} ${max.toLocaleString()}`;
   };
 
+  handleReactivate = async () => {
+    if (!this.state.job) return;
+    
+    this.setState({ isLoading: true });
+    
+    try {
+      await jobService.reactivateJob(this.state.job.id);
+      // Refresh job details
+      await this.fetchJobDetails();
+      alert('Job reactivated successfully!');
+    } catch (err: any) {
+      alert('Failed to reactivate job: ' + (err.message || 'Unknown error'));
+    } finally {
+      this.setState({ isLoading: false });
+    }
+  };
+
   render() {
     const { job, isLoading, error, redirectTo } = this.state;
     const { navigate } = this.props;
@@ -149,7 +167,7 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <p className="text-red-500 mb-4">Error: {error || 'Job not found'}</p>
-            <Button onClick={() => navigate('/employer/jobs')}>
+            <Button onClick={() => navigate('/nlo/jobs')}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
             </Button>
           </div>
@@ -163,7 +181,7 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
         <div className="mb-6">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/employer/jobs')}
+            onClick={() => navigate('/nlo/jobs')}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
@@ -189,9 +207,19 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
             </div>
             
             <div className="flex gap-2">
+              {!job.active && (
+                <Button 
+                  variant="default" 
+                  onClick={this.handleReactivate}
+                  disabled={isLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reactivate Job
+                </Button>
+              )}
               <Button 
                 variant="default" 
-                onClick={() => navigate(`/employer/jobs/edit/${job.id}`)}
+                onClick={() => navigate(`/nlo/jobs/edit/${job.id}`)}
               >
                 <Edit3 className="mr-2 h-4 w-4" /> Edit Job
               </Button>
@@ -409,20 +437,6 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
               </Card>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate(`/employer/jobs/edit/${job.id}`)}
-                >
-                  <Edit3 className="mr-2 h-4 w-4" /> Edit Job Posting
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
@@ -436,7 +450,7 @@ export const JobDetailsPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
 
   if (!jobId) {
-    return <Navigate to="/employer/jobs" />;
+    return <Navigate to="/nlo/jobs" />;
   }
 
   return <JobDetailsPageClass jobId={jobId} navigate={navigate} />;

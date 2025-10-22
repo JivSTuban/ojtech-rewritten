@@ -434,7 +434,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
       } else {
         await jobService.createJob(payload);
       }
-      this.props.navigate('/employer/jobs');
+      this.props.navigate('/nlo/jobs');
     } catch (err: any) {
       this.setState({
         error: err.response?.data?.message || (isEditMode ? 'Failed to update job.' : 'Failed to create job.')
@@ -806,7 +806,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                 type="button" 
                 variant="outline" 
                 className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 border-2 border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-gray-500 h-9 px-4 py-2"
-                onClick={() => this.props.navigate('/employer/jobs')}
+                onClick={() => this.props.navigate('/nlo/jobs')}
               >
                 Cancel
               </Button>
