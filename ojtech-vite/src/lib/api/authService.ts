@@ -138,8 +138,22 @@ const githubLogin = async (code: string) => {
 };
 
 const logout = () => {
+  // Remove user authentication data
   localStorage.removeItem('user');
-  console.log('User logged out, localStorage user data cleared');
+  
+  // Clear all onboarding and form draft data
+  localStorage.removeItem('ojtech_employer_onboarding');
+  localStorage.removeItem('ojtech_student_onboarding');
+  localStorage.removeItem('companyFormDraft');
+  
+  // Clear any other app-specific data (you can add more keys as needed)
+  const keysToRemove = Object.keys(localStorage).filter(key => 
+    key.startsWith('ojtech_') || key.includes('onboarding') || key.includes('Draft')
+  );
+  
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  
+  console.log('User logged out, all localStorage data cleared');
 };
 
 const getCurrentUser = (): UserData | null => {

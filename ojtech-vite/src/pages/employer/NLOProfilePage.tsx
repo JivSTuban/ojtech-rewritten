@@ -106,17 +106,22 @@ export class NLOProfilePage extends Component<{}, NLOProfilePageState> {
       
       toast.success({
         title: 'Password Changed',
-        description: 'Your password has been successfully updated',
+        description: 'Your password has been successfully updated. Please login with your new password.',
       });
       
-      // Clear form
-      this.setState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-        isLoading: false,
-        passwordStrength: null,
-      });
+      // Clear localStorage immediately
+      authService.logout();
+      
+      // Small delay to ensure storage is cleared before redirect
+      setTimeout(() => {
+        // Logout the user to invalidate the session
+        if (this.context && this.context.logout) {
+          this.context.logout();
+        } else {
+          // Fallback: redirect to login page
+          window.location.replace('/login');
+        }
+      }, 100);
       
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to change password';

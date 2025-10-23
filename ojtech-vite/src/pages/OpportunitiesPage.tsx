@@ -579,9 +579,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           <Button onClick={this.fetchJobs} className="w-full sm:w-auto text-sm sm:text-base">
             Find Matched Jobs
           </Button>
-          <Button onClick={this.findJobs} variant="outline" className="w-full sm:w-auto text-sm sm:text-base">
-            Find More Jobs
-          </Button>
+         
         </div>
         
         {/* Error Banner - Show inline instead of full screen */}

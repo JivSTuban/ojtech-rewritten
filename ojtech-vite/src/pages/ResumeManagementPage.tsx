@@ -404,7 +404,7 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
       <iframe
         ref={iframeRef}
         title="Resume Preview"
-        className="w-full h-[800px] border-0 bg-white rounded-b-lg"
+        className="w-full h-[600px] md:h-[800px] border-0 bg-white rounded-b-lg"
         sandbox="allow-same-origin allow-scripts"
         srcDoc={processedHtml}
         onLoad={handleIframeLoad}
@@ -481,13 +481,13 @@ const EditableResumeView: React.FC<{
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow">
-      <div className="flex justify-end gap-2 mb-6">
+    <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow">
+      <div className="flex flex-col sm:flex-row justify-end gap-2 mb-4 sm:mb-6">
         <Button
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="flex items-center gap-2"
+          className="w-full sm:w-auto flex items-center justify-center gap-2"
         >
           <X className="h-4 w-4" />
           Cancel
@@ -495,7 +495,7 @@ const EditableResumeView: React.FC<{
         <Button
           size="sm"
           onClick={handleSave}
-          className="flex items-center gap-2"
+          className="w-full sm:w-auto flex items-center justify-center gap-2"
         >
           <Save className="h-4 w-4" />
           Save Changes
@@ -504,27 +504,27 @@ const EditableResumeView: React.FC<{
 
       <div className="flex flex-col">
         {/* Header - Full Name and Professional Title */}
-        <div className="mb-6 text-center bg-background ">
+        <div className="mb-4 sm:mb-6 text-center bg-background">
           <Input
             value={editedData.contactInfo.name}
             onChange={(e) => handleChange('contactInfo', 'name', e.target.value)}
             placeholder="Full Name"
-            className="text-center text-2xl font-bold uppercase mb-2"
+            className="text-center text-xl sm:text-2xl font-bold uppercase mb-2"
           />
           <Input
             placeholder="Professional Title"
-            className="text-center"
+            className="text-center text-sm sm:text-base"
             value="PROFESSIONAL"
          
           />
         </div>
         
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8">
           {/* Left Column - Contact and Skills */}
-          <div className="w-full md:w-1/3 space-y-8">
+          <div className="w-full md:w-1/3 space-y-4 sm:space-y-6 md:space-y-8">
             {/* Contact Information */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">CONTACT</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">CONTACT</h2>
               <div className="space-y-3">
                 <Input
                   value={editedData.contactInfo.email}
@@ -567,7 +567,7 @@ const EditableResumeView: React.FC<{
 
             {/* Skills */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">SKILLS</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">SKILLS</h2>
               <div className="space-y-3">
                 {editedData.skills.skillsList.map((skill, index) => (
                   <div key={index} className="flex gap-2">
@@ -608,7 +608,7 @@ const EditableResumeView: React.FC<{
 
             {/* Education */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">EDUCATION</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">EDUCATION</h2>
               <div className="space-y-3">
                 <Input
                   value={editedData.education.university}
@@ -639,10 +639,10 @@ const EditableResumeView: React.FC<{
           </div>
 
           {/* Right Column - Professional Summary, Experience, Projects */}
-          <div className="w-full md:w-2/3 space-y-8">
+          <div className="w-full md:w-2/3 space-y-4 sm:space-y-6 md:space-y-8">
             {/* Professional Summary */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">PROFESSIONAL SUMMARY</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">PROFESSIONAL SUMMARY</h2>
               <div className="space-y-3">
                 {editedData.professionalSummary.summaryPoints.map((point, index) => (
                   <div key={index} className="flex gap-2">
@@ -684,7 +684,7 @@ const EditableResumeView: React.FC<{
 
             {/* Experience */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">EXPERIENCE</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">EXPERIENCE</h2>
               <div className="space-y-6">
                 {editedData.experience.experiences.map((exp, index) => (
                   <div key={index} className="border rounded-lg p-4 space-y-4">
@@ -806,7 +806,7 @@ const EditableResumeView: React.FC<{
 
             {/* Projects */}
             <section>
-              <h2 className="text-xl font-bold mb-4 text-gray-800 uppercase">PROJECTS</h2>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-gray-800 uppercase">PROJECTS</h2>
               <div className="space-y-6">
                 {editedData.projects.projectsList.map((project, index) => (
                   <div key={index} className="border rounded-lg p-4 space-y-4">
@@ -2420,15 +2420,15 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
           }}
         />
 
-      <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
+      <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">CV Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">CV Management</h1>
         </div>
         
-        <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-6 rounded-lg border border-gray-800/50 shadow-lg">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-4 sm:p-6 rounded-lg border border-gray-800/50 shadow-lg">
+          <div className="flex flex-col gap-4">
             <div>
-              <h3 className="text-2xl font-bold text-white">CV Builder</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-white">CV Builder</h3>
               <p className="text-gray-400 text-sm mt-1">
                 Generate a professional, ATS-optimized CV based on your profile
               </p>
@@ -2437,11 +2437,11 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
               </p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
               <Button 
                 onClick={this.handleGenerateCVClick} 
                 disabled={generatingCV}
-                className="bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center gap-2 hover:from-gray-700 hover:to-gray-900"
+                className="w-full sm:w-auto bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center justify-center gap-2 hover:from-gray-700 hover:to-gray-900"
               >
                 {generatingCV ? (
                   <>
@@ -2461,7 +2461,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                   <Button 
                     onClick={this.handleEditClick}
                     variant="outline"
-                    className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2"
+                    className="w-full sm:w-auto border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center justify-center gap-2"
                   >
                     <Edit2 className="h-4 w-4" />
                     <span>Edit CV</span>
@@ -2471,7 +2471,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                     onClick={this.handleDownloadCV}
                     variant="outline"
                     disabled={this.state.uploadLoading}
-                    className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center gap-2"
+                    className="w-full sm:w-auto border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center justify-center gap-2"
                   >
                     {this.state.uploadLoading ? (
                       <>
@@ -2494,8 +2494,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
         {/* CV Preview/Edit */}
         {resumeHtml && (
           <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-gray-800/50">
-              <h4 className="font-medium text-white">
+            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-800/50">
+              <h4 className="text-sm sm:text-base font-medium text-white">
                 {isEditMode ? 'Edit CV' : 'CV Preview'}
               </h4>
               {!isEditMode && (
@@ -2504,7 +2504,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
                     variant="ghost" 
                     size="sm" 
                     onClick={this.toggleCVPreview}
-                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                    className="text-xs sm:text-sm text-gray-400 hover:text-white hover:bg-gray-800"
                   >
                     {cvPreviewVisible ? 'Hide Preview' : 'Show Preview'}
                   </Button>
@@ -2513,7 +2513,7 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
             </div>
             
             {cvPreviewVisible && (
-              <div className="bg-white">
+              <div className="bg-white overflow-auto">
                 {isEditMode && editableData ? (
                   <EditableResumeView
                     data={editableData}
@@ -2526,35 +2526,35 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
               </div>
             )}
           </div>
-        )}
+        )}  
         
         {/* Instructions for better resume */}
         {!resumeHtml && (
-          <div className="bg-gray-900/60 border border-gray-800/50 rounded-lg p-6">
-            <h4 className="text-lg font-semibold text-white mb-3">Tips for a Great Resume</h4>
-            <ul className="space-y-3 text-gray-400">
+          <div className="bg-gray-900/60 border border-gray-800/50 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold text-white mb-3">Tips for a Great Resume</h4>
+            <ul className="space-y-3 text-sm sm:text-base text-gray-400">
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>Complete your profile with detailed work experiences and projects</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>Quantify your achievements with specific metrics (e.g., "increased efficiency by 30%" or "reduced load time from 5s to 1.2s")</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>Use numbers to show scale and impact (e.g., "managed database with 500,000 records" or "saved team 15 hours weekly")</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>Add technical skills relevant to the positions you're applying for</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>Include your education details and relevant certifications</span>
               </li>
               <li className="flex gap-2">
-                <span className="text-gray-500">•</span>
+                <span className="text-gray-500 flex-shrink-0">•</span>
                 <span>For technical projects, highlight business impact (e.g., "implemented feature used by 80% of users")</span>
               </li>
             </ul>

@@ -155,6 +155,9 @@ public class StudentProfileController {
         StudentProfile profile = new StudentProfile();
         profile.setUser(user);
         profile.setRole(UserRole.STUDENT);
+        // Set login email from User entity
+        profile.setEmail(user.getEmail());
+        logger.info("Created student profile with login email: {}", user.getEmail());
         
         updateProfileFields(profile, profileData);
         
@@ -170,12 +173,20 @@ public class StudentProfileController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         Optional<StudentProfile> profileOpt = studentProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         StudentProfile profile = profileOpt.get();
+        // Always sync the email from User entity to StudentProfile
+        if (profile.getEmail() == null || !profile.getEmail().equals(user.getEmail())) {
+            profile.setEmail(user.getEmail());
+            logger.info("Synced login email to student profile: {}", user.getEmail());
+        }
         updateProfileFields(profile, profileData);
         
         profile = studentProfileRepository.save(profile);
@@ -196,26 +207,34 @@ public class StudentProfileController {
             logger.info("User ID: {}, Username: {}", userId, userDetails.getUsername());
             logger.info("User roles: {}", userDetails.getAuthorities());
 
+            // Get the user to retrieve login email
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> {
+                        logger.error("User not found with ID: {}", userId);
+                        return new ResourceNotFoundException("User not found");
+                    });
+            
             Optional<StudentProfile> profileOpt = studentProfileRepository.findByUserId(userId);
             if (profileOpt.isEmpty()) {
                 logger.warn("No profile found for user ID: {}", userId);
                 
                 // Create a new profile if it doesn't exist
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> {
-                            logger.error("User not found with ID: {}", userId);
-                            return new ResourceNotFoundException("User not found");
-                        });
-                
                 StudentProfile newProfile = new StudentProfile();
                 newProfile.setUser(user);
                 newProfile.setRole(UserRole.STUDENT);
+                newProfile.setEmail(user.getEmail()); // Set login email
                 newProfile = studentProfileRepository.save(newProfile);
                 profileOpt = Optional.of(newProfile);
-                logger.info("Created new student profile for user: {}", user.getUsername());
+                logger.info("Created new student profile for user: {} with email: {}", user.getUsername(), user.getEmail());
             }
 
             StudentProfile profile = profileOpt.get();
+            
+            // Always sync the email from User entity to StudentProfile
+            if (profile.getEmail() == null || !profile.getEmail().equals(user.getEmail())) {
+                profile.setEmail(user.getEmail());
+                logger.info("Synced login email to student profile: {}", user.getEmail());
+            }
             profile.setHasCompletedOnboarding(true);
             logger.info("Processing onboarding data for profile ID: {}", profile.getId());
             
@@ -598,6 +617,12 @@ public class StudentProfileController {
     }
 
     private void updateProfileFields(StudentProfile profile, Map<String, Object> data) {
+        // Note: Email should not be updated through profileData
+        // It should always be synced from the User entity
+        if (data.containsKey("email")) {
+            logger.warn("Ignoring email from profile data. Email is synced from User entity.");
+        }
+        
         if (data.containsKey("firstName")) {
             profile.setFirstName((String) data.get("firstName"));
         }

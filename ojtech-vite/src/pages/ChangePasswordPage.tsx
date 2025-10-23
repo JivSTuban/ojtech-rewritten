@@ -134,16 +134,22 @@ export class ChangePasswordPage extends Component<{}, ChangePasswordPageState> {
       
       toast.success({
         title: 'Password Changed',
-        description: 'Your password has been successfully updated',
+        description: 'Your password has been successfully updated. Please login with your new password.',
       });
       
-      // Update auth context to clear requiresPasswordReset flag
-      if (this.context && this.context.updateProfile) {
-        this.context.updateProfile({ requiresPasswordReset: false });
-      }
+      // Clear localStorage immediately
+      authService.logout();
       
-      // Redirect based on role
-      this.redirectBasedOnRole();
+      // Small delay to ensure storage is cleared before redirect
+      setTimeout(() => {
+        // Logout the user to invalidate the session
+        if (this.context && this.context.logout) {
+          this.context.logout();
+        } else {
+          // Fallback: redirect to login page
+          window.location.replace('/login');
+        }
+      }, 100);
       
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to change password';

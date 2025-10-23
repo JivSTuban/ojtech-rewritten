@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Building2, Mail, Phone, MapPin, Users, Globe, Edit, ToggleLeft, ToggleRight, FileText, X as XIcon } from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, MapPin, Users, Globe, FileText, X as XIcon, CheckCircle, Edit3 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Badge } from '../ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Card, CardContent } from '../ui/Card';
 import { useToast } from '../../components/ui/use-toast';
 import nloService, { Company, CompanyCreateRequest } from '../../lib/api/nloService';
 import apiClient from '../../lib/api/apiClient';
@@ -13,7 +12,7 @@ const CompanyManagementPage: React.FC = () => {
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
@@ -51,7 +50,7 @@ const CompanyManagementPage: React.FC = () => {
 
   useEffect(() => {
     filterCompanies();
-  }, [companies, searchTerm, showActiveOnly]);
+  }, [companies, searchTerm, activeTab]);
 
   const fetchCompanies = async () => {
     try {
@@ -69,8 +68,11 @@ const CompanyManagementPage: React.FC = () => {
   const filterCompanies = () => {
     let filtered = companies;
 
-    if (showActiveOnly) {
+    // Filter by active tab
+    if (activeTab === 'active') {
       filtered = filtered.filter(company => company.active);
+    } else {
+      filtered = filtered.filter(company => !company.active);
     }
 
     if (searchTerm) {
@@ -454,158 +456,224 @@ const CompanyManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Company Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage partner company profiles</p>
+    <div className="min-h-screen bg-gray-950 text-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold">Company Management</h1>
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Company
+          </Button>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Company
-        </Button>
-      </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search companies..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Button
-              variant={showActiveOnly ? "default" : "outline"}
-              onClick={() => setShowActiveOnly(!showActiveOnly)}
-            >
-              {showActiveOnly ? "Show All" : "Active Only"}
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 border-b border-gray-800">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'active'
+                ? 'text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <CheckCircle className="inline-block mr-2 h-4 w-4" />
+            Active Companies
+          </button>
+          <button
+            onClick={() => setActiveTab('inactive')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === 'inactive'
+                ? 'text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <XIcon className="inline-block mr-2 h-4 w-4" />
+            Inactive Companies
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by company name, email, location, industry..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {loading && <p className="text-center text-gray-400 py-12">Loading companies...</p>}
+
+        {!loading && companies.length === 0 && (
+          <div className="text-center py-12">
+            <Building2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">You haven't added any companies yet.</p>
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" /> Add Your First Company
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Companies Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCompanies.map((company) => (
-          <Card key={company.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  {company.logoUrl ? (
-                    <img src={company.logoUrl} alt={company.name} className="w-10 h-10 rounded-lg object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Building2 className="w-6 h-6 text-blue-600" />
+        {companies.length > 0 && filteredCompanies.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">
+              {activeTab === 'active' 
+                ? 'No active companies found.' 
+                : 'No inactive companies found.'}
+            </p>
+            {searchTerm && (
+              <Button
+                variant="outline"
+                className="mt-4 border-gray-700 hover:bg-gray-800"
+                onClick={() => setSearchTerm('')}
+              >
+                Clear Search
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Companies Grid */}
+        {companies.length > 0 && filteredCompanies.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCompanies.map((company) => {
+              const companyInitials = company.name.substring(0, 2).toUpperCase();
+              
+              return (
+                <Card key={company.id} className="bg-gray-900 border-gray-800 hover:border-gray-600 hover:shadow-lg transition-all duration-200 cursor-pointer h-full">
+                  <CardContent className="p-6">
+                    {/* Header with Logo and Actions */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Company Logo/Avatar */}
+                        {company.logoUrl ? (
+                          <img src={company.logoUrl} alt={company.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                            {companyInitials}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-white text-base truncate">{company.name}</h3>
+                          <p className="text-sm text-gray-400 truncate">{company.industry || 'No industry specified'}</p>
+                          {company.active ? (
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-400 rounded mt-1">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-500/20 text-gray-400 rounded mt-1">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Action Icons */}
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button 
+                          className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+                          onClick={() => openEditDialog(company)}
+                        >
+                          <Edit3 className="h-4 w-4 text-gray-400 hover:text-white" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <CardTitle className="text-lg">{company.name}</CardTitle>
-                    <Badge variant={company.active ? "default" : "secondary"}>
-                      {company.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(company)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleStatus(company)}
-                  >
-                    {company.active ? (
-                      <ToggleRight className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <ToggleLeft className="w-4 h-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                  <Mail className="w-4 h-4 mr-2" />
-                  {company.email}
-                </div>
-                {company.phone && (
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <Phone className="w-4 h-4 mr-2" />
-                    {company.phone}
-                  </div>
-                )}
-                {company.location && (
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    {company.location}
-                  </div>
-                )}
-                {company.website && (
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <Globe className="w-4 h-4 mr-2" />
-                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                      Website
-                    </a>
-                  </div>
-                )}
-                {company.industry && (
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <Users className="w-4 h-4 mr-2" />
-                    {company.industry}
-                  </div>
-                )}
-              </div>
 
-              {(company.hrName || company.hrEmail || company.hrPhone) && (
-                <div className="border-t pt-3">
-                  <h5 className="text-sm font-medium mb-2">HR Contact</h5>
-                  <div className="space-y-1">
-                    {company.hrName && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{company.hrName}</div>
-                    )}
-                    {company.hrEmail && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{company.hrEmail}</div>
-                    )}
-                    {company.hrPhone && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{company.hrPhone}</div>
-                    )}
-                  </div>
-                </div>
-              )}
+                    {/* Contact Information */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{company.email}</span>
+                      </div>
+                      {company.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Phone className="h-4 w-4 flex-shrink-0" />
+                          <span>{company.phone}</span>
+                        </div>
+                      )}
+                      {company.location && (
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <MapPin className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{company.location}</span>
+                        </div>
+                      )}
+                    </div>
 
-              {company.description && (
-                <div className="border-t pt-3">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                    {company.description}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {company.website && (
+                        <a 
+                          href={company.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 rounded text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+                        >
+                          <Globe className="h-3 w-3" />
+                          <span>Website</span>
+                        </a>
+                      )}
+                      {company.companySize && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 rounded text-xs text-gray-300">
+                          <Users className="h-3 w-3" />
+                          <span>{company.companySize}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-sm text-gray-400 line-clamp-2 mb-4">
+                      {company.description || 'No description available.'}
+                    </p>
+
+                    {/* HR Contact - Compact */}
+                    {(company.hrName || company.hrEmail) && (
+                      <div className="border-t border-gray-800 pt-3 mb-4">
+                        <h5 className="text-xs font-medium text-gray-500 mb-1">HR Contact</h5>
+                        {company.hrName && (
+                          <p className="text-sm text-gray-400">{company.hrName}</p>
+                        )}
+                        {company.hrEmail && (
+                          <p className="text-xs text-gray-500">{company.hrEmail}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer Actions */}
+                    <div className="flex gap-2 pt-4 border-t border-gray-800">
+                      {company.active ? (
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleToggleStatus(company)} 
+                          disabled={loading}
+                          className="w-full bg-red-600 hover:bg-red-700"
+                        >
+                          <XIcon className="mr-1.5 h-3.5 w-3.5" /> Deactivate
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          onClick={() => handleToggleStatus(company)} 
+                          disabled={loading}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Activate
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      {filteredCompanies.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No companies found</h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            {searchTerm ? "Try adjusting your search terms" : "Get started by adding your first company"}
-          </p>
-        </div>
-      )}
 
       {/* Create Company Modal */}
       {isCreateDialogOpen && (

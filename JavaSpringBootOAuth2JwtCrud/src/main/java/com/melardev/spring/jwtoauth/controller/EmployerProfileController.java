@@ -118,6 +118,9 @@ public class EmployerProfileController {
         EmployerProfile profile = new EmployerProfile();
         profile.setUser(user);
         profile.setRole(UserRole.NLO);
+        // Set login email from User entity
+        profile.setEmail(user.getEmail());
+        logger.info("Created employer profile with login email: {}", user.getEmail());
         
         updateProfileFields(profile, profileData);
         
@@ -134,12 +137,20 @@ public class EmployerProfileController {
             return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
         }
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
             return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
         }
 
         EmployerProfile profile = profileOpt.get();
+        // Always sync the email from User entity to EmployerProfile
+        if (profile.getEmail() == null || !profile.getEmail().equals(user.getEmail())) {
+            profile.setEmail(user.getEmail());
+            logger.info("Synced login email to employer profile: {}", user.getEmail());
+        }
         updateProfileFields(profile, profileData);
         
         profile = employerProfileRepository.save(profile);
@@ -174,6 +185,12 @@ public class EmployerProfileController {
     }
 
     private void updateProfileFields(EmployerProfile profile, Map<String, Object> data) {
+        // Note: Email should not be updated through profileData
+        // It should always be synced from the User entity
+        if (data.containsKey("email")) {
+            logger.warn("Ignoring email from profile data. Email is synced from User entity.");
+        }
+        
         if (data.containsKey("fullName")) {
             profile.setFullName((String) data.get("fullName"));
         }

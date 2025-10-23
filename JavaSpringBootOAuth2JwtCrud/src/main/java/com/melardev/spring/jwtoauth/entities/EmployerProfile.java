@@ -28,6 +28,9 @@ public class EmployerProfile extends Profile {
     @Column(name = "logo_url")
     private String logoUrl;
     
+    @Column(name = "email")
+    private String email;
+    
     @Column(name = "contact_person_name")
     private String contactPersonName;
     
@@ -100,6 +103,14 @@ public class EmployerProfile extends Profile {
     
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
     }
     
     public String getContactPersonName() {
