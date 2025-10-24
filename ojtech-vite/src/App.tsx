@@ -14,7 +14,6 @@ import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { JobDetailPage } from './pages/JobDetailPage';
-import { JobApplicationPage } from './pages/JobApplicationPage';
 import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import { PublicOnlyRoute } from './components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
@@ -27,7 +26,6 @@ import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
-import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
 import NLOStudentVerificationPage from "./components/nlo/StudentVerificationPage";
 import CompanyManagementPage from "./components/nlo/CompanyManagementPage";
 import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
@@ -174,9 +172,7 @@ export const App: React.FC = () => {
               <Route path="/admin/profile" element={<AdminProfilePage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
               <Route path="/nlo/students/verification" element={<NLOStudentVerificationPage />} />
-              <Route path="/nlo/students/:id" element={<StudentDetailsPage />} />
               <Route path="/nlo/companies" element={<CompanyManagementPage />} />
-              <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
           </Route>
           
           {/* Onboarding routes without navbar */}
