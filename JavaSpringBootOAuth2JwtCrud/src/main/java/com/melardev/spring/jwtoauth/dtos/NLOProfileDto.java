@@ -1,10 +1,10 @@
 package com.melardev.spring.jwtoauth.dtos;
 
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 
 import java.util.UUID;
 
-public class EmployerProfileDto {
+public class NLOProfileDto {
     private UUID id;
     private String companyName;
     private String industry;
@@ -15,19 +15,19 @@ public class EmployerProfileDto {
     private String logoUrl;
     private String email;
     
-    public EmployerProfileDto() {
+    public NLOProfileDto() {
     }
     
-    public EmployerProfileDto(EmployerProfile employerProfile) {
-        this.id = employerProfile.getId();
-        this.companyName = employerProfile.getCompanyName();
-        this.industry = employerProfile.getIndustry();
-        this.location = employerProfile.getLocation();
-        this.companySize = employerProfile.getCompanySize();
-        this.companyDescription = employerProfile.getCompanyDescription();
-        this.websiteUrl = employerProfile.getWebsiteUrl();
-        this.logoUrl = employerProfile.getLogoUrl();
-        this.email = employerProfile.getContactPersonEmail();
+    public NLOProfileDto(NLOProfile nloProfile) {
+        this.id = nloProfile.getId();
+        this.companyName = nloProfile.getCompanyName();
+        this.industry = nloProfile.getIndustry();
+        this.location = nloProfile.getLocation();
+        this.companySize = nloProfile.getCompanySize();
+        this.companyDescription = nloProfile.getCompanyDescription();
+        this.websiteUrl = nloProfile.getWebsiteUrl();
+        this.logoUrl = nloProfile.getLogoUrl();
+        this.email = nloProfile.getContactPersonEmail();
     }
     
     public UUID getId() {
@@ -110,4 +110,4 @@ public class EmployerProfileDto {
     public String getDescription() {
         return companyDescription;
     }
-} 
+}

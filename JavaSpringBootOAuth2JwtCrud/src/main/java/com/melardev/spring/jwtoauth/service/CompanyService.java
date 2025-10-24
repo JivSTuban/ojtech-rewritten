@@ -2,7 +2,7 @@ package com.melardev.spring.jwtoauth.service;
 
 import com.melardev.spring.jwtoauth.dtos.requests.CompanyCreateRequest;
 import com.melardev.spring.jwtoauth.entities.Company;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.repositories.CompanyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class CompanyService {
     /**
      * Get companies created by specific NLO staff
      */
-    public List<Company> getCompaniesByNLO(EmployerProfile nloProfile) {
+    public List<Company> getCompaniesByNLO(NLOProfile nloProfile) {
         return companyRepository.findByCreatedByNLO(nloProfile);
     }
     
@@ -54,7 +54,7 @@ public class CompanyService {
      * Create a new company
      */
     @Transactional
-    public Company createCompany(CompanyCreateRequest request, EmployerProfile nloProfile) {
+    public Company createCompany(CompanyCreateRequest request, NLOProfile nloProfile) {
         // Check if company with same name or email already exists
         if (companyRepository.existsByName(request.getName())) {
             throw new RuntimeException("Company with this name already exists");

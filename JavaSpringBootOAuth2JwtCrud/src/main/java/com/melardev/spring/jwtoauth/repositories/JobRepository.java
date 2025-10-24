@@ -1,6 +1,6 @@
 package com.melardev.spring.jwtoauth.repositories;
 
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
 import com.melardev.spring.jwtoauth.entities.JobStatus;
 import org.springframework.data.domain.Page;
@@ -14,11 +14,11 @@ import java.util.UUID;
 
 @Repository
 public interface JobRepository extends JpaRepository<Job, UUID> {
-    List<Job> findByEmployer(EmployerProfile employer);
+    List<Job> findByEmployer(NLOProfile employer);
     
     List<Job> findByActiveTrue();
     
-    List<Job> findByActiveTrueAndEmployer(EmployerProfile employer);
+    List<Job> findByActiveTrueAndEmployer(NLOProfile employer);
     
     List<Job> findByStatus(JobStatus status);
     

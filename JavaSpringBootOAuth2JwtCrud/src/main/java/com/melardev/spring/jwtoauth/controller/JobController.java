@@ -32,13 +32,13 @@ import com.melardev.spring.jwtoauth.dtos.responses.JobMatchResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.JobResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.Company;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
 import com.melardev.spring.jwtoauth.entities.JobMatch;
 import com.melardev.spring.jwtoauth.entities.StudentProfile;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
 import com.melardev.spring.jwtoauth.repositories.CompanyRepository;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
@@ -53,7 +53,7 @@ public class JobController {
     private JobRepository jobRepository;
     
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
     
     @Autowired
     private StudentProfileRepository studentProfileRepository;
@@ -139,13 +139,13 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
-        List<Job> jobs = jobRepository.findByEmployer(employerProfile);
+        NLOProfile NLOProfile = NLOProfileOpt.get();
+        List<Job> jobs = jobRepository.findByEmployer(NLOProfile);
         
         // Filter only active jobs
         List<JobResponseDTO> jobResponseDTOs = jobs.stream()
@@ -163,13 +163,13 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
-        List<Job> jobs = jobRepository.findByEmployer(employerProfile);
+        NLOProfile NLOProfile = NLOProfileOpt.get();
+        List<Job> jobs = jobRepository.findByEmployer(NLOProfile);
         
         // Filter only inactive jobs
         List<JobResponseDTO> inactiveJobDTOs = jobs.stream()
@@ -187,12 +187,12 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
+        NLOProfile NLOProfile = NLOProfileOpt.get();
         
         Optional<Job> jobOpt = jobRepository.findById(id);
         if (jobOpt.isEmpty()) {
@@ -202,7 +202,7 @@ public class JobController {
         Job job = jobOpt.get();
         
         // Check if the employer owns the job
-        if (!job.getEmployer().getId().equals(employerProfile.getId())) {
+        if (!job.getEmployer().getId().equals(NLOProfile.getId())) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("You are not authorized to view this job"));
         }
@@ -242,15 +242,15 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
+        NLOProfile NLOProfile = NLOProfileOpt.get();
         
         Job job = new Job();
-        job.setEmployer(employerProfile);
+        job.setEmployer(NLOProfile);
         
         // Set job fields from request data
         if (jobData.containsKey("title")) {
@@ -326,12 +326,12 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
+        NLOProfile NLOProfile = NLOProfileOpt.get();
         
         Optional<Job> jobOpt = jobRepository.findById(id);
         if (jobOpt.isEmpty()) {
@@ -341,7 +341,7 @@ public class JobController {
         Job job = jobOpt.get();
         
         // Check if the employer owns the job
-        if (!job.getEmployer().getId().equals(employerProfile.getId())) {
+        if (!job.getEmployer().getId().equals(NLOProfile.getId())) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("You are not authorized to update this job"));
         }
@@ -415,12 +415,12 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
+        NLOProfile NLOProfile = NLOProfileOpt.get();
         
         Optional<Job> jobOpt = jobRepository.findById(id);
         if (jobOpt.isEmpty()) {
@@ -430,7 +430,7 @@ public class JobController {
         Job job = jobOpt.get();
         
         // Check if the employer owns the job
-        if (!job.getEmployer().getId().equals(employerProfile.getId())) {
+        if (!job.getEmployer().getId().equals(NLOProfile.getId())) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("You are not authorized to delete this job"));
         }
@@ -449,12 +449,12 @@ public class JobController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         UUID userId = userDetails.getId();
 
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isEmpty()) {
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isEmpty()) {
             throw new ResourceNotFoundException("Employer profile not found");
         }
 
-        EmployerProfile employerProfile = employerProfileOpt.get();
+        NLOProfile NLOProfile = NLOProfileOpt.get();
         
         Optional<Job> jobOpt = jobRepository.findById(id);
         if (jobOpt.isEmpty()) {
@@ -464,7 +464,7 @@ public class JobController {
         Job job = jobOpt.get();
         
         // Check if the employer owns the job
-        if (!job.getEmployer().getId().equals(employerProfile.getId())) {
+        if (!job.getEmployer().getId().equals(NLOProfile.getId())) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("You are not authorized to reactivate this job"));
         }

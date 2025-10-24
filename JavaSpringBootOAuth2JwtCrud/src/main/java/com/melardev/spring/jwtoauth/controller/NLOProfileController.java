@@ -1,13 +1,12 @@
 package com.melardev.spring.jwtoauth.controller;
 
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.User;
 import com.melardev.spring.jwtoauth.entities.UserRole;
 import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
-import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
 import com.melardev.spring.jwtoauth.service.CloudinaryService;
 import org.slf4j.Logger;
@@ -29,12 +28,12 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/nlo")
-public class EmployerProfileController {
+public class NLOProfileController {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmployerProfileController.class);
+    private static final Logger logger = LoggerFactory.getLogger(NLOProfileController.class);
 
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository nloProfileRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -50,7 +49,7 @@ public class EmployerProfileController {
      */
     @GetMapping("/me")
     @PreAuthorize("hasRole('NLO')")
-    public ResponseEntity<?> getCurrentEmployerProfile() {
+    public ResponseEntity<?> getCurrentNLOProfile() {
         logger.debug("GET /api/employer-profiles/me called");
         
         // Get authentication details for debugging
@@ -68,7 +67,7 @@ public class EmployerProfileController {
             return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
         }
 
-        Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
+        Optional<NLOProfile> profileOpt = nloProfileRepository.findByUserId(userId);
         logger.debug("Profile found for userId {}: {}", userId, profileOpt.isPresent());
         
         if (profileOpt.isEmpty()) {
@@ -98,7 +97,7 @@ public class EmployerProfileController {
 
     @PostMapping
     @PreAuthorize("hasRole('NLO')")
-    public ResponseEntity<?> createEmployerProfile(@RequestBody Map<String, Object> profileData) {
+    public ResponseEntity<?> createNLOProfile(@RequestBody Map<String, Object> profileData) {
         UUID userId = SecurityUtils.getCurrentUserId();
         if (userId == null) {
             return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
@@ -108,14 +107,14 @@ public class EmployerProfileController {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Check if profile already exists
-        Optional<EmployerProfile> existingProfileOpt = employerProfileRepository.findByUserId(userId);
+        Optional<NLOProfile> existingProfileOpt = nloProfileRepository.findByUserId(userId);
         if (existingProfileOpt.isPresent()) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Employer profile already exists"));
         }
 
         // Create new profile
-        EmployerProfile profile = new EmployerProfile();
+        NLOProfile profile = new NLOProfile();
         profile.setUser(user);
         profile.setRole(UserRole.NLO);
         // Set login email from User entity
@@ -124,14 +123,14 @@ public class EmployerProfileController {
         
         updateProfileFields(profile, profileData);
         
-        profile = employerProfileRepository.save(profile);
+        profile = nloProfileRepository.save(profile);
         
         return ResponseEntity.ok(profile);
     }
 
     @PutMapping("/me")
     @PreAuthorize("hasRole('NLO')")
-    public ResponseEntity<?> updateEmployerProfile(@RequestBody Map<String, Object> profileData) {
+    public ResponseEntity<?> updateNLOProfile(@RequestBody Map<String, Object> profileData) {
         UUID userId = SecurityUtils.getCurrentUserId();
         if (userId == null) {
             return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
@@ -140,20 +139,20 @@ public class EmployerProfileController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
+        Optional<NLOProfile> profileOpt = nloProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
             return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
         }
 
-        EmployerProfile profile = profileOpt.get();
-        // Always sync the email from User entity to EmployerProfile
+        NLOProfile profile = profileOpt.get();
+        // Always sync the email from User entity to NLOProfile
         if (profile.getEmail() == null || !profile.getEmail().equals(user.getEmail())) {
             profile.setEmail(user.getEmail());
             logger.info("Synced login email to employer profile: {}", user.getEmail());
         }
         updateProfileFields(profile, profileData);
         
-        profile = employerProfileRepository.save(profile);
+        profile = nloProfileRepository.save(profile);
         
         return ResponseEntity.ok(profile);
     }
@@ -166,12 +165,12 @@ public class EmployerProfileController {
             return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
         }
 
-        Optional<EmployerProfile> profileOpt = employerProfileRepository.findByUserId(userId);
+        Optional<NLOProfile> profileOpt = nloProfileRepository.findByUserId(userId);
         if (profileOpt.isEmpty()) {
             return ResponseEntity.status(404).body(new MessageResponse("Employer profile not found"));
         }
 
-        EmployerProfile profile = profileOpt.get();
+        NLOProfile profile = profileOpt.get();
         
         // Upload to Cloudinary
         Map<String, Object> result = cloudinaryService.upload(file, "logos");
@@ -179,12 +178,12 @@ public class EmployerProfileController {
         
         // Update profile
         profile.setLogoUrl(logoUrl);
-        profile = employerProfileRepository.save(profile);
+        profile = nloProfileRepository.save(profile);
         
         return ResponseEntity.ok(profile);
     }
 
-    private void updateProfileFields(EmployerProfile profile, Map<String, Object> data) {
+    private void updateProfileFields(NLOProfile profile, Map<String, Object> data) {
         // Note: Email should not be updated through profileData
         // It should always be synced from the User entity
         if (data.containsKey("email")) {
@@ -269,4 +268,4 @@ public class EmployerProfileController {
             profile.setVerified((Boolean) data.get("verified"));
         }
     }
-} 
+}

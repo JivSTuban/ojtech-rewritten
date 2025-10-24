@@ -61,7 +61,7 @@ public class JobApplicationControllerTest {
     private User employerUser;
     private User studentUser;
     private StudentProfile studentProfile;
-    private EmployerProfile employerProfile;
+    private NLOProfile NLOProfile;
     private Job job;
     private CV cv;
 
@@ -85,10 +85,10 @@ public class JobApplicationControllerTest {
         studentUser.setEmail("student@test.com");
         
         // Set up employer profile
-        employerProfile = new EmployerProfile();
-        employerProfile.setId(UUID.randomUUID());
-        employerProfile.setUser(employerUser);
-        employerProfile.setCompanyName("Test Company");
+        NLOProfile = new NLOProfile();
+        NLOProfile.setId(UUID.randomUUID());
+        NLOProfile.setUser(employerUser);
+        NLOProfile.setCompanyName("Test Company");
         
         // Set up student profile
         studentProfile = new StudentProfile();
@@ -102,7 +102,7 @@ public class JobApplicationControllerTest {
         job.setId(jobId);
         job.setTitle("Software Engineer");
         job.setDescription("Test job description");
-        job.setEmployer(employerProfile);
+        job.setEmployer(NLOProfile);
         
         // Set up CV
         cv = new CV();

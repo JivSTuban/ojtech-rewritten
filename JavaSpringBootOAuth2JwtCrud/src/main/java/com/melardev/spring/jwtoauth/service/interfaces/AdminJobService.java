@@ -75,14 +75,14 @@ public interface AdminJobService {
     Map<String, Object> getJobPerformanceComparison(List<UUID> jobIds);
 
     // Employer Job Quota Management
-    EmployerJobQuota getEmployerJobQuota(UUID employerId);
-    EmployerJobQuota createEmployerJobQuota(UUID employerId, Integer maxActiveJobs, Integer maxFeaturedJobs, UUID adminId);
-    EmployerJobQuota updateEmployerJobQuota(UUID employerId, EmployerJobQuota quota, UUID adminId);
+    NLOJobQuota getNLOJobQuota(UUID employerId);
+    NLOJobQuota createNLOJobQuota(UUID employerId, Integer maxActiveJobs, Integer maxFeaturedJobs, UUID adminId);
+    NLOJobQuota updateNLOJobQuota(UUID employerId, NLOJobQuota quota, UUID adminId);
     boolean canEmployerCreateJob(UUID employerId);
     boolean canEmployerCreateFeaturedJob(UUID employerId);
     void incrementEmployerJobCount(UUID employerId, boolean featured);
     void decrementEmployerJobCount(UUID employerId, boolean featured);
-    List<EmployerJobQuota> getEmployersAtJobLimit();
+    List<NLOJobQuota> getEmployersAtJobLimit();
     void resetExpiredQuotas();
 
     // Job Category Management

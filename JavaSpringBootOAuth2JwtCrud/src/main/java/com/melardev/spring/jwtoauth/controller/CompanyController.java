@@ -24,8 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.melardev.spring.jwtoauth.dtos.requests.CompanyCreateRequest;
 import com.melardev.spring.jwtoauth.dtos.responses.CompanyResponseDTO;
 import com.melardev.spring.jwtoauth.entities.Company;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.service.CompanyService;
 
@@ -44,7 +44,7 @@ public class CompanyController {
     private CompanyService companyService;
     
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
     
     /**
      * Get all companies
@@ -99,7 +99,7 @@ public class CompanyController {
         UUID userId = userDetails.getId();
         
         // Get NLO profile
-        EmployerProfile nloProfile = employerProfileRepository.findByUserId(userId)
+        NLOProfile nloProfile = NLOProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("NLO profile not found"));
         
         Company company = companyService.createCompany(request, nloProfile);

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class Job extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "employer_id")
     @JsonBackReference
-    private EmployerProfile employer;
+    private NLOProfile employer;
     
     @OneToOne
     @JoinColumn(name = "company_id", unique = true)
@@ -80,11 +79,11 @@ public class Job extends BaseEntity {
     public Job() {
     }
     
-    public EmployerProfile getEmployer() {
+    public NLOProfile getEmployer() {
         return employer;
     }
     
-    public void setEmployer(EmployerProfile employer) {
+    public void setEmployer(NLOProfile employer) {
         this.employer = employer;
     }
     

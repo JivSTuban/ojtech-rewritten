@@ -12,7 +12,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "employer_job_quotas")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class EmployerJobQuota {
+public class NLOJobQuota {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -20,7 +20,7 @@ public class EmployerJobQuota {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employer_id", nullable = false, unique = true)
-    private EmployerProfile employer;
+    private NLOProfile employer;
 
     @Column(name = "max_active_jobs", nullable = false)
     private Integer maxActiveJobs = 10;
@@ -57,11 +57,11 @@ public class EmployerJobQuota {
     private LocalDateTime updatedAt;
 
     // Constructors
-    public EmployerJobQuota() {
+    public NLOJobQuota() {
         this.resetDate = LocalDateTime.now();
     }
 
-    public EmployerJobQuota(EmployerProfile employer, Integer maxActiveJobs, Integer maxFeaturedJobs, QuotaPeriod quotaPeriod) {
+    public NLOJobQuota(NLOProfile employer, Integer maxActiveJobs, Integer maxFeaturedJobs, QuotaPeriod quotaPeriod) {
         this.employer = employer;
         this.maxActiveJobs = maxActiveJobs;
         this.maxFeaturedJobs = maxFeaturedJobs;
@@ -78,11 +78,11 @@ public class EmployerJobQuota {
         this.id = id;
     }
 
-    public EmployerProfile getEmployer() {
+    public NLOProfile getEmployer() {
         return employer;
     }
 
-    public void setEmployer(EmployerProfile employer) {
+    public void setEmployer(NLOProfile employer) {
         this.employer = employer;
     }
 
@@ -242,7 +242,7 @@ public class EmployerJobQuota {
 
     @Override
     public String toString() {
-        return "EmployerJobQuota{" +
+        return "NLOJobQuota{" +
                 "id=" + id +
                 ", employerId=" + (employer != null ? employer.getId() : null) +
                 ", maxActiveJobs=" + maxActiveJobs +

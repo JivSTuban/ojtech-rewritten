@@ -3,7 +3,7 @@ package com.melardev.spring.jwtoauth.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.OJTechApiApplication;
 import com.melardev.spring.jwtoauth.entities.*;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.RoleRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
@@ -51,17 +51,17 @@ public class JobControllerTest {
     private JobRepository jobRepository;
 
     @MockBean
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
 
     @MockBean
     private UserRepository userRepository;
 
     private UUID employerId;
     private UUID studentId;
-    private UUID employerProfileId;
+    private UUID NLOProfileId;
     private User employerUser;
     private User studentUser;
-    private EmployerProfile employerProfile;
+    private NLOProfile NLOProfile;
     private UserDetailsImpl employerUserDetails;
     private UserDetailsImpl studentUserDetails;
 
@@ -75,12 +75,12 @@ public class JobControllerTest {
         employerUser.setEmail("employer@example.com");
         
         // Create employer profile
-        employerProfileId = UUID.randomUUID();
-        employerProfile = new EmployerProfile();
-        employerProfile.setId(employerProfileId);
-        employerProfile.setUser(employerUser);
-        employerProfile.setCompanyName("Test Company");
-        employerProfile.setRole(UserRole.NLO);
+        NLOProfileId = UUID.randomUUID();
+        NLOProfile = new NLOProfile();
+        NLOProfile.setId(NLOProfileId);
+        NLOProfile.setUser(employerUser);
+        NLOProfile.setCompanyName("Test Company");
+        NLOProfile.setRole(UserRole.NLO);
         
         // Create student user
         studentId = UUID.randomUUID();
@@ -109,7 +109,7 @@ public class JobControllerTest {
         // Setup repository mocks
         when(userRepository.findById(employerId)).thenReturn(Optional.of(employerUser));
         when(userRepository.findById(studentId)).thenReturn(Optional.of(studentUser));
-        when(employerProfileRepository.findByUserId(employerId)).thenReturn(Optional.of(employerProfile));
+        when(NLOProfileRepository.findByUserId(employerId)).thenReturn(Optional.of(NLOProfile));
     }
 
     @Test
@@ -194,10 +194,10 @@ public class JobControllerTest {
         job.setDescription("A job for a backend developer");
         job.setLocation("San Francisco");
         job.setEmploymentType("Full-time");
-        job.setEmployer(employerProfile);
+        job.setEmployer(NLOProfile);
         jobs.add(job);
         
-        when(jobRepository.findByEmployer(employerProfile)).thenReturn(jobs);
+        when(jobRepository.findByEmployer(NLOProfile)).thenReturn(jobs);
 
         // Execute and Verify
         mockMvc.perform(get("/api/jobs/employer")
@@ -216,7 +216,7 @@ public class JobControllerTest {
         job.setDescription("A job for a DevOps engineer");
         job.setLocation("Chicago");
         job.setEmploymentType("Full-time");
-        job.setEmployer(employerProfile);
+        job.setEmployer(NLOProfile);
         
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
         when(jobRepository.save(any(Job.class))).thenReturn(job);
@@ -241,7 +241,7 @@ public class JobControllerTest {
         Job job = new Job();
         job.setId(jobId);
         job.setTitle("Job to Delete");
-        job.setEmployer(employerProfile);
+        job.setEmployer(NLOProfile);
         
         when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
         

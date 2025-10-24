@@ -21,7 +21,7 @@ import com.melardev.spring.jwtoauth.entities.ApplicationStatus;
 import com.melardev.spring.jwtoauth.entities.CV;
 import com.melardev.spring.jwtoauth.entities.Company;
 import com.melardev.spring.jwtoauth.entities.ERole;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
 import com.melardev.spring.jwtoauth.entities.JobApplication;
 import com.melardev.spring.jwtoauth.entities.JobMatch;
@@ -30,7 +30,7 @@ import com.melardev.spring.jwtoauth.entities.StudentProfile;
 import com.melardev.spring.jwtoauth.entities.User;
 import com.melardev.spring.jwtoauth.repositories.CVRepository;
 import com.melardev.spring.jwtoauth.repositories.CompanyRepository;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.JobApplicationRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.repositories.RoleRepository;
@@ -53,7 +53,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private StudentProfileRepository studentProfileRepository;
 
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
 
     @Autowired
     private JobRepository jobRepository;
@@ -226,13 +226,13 @@ public class DatabaseSeeder implements CommandLineRunner {
             // Check if tables exist before attempting to seed
             try {
                 studentProfileRepository.count();
-                employerProfileRepository.count();
+                NLOProfileRepository.count();
             } catch (DataAccessException e) {
                 logger.warn("Student or employer profiles tables do not exist yet. Skipping profile seeding.");
                 return;
             }
             
-            if (studentProfileRepository.count() == 0 && employerProfileRepository.count() == 0) {
+            if (studentProfileRepository.count() == 0 && NLOProfileRepository.count() == 0) {
                 logger.info("Seeding profiles");
                 
                 // Create student profiles
@@ -296,7 +296,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 User nloUser = userRepository.findByUsername("nlo_staff")
                         .orElseThrow(() -> new RuntimeException("NLO user not found"));
                 
-                EmployerProfile nloProfile = new EmployerProfile();
+                NLOProfile nloProfile = new NLOProfile();
                 nloProfile.setUser(nloUser);
                 nloProfile.setFullName("NLO Staff");
                 nloProfile.setCompanyName("Networking and Linkages Office");
@@ -314,7 +314,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 nloProfile.setContactPersonEmail("moronaldrin3@gmail.com");
                 nloProfile.setContactPersonPhone("555-123-4567");
                 
-                employerProfileRepository.save(nloProfile);
+                NLOProfileRepository.save(nloProfile);
             }
         } catch (DataAccessException e) {
             logger.warn("Could not seed profiles: {}", e.getMessage());
@@ -393,7 +393,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 // Get NLO profile
                 User nloUser = userRepository.findByUsername("nlo_staff")
                         .orElseThrow(() -> new RuntimeException("NLO user not found"));
-                EmployerProfile nloProfile = employerProfileRepository.findByUserId(nloUser.getId())
+                NLOProfile nloProfile = NLOProfileRepository.findByUserId(nloUser.getId())
                         .orElseThrow(() -> new RuntimeException("NLO profile not found"));
                 
                 // Create sample companies
@@ -458,12 +458,12 @@ public class DatabaseSeeder implements CommandLineRunner {
             
             if (jobRepository.count() == 0) {
                 logger.info("Seeding jobs");
-                List<EmployerProfile> employers = employerProfileRepository.findAll();
+                List<NLOProfile> employers = NLOProfileRepository.findAll();
                 if (employers.isEmpty()) {
                     return; // Skip if no employers exist
                 }
                 
-                EmployerProfile employer = employers.get(0);
+                NLOProfile employer = employers.get(0);
 
                 Job job1 = new Job();
                 job1.setEmployer(employer);

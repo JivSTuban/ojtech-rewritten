@@ -40,7 +40,7 @@ public class AdminJobServiceImpl implements AdminJobService {
     private JobPerformanceMetricsRepository jobPerformanceMetricsRepository;
     
     @Autowired
-    private EmployerJobQuotaRepository employerJobQuotaRepository;
+    private NLOJobQuotaRepository NLOJobQuotaRepository;
     
     @Autowired
     private JobCategoryRepository jobCategoryRepository;
@@ -49,7 +49,7 @@ public class AdminJobServiceImpl implements AdminJobService {
     private JobCategoryMappingRepository jobCategoryMappingRepository;
     
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
     
     @Autowired
     private UserRepository userRepository;
@@ -65,7 +65,7 @@ public class AdminJobServiceImpl implements AdminJobService {
     public Job createJobAsAdmin(Map<String, Object> jobData, UUID employerId, UUID adminId) {
         logger.info("Admin {} creating job for employer {}", adminId, employerId);
         
-        EmployerProfile employer = employerProfileRepository.findByUserId(employerId)
+        NLOProfile employer = NLOProfileRepository.findByUserId(employerId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employer not found"));
         
         Job job = new Job();
@@ -412,23 +412,23 @@ public class AdminJobServiceImpl implements AdminJobService {
     // ==============================================
 
     @Override
-    public EmployerJobQuota getEmployerJobQuota(UUID employerId) {
-        return employerJobQuotaRepository.findByEmployerId(employerId).orElse(null);
+    public NLOJobQuota getNLOJobQuota(UUID employerId) {
+        return NLOJobQuotaRepository.findByEmployerId(employerId).orElse(null);
     }
 
     @Override
-    public EmployerJobQuota createEmployerJobQuota(UUID employerId, Integer maxActiveJobs, Integer maxFeaturedJobs, UUID adminId) {
-        EmployerJobQuota quota = new EmployerJobQuota();
+    public NLOJobQuota createNLOJobQuota(UUID employerId, Integer maxActiveJobs, Integer maxFeaturedJobs, UUID adminId) {
+        NLOJobQuota quota = new NLOJobQuota();
         // Note: Setting fields based on actual entity structure
         quota.setMaxActiveJobs(maxActiveJobs);
         quota.setMaxFeaturedJobs(maxFeaturedJobs);
-        return employerJobQuotaRepository.save(quota);
+        return NLOJobQuotaRepository.save(quota);
     }
 
     @Override
-    public EmployerJobQuota updateEmployerJobQuota(UUID employerId, EmployerJobQuota quota, UUID adminId) {
+    public NLOJobQuota updateNLOJobQuota(UUID employerId, NLOJobQuota quota, UUID adminId) {
         // Note: Update based on actual entity structure
-        return employerJobQuotaRepository.save(quota);
+        return NLOJobQuotaRepository.save(quota);
     }
 
     @Override
@@ -452,8 +452,8 @@ public class AdminJobServiceImpl implements AdminJobService {
     }
 
     @Override
-    public List<EmployerJobQuota> getEmployersAtJobLimit() {
-        return employerJobQuotaRepository.findAll(); // Stub
+    public List<NLOJobQuota> getEmployersAtJobLimit() {
+        return NLOJobQuotaRepository.findAll(); // Stub
     }
 
     @Override

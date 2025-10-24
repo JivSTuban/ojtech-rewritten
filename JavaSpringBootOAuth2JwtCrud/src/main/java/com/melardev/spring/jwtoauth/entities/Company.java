@@ -55,7 +55,7 @@ public class Company extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "created_by_nlo_id")
     @JsonIgnoreProperties({"jobs", "applications"})
-    private EmployerProfile createdByNLO;
+    private NLOProfile createdByNLO;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -178,11 +178,11 @@ public class Company extends BaseEntity {
         this.active = active;
     }
     
-    public EmployerProfile getCreatedByNLO() {
+    public NLOProfile getCreatedByNLO() {
         return createdByNLO;
     }
     
-    public void setCreatedByNLO(EmployerProfile createdByNLO) {
+    public void setCreatedByNLO(NLOProfile createdByNLO) {
         this.createdByNLO = createdByNLO;
     }
     

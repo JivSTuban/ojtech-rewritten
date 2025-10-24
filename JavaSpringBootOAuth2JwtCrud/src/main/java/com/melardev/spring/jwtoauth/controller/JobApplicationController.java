@@ -30,7 +30,7 @@ import com.melardev.spring.jwtoauth.dtos.responses.JobApplicationResponseDTO;
 import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.melardev.spring.jwtoauth.entities.ApplicationStatus;
 import com.melardev.spring.jwtoauth.entities.CV;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
 import com.melardev.spring.jwtoauth.entities.JobApplication;
 import com.melardev.spring.jwtoauth.entities.JobMatch;
@@ -284,7 +284,7 @@ public class JobApplicationController {
         
         StudentProfile student = application.getStudent();
         Job job = application.getJob();
-        EmployerProfile employer = job.getEmployer();
+        NLOProfile employer = job.getEmployer();
         CV cv = application.getCv();
         
         // Build email draft
@@ -376,7 +376,7 @@ public class JobApplicationController {
         }
         
         Job job = application.getJob();
-        EmployerProfile employer = job.getEmployer();
+        NLOProfile employer = job.getEmployer();
         CV cv = application.getCv();
         
         String studentName = student.getFirstName() + " " + student.getLastName();

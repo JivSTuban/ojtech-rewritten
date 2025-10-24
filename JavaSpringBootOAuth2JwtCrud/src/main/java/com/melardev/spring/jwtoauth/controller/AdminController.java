@@ -71,7 +71,7 @@ public class AdminController {
     private AdminJobService adminJobService;
     
     @Autowired
-    private com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository employerProfileRepository;
+    private com.melardev.spring.jwtoauth.repositories.NLOProfileRepository NLOProfileRepository;
     
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -728,7 +728,7 @@ public class AdminController {
     @GetMapping("/employers")
     public ResponseEntity<?> getAllEmployers() {
         try {
-            List<com.melardev.spring.jwtoauth.entities.EmployerProfile> employers = employerProfileRepository.findAll();
+            List<com.melardev.spring.jwtoauth.entities.NLOProfile> employers = NLOProfileRepository.findAll();
             
             // Map to simpler DTO for frontend
             List<Map<String, Object>> employerList = employers.stream()

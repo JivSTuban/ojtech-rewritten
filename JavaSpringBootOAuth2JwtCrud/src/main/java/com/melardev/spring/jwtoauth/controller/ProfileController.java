@@ -1,27 +1,5 @@
 package com.melardev.spring.jwtoauth.controller;
 
-import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
-import com.melardev.spring.jwtoauth.entities.*;
-import com.melardev.spring.jwtoauth.entities.ERole;
-import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
-import com.melardev.spring.jwtoauth.repositories.AdminProfileRepository;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
-import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
-import com.melardev.spring.jwtoauth.repositories.UserRepository;
-import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
-import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
-import com.melardev.spring.jwtoauth.service.CloudinaryService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +8,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.melardev.spring.jwtoauth.dtos.responses.MessageResponse;
+import com.melardev.spring.jwtoauth.entities.AdminProfile;
+import com.melardev.spring.jwtoauth.entities.ERole;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
+import com.melardev.spring.jwtoauth.entities.Profile;
+import com.melardev.spring.jwtoauth.entities.StudentProfile;
+import com.melardev.spring.jwtoauth.entities.User;
+import com.melardev.spring.jwtoauth.entities.UserRole;
+import com.melardev.spring.jwtoauth.exceptions.ResourceNotFoundException;
+import com.melardev.spring.jwtoauth.repositories.AdminProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.StudentProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.UserRepository;
+import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
+import com.melardev.spring.jwtoauth.security.utils.SecurityUtils;
+import com.melardev.spring.jwtoauth.service.CloudinaryService;
 
 @RestController
 @RequestMapping("/api/profiles")
@@ -41,7 +54,7 @@ public class ProfileController {
     private StudentProfileRepository studentProfileRepository;
 
     @Autowired
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository NLOProfileRepository;
     
     @Autowired
     private AdminProfileRepository adminProfileRepository;
@@ -137,10 +150,10 @@ public class ProfileController {
         }
 
         // Check if user has an employer profile
-        Optional<EmployerProfile> employerProfile = employerProfileRepository.findByUserId(userId);
-        if (employerProfile.isPresent()) {
+        Optional<NLOProfile> NLOProfile = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfile.isPresent()) {
             logger.debug("Found employer profile for user");
-            return ResponseEntity.ok(employerProfile.get());
+            return ResponseEntity.ok(NLOProfile.get());
         }
         
         // Check if user has an admin profile
@@ -164,9 +177,9 @@ public class ProfileController {
         }
 
         // Check if it's an employer profile
-        Optional<EmployerProfile> employerProfile = employerProfileRepository.findById(id);
-        if (employerProfile.isPresent()) {
-            return ResponseEntity.ok(employerProfile.get());
+        Optional<NLOProfile> NLOProfile = NLOProfileRepository.findById(id);
+        if (NLOProfile.isPresent()) {
+            return ResponseEntity.ok(NLOProfile.get());
         }
         
         // Check if it's an admin profile
@@ -198,26 +211,26 @@ public class ProfileController {
         logger.debug("Found user: {}", user.getUsername());
 
         // Check if profile already exists
-        Optional<EmployerProfile> existingProfileOpt = employerProfileRepository.findByUserId(userId);
+        Optional<NLOProfile> existingProfileOpt = NLOProfileRepository.findByUserId(userId);
         if (existingProfileOpt.isPresent()) {
             // Update existing profile
-            EmployerProfile profile = existingProfileOpt.get();
+            NLOProfile profile = existingProfileOpt.get();
             updateProfileFields(profile, profileData);
             profile.setHasCompletedOnboarding(true);
-            profile = employerProfileRepository.save(profile);
+            profile = NLOProfileRepository.save(profile);
             logger.debug("Updated existing employer profile");
             return ResponseEntity.ok(profile);
         }
 
         // Create new profile
-        EmployerProfile profile = new EmployerProfile();
+        NLOProfile profile = new NLOProfile();
         profile.setUser(user);
         profile.setRole(UserRole.NLO);
         
         updateProfileFields(profile, profileData);
         profile.setHasCompletedOnboarding(true);
         
-        profile = employerProfileRepository.save(profile);
+        profile = NLOProfileRepository.save(profile);
         logger.debug("Created new employer profile");
         
         return ResponseEntity.ok(profile);
@@ -243,11 +256,11 @@ public class ProfileController {
             return ResponseEntity.ok(profile);
         }
 
-        Optional<EmployerProfile> employerProfile = employerProfileRepository.findByUserId(userId);
-        if (employerProfile.isPresent()) {
-            EmployerProfile profile = employerProfile.get();
+        Optional<NLOProfile> NLOProfile = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfile.isPresent()) {
+            NLOProfile profile = NLOProfile.get();
             profile.setAvatarUrl(avatarUrl);
-            employerProfileRepository.save(profile);
+            NLOProfileRepository.save(profile);
             return ResponseEntity.ok(profile);
         }
         
@@ -279,11 +292,11 @@ public class ProfileController {
         }
 
         // Check if user has an employer profile
-        Optional<EmployerProfile> employerProfileOpt = employerProfileRepository.findByUserId(userId);
-        if (employerProfileOpt.isPresent()) {
-            EmployerProfile profile = employerProfileOpt.get();
+        Optional<NLOProfile> NLOProfileOpt = NLOProfileRepository.findByUserId(userId);
+        if (NLOProfileOpt.isPresent()) {
+            NLOProfile profile = NLOProfileOpt.get();
             updateProfileFields(profile, updates);
-            employerProfileRepository.save(profile);
+            NLOProfileRepository.save(profile);
             return ResponseEntity.ok(profile);
         }
         
@@ -369,12 +382,12 @@ public class ProfileController {
                 return ResponseEntity.ok(responseMap);
             }
             
-            Optional<EmployerProfile> existingEmployerProfile = employerProfileRepository.findByUserId(userId);
-            if (existingEmployerProfile.isPresent()) {
+            Optional<NLOProfile> existingNLOProfile = NLOProfileRepository.findByUserId(userId);
+            if (existingNLOProfile.isPresent()) {
                 logger.debug("Employer profile already exists, updating existing profile");
-                EmployerProfile profile = existingEmployerProfile.get();
+                NLOProfile profile = existingNLOProfile.get();
                 updateProfileFields(profile, profileData);
-                profile = employerProfileRepository.save(profile);
+                profile = NLOProfileRepository.save(profile);
                 return ResponseEntity.ok(profile);
             }
             
@@ -384,11 +397,11 @@ public class ProfileController {
             
             if (isEmployer) {
                 logger.debug("Creating new employer profile");
-                EmployerProfile profile = new EmployerProfile();
+                NLOProfile profile = new NLOProfile();
                 profile.setUser(user);
                 profile.setRole(UserRole.NLO);
                 updateProfileFields(profile, profileData);
-                EmployerProfile savedProfile = employerProfileRepository.save(profile);
+                NLOProfile savedProfile = NLOProfileRepository.save(profile);
                 return ResponseEntity.ok(savedProfile);
             } else {
                 // Default to student profile
@@ -537,25 +550,25 @@ public class ProfileController {
         }
 
         // Handle employer-specific fields
-        if (profile instanceof EmployerProfile) {
-            EmployerProfile employerProfile = (EmployerProfile) profile;
+        if (profile instanceof NLOProfile) {
+            NLOProfile NLOProfile = (NLOProfile) profile;
             if (updates.containsKey("companyName")) {
-                employerProfile.setCompanyName((String) updates.get("companyName"));
+                NLOProfile.setCompanyName((String) updates.get("companyName"));
             }
             if (updates.containsKey("companySize")) {
-                employerProfile.setCompanySize((String) updates.get("companySize"));
+                NLOProfile.setCompanySize((String) updates.get("companySize"));
             }
             if (updates.containsKey("industry")) {
-                employerProfile.setIndustry((String) updates.get("industry"));
+                NLOProfile.setIndustry((String) updates.get("industry"));
             }
             if (updates.containsKey("companyDescription")) {
-                employerProfile.setCompanyDescription((String) updates.get("companyDescription"));
+                NLOProfile.setCompanyDescription((String) updates.get("companyDescription"));
             }
             if (updates.containsKey("websiteUrl")) {
-                employerProfile.setWebsiteUrl((String) updates.get("websiteUrl"));
+                NLOProfile.setWebsiteUrl((String) updates.get("websiteUrl"));
             }
             if (updates.containsKey("logoUrl")) {
-                employerProfile.setLogoUrl((String) updates.get("logoUrl"));
+                NLOProfile.setLogoUrl((String) updates.get("logoUrl"));
             }
         }
     }

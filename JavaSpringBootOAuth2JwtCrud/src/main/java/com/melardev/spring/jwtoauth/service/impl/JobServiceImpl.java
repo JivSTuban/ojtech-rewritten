@@ -1,9 +1,9 @@
 package com.melardev.spring.jwtoauth.service.impl;
 
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.Job;
 import com.melardev.spring.jwtoauth.entities.JobStatus;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.JobRepository;
 import com.melardev.spring.jwtoauth.service.interfaces.JobService;
 import org.slf4j.Logger;
@@ -25,12 +25,12 @@ public class JobServiceImpl implements JobService {
     private static final Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
 
     private final JobRepository jobRepository;
-    private final EmployerProfileRepository employerProfileRepository;
+    private final NLOProfileRepository NLOProfileRepository;
 
     @Autowired
-    public JobServiceImpl(JobRepository jobRepository, EmployerProfileRepository employerProfileRepository) {
+    public JobServiceImpl(JobRepository jobRepository, NLOProfileRepository NLOProfileRepository) {
         this.jobRepository = jobRepository;
-        this.employerProfileRepository = employerProfileRepository;
+        this.NLOProfileRepository = NLOProfileRepository;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public List<Job> getJobsByEmployer(UUID employerId) {
-        Optional<EmployerProfile> employerOpt = employerProfileRepository.findByUserId(employerId);
+        Optional<NLOProfile> employerOpt = NLOProfileRepository.findByUserId(employerId);
         if (employerOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Employer profile not found");
         }
@@ -67,7 +67,7 @@ public class JobServiceImpl implements JobService {
 
     @Override
     public Job createJob(UUID employerId, Map<String, Object> jobData) {
-        Optional<EmployerProfile> employerOpt = employerProfileRepository.findByUserId(employerId);
+        Optional<NLOProfile> employerOpt = NLOProfileRepository.findByUserId(employerId);
         if (employerOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Employer profile not found");
         }

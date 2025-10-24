@@ -16,7 +16,7 @@ public class JobDto {
     private Double maxSalary;
     private String currency;
     private LocalDateTime postedAt;
-    private EmployerProfileDto employer;
+    private NLOProfileDto employer;
     
     public JobDto() {
     }
@@ -33,7 +33,7 @@ public class JobDto {
         this.currency = job.getCurrency();
         this.postedAt = job.getPostedAt();
         if (job.getEmployer() != null) {
-            this.employer = new EmployerProfileDto(job.getEmployer());
+            this.employer = new NLOProfileDto(job.getEmployer());
         }
     }
     
@@ -117,11 +117,11 @@ public class JobDto {
         this.postedAt = postedAt;
     }
     
-    public EmployerProfileDto getEmployer() {
+    public NLOProfileDto getEmployer() {
         return employer;
     }
     
-    public void setEmployer(EmployerProfileDto employer) {
+    public void setEmployer(NLOProfileDto employer) {
         this.employer = employer;
     }
 } 

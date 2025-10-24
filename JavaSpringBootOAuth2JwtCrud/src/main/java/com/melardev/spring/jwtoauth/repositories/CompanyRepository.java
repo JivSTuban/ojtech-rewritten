@@ -1,7 +1,7 @@
 package com.melardev.spring.jwtoauth.repositories;
 
 import com.melardev.spring.jwtoauth.entities.Company;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +19,7 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
     /**
      * Find all companies created by a specific NLO staff member
      */
-    List<Company> findByCreatedByNLO(EmployerProfile nloProfile);
+    List<Company> findByCreatedByNLO(NLOProfile nloProfile);
     
     /**
      * Find all active companies

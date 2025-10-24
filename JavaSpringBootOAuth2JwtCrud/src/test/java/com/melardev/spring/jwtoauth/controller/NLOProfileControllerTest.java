@@ -2,10 +2,10 @@ package com.melardev.spring.jwtoauth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.melardev.spring.jwtoauth.OJTechApiApplication;
-import com.melardev.spring.jwtoauth.entities.EmployerProfile;
+import com.melardev.spring.jwtoauth.entities.NLOProfile;
 import com.melardev.spring.jwtoauth.entities.User;
 import com.melardev.spring.jwtoauth.entities.UserRole;
-import com.melardev.spring.jwtoauth.repositories.EmployerProfileRepository;
+import com.melardev.spring.jwtoauth.repositories.NLOProfileRepository;
 import com.melardev.spring.jwtoauth.repositories.UserRepository;
 import com.melardev.spring.jwtoauth.security.services.UserDetailsImpl;
 import com.melardev.spring.jwtoauth.service.CloudinaryService;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = OJTechApiApplication.class)
 @AutoConfigureMockMvc
-public class EmployerProfileControllerTest {
+public class NLOProfileControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,7 +43,7 @@ public class EmployerProfileControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private EmployerProfileRepository employerProfileRepository;
+    private NLOProfileRepository nloProfileRepository;
 
     @MockBean
     private UserRepository userRepository;
@@ -54,7 +54,7 @@ public class EmployerProfileControllerTest {
     private UUID userId;
     private UUID profileId;
     private User user;
-    private EmployerProfile employerProfile;
+    private NLOProfile nloProfile;
 
     @BeforeEach
     public void setUp() {
@@ -68,14 +68,14 @@ public class EmployerProfileControllerTest {
         user.setEmail("employer@example.com");
         
         // Create test profile
-        employerProfile = new EmployerProfile();
-        employerProfile.setId(profileId);
-        employerProfile.setUser(user);
-        employerProfile.setRole(UserRole.NLO);
-        employerProfile.setFullName("Test Employer");
-        employerProfile.setCompanyName("Test Company");
-        employerProfile.setIndustry("Technology");
-        employerProfile.setCompanySize("51-200");
+        nloProfile = new NLOProfile();
+        nloProfile.setId(profileId);
+        nloProfile.setUser(user);
+        nloProfile.setRole(UserRole.NLO);
+        nloProfile.setFullName("Test Employer");
+        nloProfile.setCompanyName("Test Company");
+        nloProfile.setIndustry("Technology");
+        nloProfile.setCompanySize("51-200");
         
         // Setup authentication
         UserDetailsImpl userDetails = new UserDetailsImpl(
@@ -92,11 +92,11 @@ public class EmployerProfileControllerTest {
         
         // Setup repository mocks
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(employerProfileRepository.findByUserId(userId)).thenReturn(Optional.of(employerProfile));
+        when(nloProfileRepository.findByUserId(userId)).thenReturn(Optional.of(nloProfile));
     }
 
     @Test
-    public void testGetCurrentEmployerProfile() throws Exception {
+    public void testGetCurrentNLOProfile() throws Exception {
         mockMvc.perform(get("/api/employer-profiles/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.fullName").value("Test Employer"))
@@ -105,11 +105,11 @@ public class EmployerProfileControllerTest {
     }
 
     @Test
-    public void testCreateEmployerProfile() throws Exception {
+    public void testCreateNLOProfile() throws Exception {
         // Setup
-        when(employerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(employerProfileRepository.save(any(EmployerProfile.class))).thenAnswer(invocation -> {
-            EmployerProfile savedProfile = invocation.getArgument(0);
+        when(nloProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(nloProfileRepository.save(any(NLOProfile.class))).thenAnswer(invocation -> {
+            NLOProfile savedProfile = invocation.getArgument(0);
             savedProfile.setId(profileId);
             return savedProfile;
         });
@@ -129,7 +129,7 @@ public class EmployerProfileControllerTest {
     }
 
     @Test
-    public void testCreateEmployerProfileWhenAlreadyExists() throws Exception {
+    public void testCreateNLOProfileWhenAlreadyExists() throws Exception {
         // Setup
         Map<String, Object> profileData = new HashMap<>();
         profileData.put("fullName", "New Employer");
@@ -143,9 +143,9 @@ public class EmployerProfileControllerTest {
     }
 
     @Test
-    public void testUpdateEmployerProfile() throws Exception {
+    public void testUpdateNLOProfile() throws Exception {
         // Setup
-        when(employerProfileRepository.save(any(EmployerProfile.class))).thenReturn(employerProfile);
+        when(nloProfileRepository.save(any(NLOProfile.class))).thenReturn(nloProfile);
         
         Map<String, Object> profileData = new HashMap<>();
         profileData.put("fullName", "Updated Employer");
@@ -173,7 +173,7 @@ public class EmployerProfileControllerTest {
         cloudinaryResponse.put("url", "https://example.com/company-logo.png");
         
         when(cloudinaryService.upload(any(), eq("logos"))).thenReturn(cloudinaryResponse);
-        when(employerProfileRepository.save(any(EmployerProfile.class))).thenReturn(employerProfile);
+        when(nloProfileRepository.save(any(NLOProfile.class))).thenReturn(nloProfile);
         
         // Execute and Verify
         mockMvc.perform(multipart("/api/employer-profiles/logo")
@@ -184,10 +184,10 @@ public class EmployerProfileControllerTest {
     @Test
     public void testProfileNotFound() throws Exception {
         // Setup
-        when(employerProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(nloProfileRepository.findByUserId(userId)).thenReturn(Optional.empty());
         
         // Execute and Verify
         mockMvc.perform(get("/api/employer-profiles/me"))
                 .andExpect(status().isNotFound());
     }
-} 
+}

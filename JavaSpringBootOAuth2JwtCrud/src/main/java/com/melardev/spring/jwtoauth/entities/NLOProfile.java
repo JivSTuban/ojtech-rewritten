@@ -8,7 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "employer_profiles")
-public class EmployerProfile extends Profile {
+public class NLOProfile extends Profile {
     
     @Column(name = "company_name")
     private String companyName;
@@ -53,7 +53,7 @@ public class EmployerProfile extends Profile {
     @JsonIgnore
     private List<Job> jobs = new ArrayList<>();
     
-    public EmployerProfile() {
+    public NLOProfile() {
         this.setRole(UserRole.NLO);
     }
     
@@ -178,4 +178,4 @@ public class EmployerProfile extends Profile {
         jobs.remove(job);
         job.setEmployer(null);
     }
-} 
+}
