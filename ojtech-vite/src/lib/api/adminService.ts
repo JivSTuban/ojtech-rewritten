@@ -222,6 +222,14 @@ const unverifyStudent = async (id: string, notes?: string): Promise<any> => {
   return response.data;
 };
 
+// Recent Activity
+const getRecentActivity = async (limit = 10): Promise<RecentActivity[]> => {
+  const response = await apiClient.get('admin/recent-activity', {
+    params: { limit }
+  });
+  return response.data;
+};
+
 const adminService = {
   // Statistics
   getStats,
@@ -248,6 +256,8 @@ const adminService = {
   getStudentDetails,
   verifyStudent,
   unverifyStudent,
+  // Recent Activity
+  getRecentActivity,
 };
 
 export default adminService;

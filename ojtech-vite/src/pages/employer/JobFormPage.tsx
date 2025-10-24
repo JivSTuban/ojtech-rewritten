@@ -1,6 +1,7 @@
 import React, { Component, ChangeEvent, FormEvent } from 'react';
 import jobService from '@/lib/api/jobService';
-import { useNavigate, useParams, Link, Navigate, useLocation } from 'react-router-dom';
+import nloService from '@/lib/api/nloService';
+import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { AuthContext } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -47,6 +48,7 @@ interface JobFormData {
   skillsPreferred: string[];
   closingDate?: string;
   active: boolean;
+  companyId?: string;
 }
 
 interface JobFormPageProps {
@@ -78,6 +80,14 @@ interface EmployerData {
   };
 }
 
+interface Company {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  active: boolean;
+  location?: string;
+}
+
 interface JobFormPageState {
   formData: JobFormData;
   requiredSkillInput: string;
@@ -87,6 +97,8 @@ interface JobFormPageState {
   redirectTo: string | null;
   showSuggestions: boolean;
   employer: EmployerData | null;
+  companies: Company[];
+  loadingCompanies: boolean;
 }
 
 class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
@@ -115,24 +127,39 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
       error: null,
       redirectTo: null,
       showSuggestions: false,
-      employer: null
+      employer: null,
+      companies: [],
+      loadingCompanies: false
     };
   }
 
   componentDidMount() {
     const { user } = this.context || {};
     
-    if (!user || !user.roles.includes('ROLE_EMPLOYER')) {
+    if (!user || !user.roles.includes('ROLE_NLO')) {
       this.setState({ redirectTo: '/login' });
       return;
     }
     
     this.fetchEmployerData();
+    this.fetchCompanies();
     
     if (this.props.jobId) {
       this.fetchJobData();
     }
   }
+  
+  fetchCompanies = async () => {
+    try {
+      this.setState({ loadingCompanies: true });
+      const companies = await nloService.getActiveCompanies();
+      this.setState({ companies });
+    } catch (err: any) {
+      console.error('Failed to fetch companies:', err);
+    } finally {
+      this.setState({ loadingCompanies: false });
+    }
+  };
   
   fetchEmployerData = async () => {
     try {
@@ -181,6 +208,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
           skillsPreferred: job.skillsPreferred || [],
           closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '',
           active: job.active === undefined ? true : job.active,
+          companyId: job.company?.id || undefined,
         },
         requiredSkillInput: '',
         preferredSkillInput: ''
@@ -406,7 +434,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
       } else {
         await jobService.createJob(payload);
       }
-      this.props.navigate('/employer/jobs');
+      this.props.navigate('/nlo/jobs');
     } catch (err: any) {
       this.setState({
         error: err.response?.data?.message || (isEditMode ? 'Failed to update job.' : 'Failed to create job.')
@@ -417,11 +445,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
   };
 
   render() {
-    const { formData, requiredSkillInput, preferredSkillInput, isLoading, error, redirectTo, employer } = this.state;
+    const { formData, requiredSkillInput, preferredSkillInput, isLoading, error, redirectTo, employer, companies } = this.state;
     const isEditMode = Boolean(this.props.jobId);
     
-    // Use employer location or fallback to default
-    const officeLocation = employer?.profile?.location || " ";
+    // Get selected company location if a company is selected
+    const selectedCompany = companies.find(c => c.id === formData.companyId);
+    const officeLocation = selectedCompany?.location || employer?.profile?.location || "Office";
     
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
@@ -474,6 +503,35 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     pattern="^[a-zA-Z0-9\s\-&]+$"
                     maxLength={100}
                   />
+                </div>
+
+                {/* Company Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="companyId" className="text-gray-200">
+                    Company 
+                  </Label>
+                  <Select
+                    value={formData.companyId || 'none'}
+                    onValueChange={(value) => this.setState(prev => ({
+                      formData: { ...prev.formData, companyId: value === 'none' ? undefined : value }
+                    }))}
+                  >
+                    <SelectTrigger className="bg-gray-900/70 border-gray-700 text-white">
+                      <SelectValue placeholder="Select a company" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectItem value="none" className="text-white" >None</SelectItem>
+                      {this.state.companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id} className="text-white">
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                    
+                  </Select>
+                  <p className="text-xs text-gray-400">
+                    Associate this job with a company profile created by NLO staff
+                  </p>
                 </div>
 
                 {/* Job Location */}
@@ -748,7 +806,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                 type="button" 
                 variant="outline" 
                 className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 border-2 border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-gray-500 h-9 px-4 py-2"
-                onClick={() => this.props.navigate('/employer/jobs')}
+                onClick={() => this.props.navigate('/nlo/jobs')}
               >
                 Cancel
               </Button>

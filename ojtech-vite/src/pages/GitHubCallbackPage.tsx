@@ -94,7 +94,7 @@ export class GitHubCallbackPage extends Component<{}, GitHubCallbackPageState> {
           isProcessing: false,
           redirectTo: '/admin/dashboard',
         });
-      } else if (user.roles?.includes('ROLE_EMPLOYER') && !user.hasCompletedOnboarding) {
+      } else if (user.roles?.includes('ROLE_NLO') && !user.hasCompletedOnboarding) {
         this.setState({
           isProcessing: false,
           redirectTo: '/onboarding/employer',
@@ -109,7 +109,7 @@ export class GitHubCallbackPage extends Component<{}, GitHubCallbackPageState> {
           isProcessing: false,
           redirectTo: '/track',
         });
-      } else if (user.roles?.includes('ROLE_EMPLOYER') && user.hasCompletedOnboarding) {
+      } else if (user.roles?.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
         this.setState({
           isProcessing: false,
           redirectTo: '/employer/jobs',

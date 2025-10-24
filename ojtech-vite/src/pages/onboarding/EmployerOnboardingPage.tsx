@@ -96,7 +96,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
     }
 
     // Check if user has employer role
-    if (!user.roles?.includes('ROLE_EMPLOYER')) {
+    if (!user.roles?.includes('ROLE_NLO')) {
       console.log('User is not an employer, redirecting to appropriate onboarding');
       if (user.roles?.includes('ROLE_STUDENT')) {
         this.setState({ redirectTo: '/onboarding/student' });
@@ -142,7 +142,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
           // If onboarding is completed, redirect to jobs page
           if (profileData.hasCompletedOnboarding) {
             console.log('Profile is complete, redirecting to jobs page');
-            this.setState({ redirectTo: '/employer/jobs' });
+            this.setState({ redirectTo: '/nlo/jobs' });
           }
         });
       }
@@ -215,7 +215,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingStat
       // Clear localStorage data since onboarding is complete
       this.clearLocalStorage();
       
-      this.setState({ redirectTo: '/employer/jobs' });
+      this.setState({ redirectTo: '/nlo/jobs' });
       
       ToastHelper.toast({
         title: "Profile Updated",

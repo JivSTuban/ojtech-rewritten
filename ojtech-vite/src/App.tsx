@@ -5,6 +5,7 @@ import { ToastProvider, ToastHelper } from './providers/ToastContext';
 import { Toaster } from './components/ui/Toaster';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { OnboardingLayout } from './components/layouts/OnboardingLayout';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
@@ -13,23 +14,20 @@ import ProfilePage from './pages/ProfilePage';
 import { HomePage } from './pages/HomePage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { JobDetailPage } from './pages/JobDetailPage';
-import { JobApplicationPage } from './pages/JobApplicationPage';
 import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
 import { PublicOnlyRoute } from './components/auth/ProtectedRoute';
 import { StudentOnboardingPage } from './pages/onboarding/StudentOnboardingPage';
 import { EmployerOnboardingPage } from './pages/onboarding/EmployerOnboardingPage';
-import { EmployerJobsPage } from './pages/employer/EmployerJobsPage';
+import { NLOJobsPage } from './pages/employer/NLOJobsPage';
 import { JobFormPage } from './pages/employer/JobFormPage';
-import { JobApplicationsPage } from './pages/employer/JobApplicationsPage';
+import { JobDetailsPage } from './pages/employer/JobDetailsPage';
+import NLOProfilePage from './pages/employer/NLOProfilePage';
 import { useAuth } from './providers/AuthProvider';
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
-import { AdminJobsPage } from "./pages/admin/AdminJobsPage";
-import { AdminJobFormPage } from "./pages/admin/AdminJobFormPage";
-import { AdminJobDetailsPage } from "./pages/admin/AdminJobDetailsPage";
-import { AdminJobModeratePage } from "./pages/admin/AdminJobModeratePage";
 import { UsersAdminPage } from "./pages/admin/UsersAdminPage";
-import { StudentVerificationPage } from "./pages/admin/StudentVerificationPage";
-import StudentDetailsPage from "./pages/admin/StudentDetailsPage";
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
+import NLOStudentVerificationPage from "./components/nlo/StudentVerificationPage";
+import CompanyManagementPage from "./components/nlo/CompanyManagementPage";
 import { TrackApplicationsPage } from './pages/TrackApplicationsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
@@ -59,11 +57,11 @@ const MainLayout: React.FC = () => {
       '/privacy',
       '/terms',
       '/admin',
+      '/nlo',
       '/change-password',
-      '/track',
+      '/applications',
       '/opportunities',
       '/application',
-      '/employer',
       '/'
     ];
     
@@ -83,7 +81,7 @@ const MainLayout: React.FC = () => {
           location.pathname !== studentOnboardingPath) {
         console.log('Redirecting to student onboarding from:', location.pathname);
         window.location.replace(studentOnboardingPath);
-      } else if (user?.roles?.includes('ROLE_EMPLOYER') && 
+      } else if (user?.roles?.includes('ROLE_NLO') && 
                 location.pathname !== employerOnboardingPath) {
         console.log('Redirecting to employer onboarding from:', location.pathname);
         window.location.replace(employerOnboardingPath);
@@ -121,7 +119,7 @@ const EmailVerificationRedirect: React.FC = () => {
   if (user) {
     if (user.roles?.includes('ROLE_STUDENT')) {
       return <Navigate to="/onboarding/student" replace />;
-    } else if (user.roles?.includes('ROLE_EMPLOYER')) {
+    } else if (user.roles?.includes('ROLE_NLO')) {
       return <Navigate to="/onboarding/employer" replace />;
     }
   }
@@ -161,27 +159,26 @@ export const App: React.FC = () => {
               <Route path="/opportunities/:id" element={<JobDetailPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
-              <Route path="/track" element={<TrackApplicationsPage />} />
+              <Route path="/applications" element={<TrackApplicationsPage />} />
               <Route path="/application/:id" element={<ApplicationDetailsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/resume" element={<ResumeManagementPage />} />
-              <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
-              <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
-              <Route path="/employer/jobs" element={<EmployerJobsPage />} />
-              <Route path="/employer/jobs/create" element={<JobFormPage />} />
-              <Route path="/employer/jobs/edit/:jobId" element={<JobFormPage />} />
-              <Route path="/employer/jobs/applications/:jobId" element={<JobApplicationsPage />} />
+              <Route path="/nlo/jobs" element={<NLOJobsPage />} />
+              <Route path="/nlo/jobs/create" element={<JobFormPage />} />
+              <Route path="/nlo/jobs/:jobId" element={<JobDetailsPage />} />
+              <Route path="/nlo/jobs/edit/:jobId" element={<JobFormPage />} />
+              <Route path="/nlo/profile" element={<NLOProfilePage />} />
               <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/admin/jobs" element={<AdminJobsPage />} />
-              <Route path="/admin/jobs/new" element={<AdminJobFormPage />} />
-              <Route path="/admin/jobs/:jobId" element={<AdminJobDetailsPage />} />
-              <Route path="/admin/jobs/:jobId/edit" element={<AdminJobFormPage />} />
-              <Route path="/admin/jobs/:jobId/moderate" element={<AdminJobModeratePage />} />
-              <Route path="/admin/jobs/analytics" element={<div className="container mx-auto px-4 py-6"><h1 className="text-3xl font-bold mb-4">Job Analytics</h1><p className="text-gray-600">Analytics dashboard coming soon...</p></div>} />
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
               <Route path="/admin/users" element={<UsersAdminPage />} />
-              <Route path="/admin/students/verification" element={<StudentVerificationPage />} />
-              <Route path="/admin/students/:id" element={<StudentDetailsPage />} />
-              <Route path="/opportunities/apply/:id" element={<JobApplicationPage />} />
+              <Route path="/nlo/students/verification" element={<NLOStudentVerificationPage />} />
+              <Route path="/nlo/companies" element={<CompanyManagementPage />} />
+          </Route>
+          
+          {/* Onboarding routes without navbar */}
+          <Route element={<OnboardingLayout />}>
+            <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
+            <Route path="/onboarding/employer" element={<EmployerOnboardingPage />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

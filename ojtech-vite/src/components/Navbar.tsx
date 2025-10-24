@@ -95,16 +95,16 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/opportunities" className="text-gray-400 hover:text-white transition-colors">
                     Find Jobs
                   </Link>
-                  <Link to="/track" className="text-gray-400 hover:text-white transition-colors">
-                    Track Applications
+                  <Link to="/applications" className="text-gray-400 hover:text-white transition-colors">
+                    My Applications
                   </Link>
                 </>
               )}
               
               {/* Employer-specific navigation */}
-              {user.roles.includes('ROLE_EMPLOYER') && (
+              {user.roles.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
-                  <Link to="/employer/jobs" className="text-gray-400 hover:text-white transition-colors">
+                  <Link to="/nlo/jobs" className="text-gray-400 hover:text-white transition-colors">
                     Manage Jobs
                   </Link>
                 </>
@@ -116,14 +116,24 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/admin/dashboard" className="text-gray-400 hover:text-white transition-colors">
                     Dashboard
                   </Link>
-                  <Link to="/admin/jobs" className="text-gray-400 hover:text-white transition-colors">
-                    Manage Jobs
-                  </Link>
                   <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
                     Users
-                  </Link>         
-                  <Link to="/admin/students/verification" className="text-gray-400 hover:text-white transition-colors">
-                    Verify Profiles
+                  </Link>
+                
+                </>
+              )}
+
+              {/* NLO-specific navigation */}
+              {user.roles.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
+                <>
+                  <Link to="/nlo/jobs" className="text-gray-400 hover:text-white transition-colors">
+                    Manage Jobs
+                  </Link>
+                  <Link to="/nlo/students/verification" className="text-gray-400 hover:text-white transition-colors">
+                    Student Verification
+                  </Link>
+                  <Link to="/nlo/companies" className="text-gray-400 hover:text-white transition-colors">
+                    Companies
                   </Link>
                 </>
               )}
@@ -139,8 +149,8 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <span className="hidden sm:block px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
                     {user.roles.includes('ROLE_ADMIN') 
                       ? 'Admin' 
-                      : user.roles.includes('ROLE_EMPLOYER') 
-                        ? 'Employer' 
+                      : user.roles.includes('ROLE_NLO') 
+                        ? 'NLO' 
                           : 'Student'}
                   </span>
                 )}
@@ -167,11 +177,21 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 pointer-events-auto">
                       <Link 
-                        to="/profile" 
+                        to={
+                          user.roles?.includes('ROLE_ADMIN') 
+                            ? "/admin/profile" 
+                            : user.roles?.includes('ROLE_NLO') 
+                              ? "/nlo/profile" 
+                              : "/profile"
+                        }
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                         onClick={this.toggleDropdown}
                       >
-                        {user.roles?.includes('ROLE_EMPLOYER') ? "Company Profile" : "My Profile"}
+                        {user.roles?.includes('ROLE_ADMIN') 
+                          ? "Profile" 
+                          : user.roles?.includes('ROLE_NLO') 
+                            ? "Profile" 
+                            : "My Profile"}
                       </Link>
                       
                       {/* Resume Management link for students only */}
@@ -238,20 +258,20 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     Find Jobs
                   </Link>
                   <Link 
-                    to="/track" 
+                    to="/applications" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
-                    Track Applications
+                    My Applications
                   </Link>
                 </>
               )}
               
               {/* Employer-specific navigation */}
-              {user.roles?.includes('ROLE_EMPLOYER') && (
+              {user.roles?.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
                   <Link 
-                    to="/employer/jobs" 
+                    to="/nlo/jobs" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -271,13 +291,6 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     Dashboard
                   </Link>
                   <Link 
-                    to="/admin/jobs" 
-                    className="block text-gray-400 hover:text-white transition-colors py-2"
-                    onClick={this.closeMobileMenu}
-                  >
-                    Manage Jobs
-                  </Link>
-                  <Link 
                     to="/admin/users" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
@@ -285,11 +298,38 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                     Users
                   </Link>
                   <Link 
-                    to="/admin/students/verification" 
+                    to="/admin/profile" 
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
-                    Verify Profiles
+                    Profile
+                  </Link>
+                </>
+              )}
+
+              {/* NLO-specific navigation */}
+              {user.roles?.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
+                <>
+                  <Link 
+                    to="/nlo/jobs" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Manage Jobs
+                  </Link>
+                  <Link 
+                    to="/nlo/students/verification" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Student Verification
+                  </Link>
+                  <Link 
+                    to="/nlo/companies" 
+                    className="block text-gray-400 hover:text-white transition-colors py-2"
+                    onClick={this.closeMobileMenu}
+                  >
+                    Companies
                   </Link>
                 </>
               )}

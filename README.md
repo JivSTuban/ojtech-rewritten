@@ -126,10 +126,10 @@ A Spring Boot application providing RESTful API services with JWT authentication
   - JWT_SECRET: Secret key for JWT token signing
   - JWT_EXPIRATION_MS: JWT token expiration time in milliseconds
   - CLOUDINARY_URL: Cloudinary configuration URL
-  - SPRING_MAIL_HOST: SMTP server host
-  - SPRING_MAIL_PORT: SMTP server port
-  - SPRING_MAIL_USERNAME: Email username
-  - SPRING_MAIL_PASSWORD: Email password
+  - EMAIL_ENABLED: Enable/disable email functionality (true/false)
+  - BREVO_API_KEY: Brevo API key for sending emails
+  - BREVO_API_URL: Brevo API endpoint (https://api.brevo.com/v3/smtp/email)
+  - SPRING_MAIL_EMAIL: Verified sender email address
   - FRONTEND_URL: Frontend application URL for CORS and redirects
 
 ## Getting Started
@@ -181,13 +181,11 @@ properties
    # Cloudinary
    cloudinary.url=cloudinary://your_api_key:your_api_secret@your_cloud_name
    
-   # Mail
-   spring.mail.host=smtp.gmail.com
-   spring.mail.port=587
-   spring.mail.username=your_email@gmail.com
-   spring.mail.password=your_app_password
-   spring.mail.properties.mail.smtp.auth=true
-   spring.mail.properties.mail.smtp.starttls.enable=true
+   # Email (Brevo API)
+   email.enabled=true
+   brevo.api.key=your_brevo_api_key
+   brevo.api.url=https://api.brevo.com/v3/smtp/email
+   spring.mail.email=your_verified_sender@email.com
    
    # Frontend URL
    app.frontend.url=http://localhost:5173

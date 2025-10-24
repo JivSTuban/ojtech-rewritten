@@ -8,6 +8,12 @@ interface StudentProfileData {
   [key: string]: any;
 }
 
+const MAJOR_OPTIONS = [
+  'Bachelor of Science in Information Technology',
+  'Bachelor of Science in Computer Science',
+  'Other'
+];
+
 interface EducationStepProps {
   formData: StudentProfileData;
   onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
@@ -15,7 +21,18 @@ interface EducationStepProps {
   onPrev: () => void;
 }
 
-export default class EducationStep extends Component<EducationStepProps> {
+interface EducationStepState {
+  showCustomMajor: boolean;
+}
+
+export default class EducationStep extends Component<EducationStepProps, EducationStepState> {
+  constructor(props: EducationStepProps) {
+    super(props);
+    this.state = {
+      showCustomMajor: !!(props.formData.major && !MAJOR_OPTIONS.slice(0, -1).includes(props.formData.major))
+    };
+  }
+
   componentDidMount() {
     // Load saved education info from localStorage
     const savedEducation = localStorageManager.getStepData<any>('education');
@@ -53,8 +70,37 @@ export default class EducationStep extends Component<EducationStepProps> {
         
         console.log('Restored education info from localStorage:', updates);
       }
+    } else {
+      // Set default university if not already set
+      if (!this.props.formData.university) {
+        const mockEvent = {
+          target: {
+            name: 'university',
+            value: 'Cebu Institute of Technology - University'
+          }
+        } as ChangeEvent<HTMLInputElement>;
+        this.props.onChange(mockEvent);
+      }
     }
   }
+
+  handleMajorChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'Other') {
+      this.setState({ showCustomMajor: true });
+      // Clear the major field to allow custom input
+      const mockEvent = {
+        target: {
+          name: 'major',
+          value: ''
+        }
+      } as ChangeEvent<HTMLInputElement>;
+      this.props.onChange(mockEvent);
+    } else {
+      this.setState({ showCustomMajor: false });
+      this.props.onChange(e);
+    }
+  };
 
   isValid = (): boolean => {
     const { formData } = this.props;
@@ -109,10 +155,11 @@ export default class EducationStep extends Component<EducationStepProps> {
                     type="text"
                     name="university"
                     id="university"
-                    value={formData.university || ''}
+                    value={formData.university || 'Cebu Institute of Technology - University'}
                     onChange={onChange}
                     required
-                    className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                    readOnly
+                    className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300 cursor-not-allowed opacity-75"
                     placeholder="Your university or school"
                   />
                 </div>
@@ -127,16 +174,50 @@ export default class EducationStep extends Component<EducationStepProps> {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
-                  <input
-                    type="text"
-                    name="major"
-                    id="major"
-                    value={formData.major || ''}
-                    onChange={onChange}
-                    required
-                    className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
-                    placeholder="Your field of study"
-                  />
+                  {!this.state.showCustomMajor ? (
+                    <select
+                      name="major"
+                      id="major"
+                      value={formData.major || ''}
+                      onChange={this.handleMajorChange}
+                      required
+                      className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300 appearance-none"
+                    >
+                      <option value="">Select your major/course</option>
+                      {MAJOR_OPTIONS.map(major => (
+                        <option key={major} value={major}>{major}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="major"
+                      id="major"
+                      value={formData.major || ''}
+                      onChange={onChange}
+                      required
+                      className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                      placeholder="Enter your major/course"
+                    />
+                  )}
+                  {!this.state.showCustomMajor && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  )}
+                  {this.state.showCustomMajor && (
+                    <button
+                      type="button"
+                      onClick={() => this.setState({ showCustomMajor: false })}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

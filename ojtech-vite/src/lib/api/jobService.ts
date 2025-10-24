@@ -25,10 +25,20 @@ const deleteJob = async (jobId: string | number) => {
   return axios.delete(`${API_URL}/${jobId}`, { headers: getAuthHeaders() });
 };
 
+const reactivateJob = async (jobId: string | number) => {
+  return axios.put(`${API_URL}/${jobId}/reactivate`, {}, { headers: getAuthHeaders() });
+};
+
 const getEmployerJobs = async (page = 0, size = 10) => {
   const response = await axios.get(`${API_URL}/employer?page=${page}&size=${size}`, { headers: getAuthHeaders() });
 
   return response.data; // Expected to be a Page<Job> object
+};
+
+const getEmployerInactiveJobs = async (page = 0, size = 10) => {
+  const response = await axios.get(`${API_URL}/employer/inactive?page=${page}&size=${size}`, { headers: getAuthHeaders() });
+
+  return response.data; // Expected to be a list of inactive jobs
 };
 
 const getEmployerJobById = async (jobId: string | number) => {
@@ -58,7 +68,9 @@ const jobService = {
   createJob,
   updateJob,
   deleteJob,
+  reactivateJob,
   getEmployerJobs,
+  getEmployerInactiveJobs,
   getEmployerJobById,
   // Public
   getAllActiveJobs,

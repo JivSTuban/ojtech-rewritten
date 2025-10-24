@@ -99,6 +99,8 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
       let profile = null;
       try {
         profile = await profileService.getCurrentStudentProfile();
+        console.log('Profile fetched successfully:', profile);
+        console.log('hasCompletedOnboarding from profile:', profile?.hasCompletedOnboarding);
        
       } catch (profileError) {
         console.error('Error fetching profile:', profileError);
@@ -107,7 +109,8 @@ class AuthProviderComponent extends Component<AuthProviderProps, AuthProviderSta
 
       // Check if hasCompletedOnboarding explicitly exists in profile
       // Strictly check for boolean true to avoid type coercion issues
-      const hasCompletedOnboarding = profile && profile.hasCompletedOnboarding === true;
+      const hasCompletedOnboarding = profile?.hasCompletedOnboarding === true;
+      console.log('Final hasCompletedOnboarding value:', hasCompletedOnboarding);
       
 
       const user: AppUser = {

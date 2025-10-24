@@ -169,8 +169,10 @@ CLOUDINARY_API_SECRET=LzSstJ4NWGoQPHFcMppJQHhHdbA
 
 GEMINI_API_KEY=AIzaSyA8-ny-LlhOwSvU9kT6M5lWLG2eLzvvWpM
 
-EMAIL_USERNAME=ojtech.team@gmail.com
-EMAIL_PASSWORD=mldv wsfs ukse mtlu
+EMAIL_ENABLED=true
+BREVO_API_KEY=<your-brevo-api-key>
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+SPRING_MAIL_EMAIL=ojtech.team@gmail.com
 
 FRONTEND_URL=https://[your-frontend-url]
 BACKEND_BASE_URL=https://ojtech-api.onrender.com

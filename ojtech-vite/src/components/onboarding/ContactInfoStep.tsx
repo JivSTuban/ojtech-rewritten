@@ -17,7 +17,17 @@ interface ContactInfoStepProps {
   onPrev: () => void;
 }
 
-export default class ContactInfoStep extends Component<ContactInfoStepProps> {
+interface ContactInfoStepState {
+  phoneError: string;
+}
+
+export default class ContactInfoStep extends Component<ContactInfoStepProps, ContactInfoStepState> {
+  constructor(props: ContactInfoStepProps) {
+    super(props);
+    this.state = {
+      phoneError: ''
+    };
+  }
   componentDidMount() {
     // Load saved contact info from localStorage
     const savedContact = localStorageManager.getStepData<any>('contact');
@@ -96,9 +106,55 @@ export default class ContactInfoStep extends Component<ContactInfoStepProps> {
     }
   };
 
+  validatePhoneNumber = (phoneNumber: string): string => {
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      return 'Phone number is required';
+    }
+    
+    // Remove all spaces, dashes, and parentheses for validation
+    const cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Check if it starts with +63 (Philippine country code)
+    if (cleaned.startsWith('+63')) {
+      // +63 followed by 10 digits (mobile) or 9 digits (landline)
+      const phoneRegex = /^\+63[0-9]{9,10}$/;
+      if (!phoneRegex.test(cleaned)) {
+        return 'Invalid Philippine phone number. Format: +63XXXXXXXXXX (10-11 digits after +63)';
+      }
+    } else if (cleaned.startsWith('63')) {
+      // 63 followed by 10 digits (mobile) or 9 digits (landline)
+      const phoneRegex = /^63[0-9]{9,10}$/;
+      if (!phoneRegex.test(cleaned)) {
+        return 'Invalid Philippine phone number. Format: 63XXXXXXXXXX (10-11 digits after 63)';
+      }
+    } else if (cleaned.startsWith('0')) {
+      // Local format: 0 followed by 10 digits (mobile) or 9 digits (landline)
+      const phoneRegex = /^0[0-9]{9,10}$/;
+      if (!phoneRegex.test(cleaned)) {
+        return 'Invalid Philippine phone number. Format: 0XXXXXXXXXX (10-11 digits)';
+      }
+    } else {
+      return 'Phone number must start with +63, 63, or 0';
+    }
+    
+    return '';
+  };
+
+  handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    this.props.onChange(e);
+    
+    // Validate on change
+    const error = this.validatePhoneNumber(value);
+    this.setState({ phoneError: error });
+  };
+
   isValid = (): boolean => {
     const { formData } = this.props;
-    return !!formData.phoneNumber;
+    if (!formData.phoneNumber) return false;
+    
+    const error = this.validatePhoneNumber(formData.phoneNumber);
+    return error === '';
   };
 
   handleNext = (e: React.MouseEvent) => {
@@ -140,11 +196,21 @@ export default class ContactInfoStep extends Component<ContactInfoStepProps> {
               name="phoneNumber"
               id="phoneNumber"
               value={formData.phoneNumber || ''}
-              onChange={onChange}
+              onChange={this.handlePhoneChange}
+              onKeyPress={(e) => {
+                // Allow numbers, plus sign (for country code), and common formatting characters
+                if (!/[0-9+\-\s()]/.test(e.key)) {
+                  e.preventDefault();
+                }
+              }}
               required
-              className="w-full bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
-              placeholder="Your phone number"
+              className={`w-full bg-black/80 border ${this.state.phoneError ? 'border-red-500' : 'border-gray-700'} text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300`}
+              placeholder="+63 XXX XXX XXXX"
             />
+            {this.state.phoneError && (
+              <p className="text-red-500 text-xs mt-1">{this.state.phoneError}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">Format: +63XXXXXXXXXX, 63XXXXXXXXXX, or 0XXXXXXXXXX</p>
           </div>
         </div>
 

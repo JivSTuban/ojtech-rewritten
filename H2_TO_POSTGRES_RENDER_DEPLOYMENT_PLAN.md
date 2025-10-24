@@ -218,9 +218,11 @@ cloudinary.api-secret=${CLOUDINARY_API_SECRET}
 # Gemini API
 gemini.api.key=${GEMINI_API_KEY}
 
-# Email
-spring.mail.username=${EMAIL_USERNAME}
-spring.mail.password=${EMAIL_PASSWORD}
+# Email (Brevo API)
+email.enabled=${EMAIL_ENABLED:true}
+brevo.api.key=${BREVO_API_KEY}
+brevo.api.url=${BREVO_API_URL:https://api.brevo.com/v3/smtp/email}
+spring.mail.email=${SPRING_MAIL_EMAIL}
 
 # URLs
 app.base-url=${FRONTEND_URL}
@@ -258,9 +260,11 @@ CLOUDINARY_API_SECRET=your-api-secret
 # Gemini
 GEMINI_API_KEY=your-gemini-api-key
 
-# Email
-EMAIL_USERNAME=your-email@gmail.com
-EMAIL_PASSWORD=your-app-password
+# Email (Brevo API)
+EMAIL_ENABLED=true
+BREVO_API_KEY=your-brevo-api-key
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+SPRING_MAIL_EMAIL=your-verified-sender@email.com
 
 # URLs
 FRONTEND_URL=http://localhost:5173
@@ -348,8 +352,10 @@ CLOUDINARY_API_SECRET=LzSstJ4NWGoQPHFcMppJQHhHdbA
 
 GEMINI_API_KEY=AIzaSyA8-ny-LlhOwSvU9kT6M5lWLG2eLzvvWpM
 
-EMAIL_USERNAME=ojtech.team@gmail.com
-EMAIL_PASSWORD=mldv wsfs ukse mtlu
+EMAIL_ENABLED=true
+BREVO_API_KEY=<your-brevo-api-key>
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+SPRING_MAIL_EMAIL=ojtech.team@gmail.com
 
 FRONTEND_URL=https://your-frontend-domain.com
 BACKEND_BASE_URL=https://ojtech-api.onrender.com

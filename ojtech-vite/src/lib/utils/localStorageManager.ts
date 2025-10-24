@@ -11,6 +11,9 @@ interface OnboardingStep {
     firstName?: string;
     lastName?: string;
     location?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
   };
   education?: {
     university?: string;

@@ -45,6 +45,9 @@ interface StudentProfileData {
     certifications?: Certification[];
     experiences?: WorkExperience[];
     location?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
 }
 
 interface StudentOnboardingState {
@@ -79,7 +82,10 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
         portfolioUrl: '',
         certifications: [],
         experiences: [],
-        location: ''
+        location: '',
+        city: '',
+        province: '',
+        postalCode: ''
       },
       error: null,
       isLoading: false,
@@ -272,12 +278,17 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
           });
         }
     
-        if (profileData.hasCompletedOnboarding) {
+        if (profileData.hasCompletedOnboarding === true) {
+          console.log('Student has already completed onboarding, redirecting to /track');
           ToastHelper.toast({
-            title: "Profile Successfully Loaded",
-            description: "Your profile is already complete. You can review and update your information as needed.",
+            title: "Profile Already Complete",
+            description: "Your onboarding is already complete. Redirecting to your dashboard.",
             variant: "success"
           });
+          
+          // Redirect to track page since onboarding is complete
+          this.setState({ redirectTo: '/track' });
+          return;
         }
         
         console.log('Final formData after API fetch:', this.state.formData);
@@ -437,6 +448,27 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
       
       if (err.response) {
         errorMsg = err.response.data?.message || errorMsg;
+        
+        // Check for authentication error
+        if (err.response.status === 401 || err.response.status === 403 || 
+            errorMsg.includes("Full authentication is required") ||
+            errorMsg.includes("authentication")) {
+          // Clear all localStorage data
+          localStorageManager.clearOnboardingData();
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          
+          ToastHelper.toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive"
+          });
+          
+          // Redirect to login
+          this.setState({ redirectTo: '/login' });
+          return;
+        }
+        
         ToastHelper.toast({
           title: "Error Saving Profile",
           description: `${errorMsg} (Status: ${err.response.status})`,
@@ -611,13 +643,20 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
                       <div key={step} className="flex flex-col items-center">
                         <div 
+                          onClick={() => {
+                            // Allow navigation ONLY when on Review step (step 9)
+                            if (this.state.currentStep === 9 && step !== 9) {
+                              this.setState({ currentStep: step });
+                            }
+                          }}
                           className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10
                             ${this.state.currentStep === step 
                               ? 'bg-gradient-to-br from-gray-500 to-gray-700 text-white ring-4 ring-gray-700/30 shadow-lg shadow-black/40 scale-110' 
                               : this.state.currentStep > step 
                                 ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white ring-2 ring-gray-600/20' 
                                 : 'bg-black text-gray-500 border border-gray-700/30'
-                            }`}
+                            }
+                            ${this.state.currentStep === 9 && step !== 9 ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
                         >
                           {this.state.currentStep > step ? (
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

@@ -10,14 +10,14 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.melardev</groupId>
+    <groupId>com.ojtechapi</groupId>
     <artifactId>ojtech-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>OJTech API</name>
     <description>OJTech API with Spring Boot and JWT</description>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <jjwt.version>0.11.5</jjwt.version>
         <mockito.version>5.7.0</mockito.version>
         <byte-buddy.version>1.14.11</byte-buddy.version>
@@ -49,6 +49,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.3</version>
+        </dependency>
+        
         
         <!-- H2 Database (for development) -->
         <dependency>
@@ -160,11 +167,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Boot Mail -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -177,8 +179,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>21</source>
+                    <target>21</target>
                     <excludes>
                         <exclude>**/backup/**</exclude>
                     </excludes>

@@ -66,6 +66,7 @@ interface JobDetailPageState {
   isAuthenticated: boolean;
   userRole: string | null;
   showMatchDetails: boolean;
+  isApplying: boolean;
 }
 
 // Helper function to get match score color
@@ -118,7 +119,8 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       error: null,
       isAuthenticated: false,
       userRole: null,
-      showMatchDetails: false
+      showMatchDetails: false,
+      isApplying: false,
     };
   }
   
@@ -156,9 +158,9 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         const jobData = response.data;
         
         // Find the user's match score if available
+        // The backend filters jobMatches to only include the current student's match
         let userMatchScore = null;
         if (jobData.jobMatches && jobData.jobMatches.length > 0) {
-          // Get the first match score for now (could be filtered by current user ID in the future)
           userMatchScore = jobData.jobMatches[0].matchScore;
         }
         
@@ -220,26 +222,32 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
     
     // Check if user is a student
     if (user.roles && user.roles.includes('ROLE_STUDENT')) {
+      this.setState({ isApplying: true });
+      
       try {
         const response = await apiClient.post(
           `/api/job-applications/apply`,
           { jobId: job.id }
         );
         
-        // Redirect to applications tracking page
-        navigate('/track');
+        // Wait a moment to show the spinner before redirecting
+        setTimeout(() => {
+          // Redirect to applications page
+          navigate('/applications');
+        }, 500);
       } catch (err) {
         console.error("Error applying for job:", err);
-        // Show error notification
+        this.setState({ isApplying: false });
+        alert('Failed to apply for job. Please try again.');
       }
     } else {
       // Show message that only students can apply
-      console.error("Only students can apply for jobs");
+      alert('Only students can apply for jobs');
     }
   };
   
   render() {
-    const { job, loading, error, showMatchDetails } = this.state;
+    const { job, loading, error, showMatchDetails, isApplying } = this.state;
     
     if (loading) {
       return (
@@ -432,6 +440,26 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
                   Applied on {new Date(job.applications[0].appliedAt).toLocaleDateString()}
                 </span>
               </div>
+            </div>
+          )}
+          
+          {/* Apply Button Section - Show if user hasn't applied yet */}
+          {this.state.isAuthenticated && (!job.applications || job.applications.length === 0) && (
+            <div className="p-6 border-t border-gray-800">
+              <Button 
+                onClick={this.handleApplyClick}
+                disabled={isApplying}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg"
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  'Apply Now'
+                )}
+              </Button>
             </div>
           )}
               

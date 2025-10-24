@@ -1,9 +1,14 @@
 import { Component, createRef, RefObject } from "react";
 import TinderCard from "react-tinder-card";
-import { Loader2, Briefcase, MapPin, Calendar, DollarSign, Info, HelpCircle, ChevronRight, AlertTriangle, FileText, Clock } from "lucide-react";
+import { Loader2, Briefcase, MapPin, Calendar, DollarSign, Info, HelpCircle, ChevronRight, AlertTriangle, FileText, Clock, Target, CheckCircle2, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { EmailDraftModal } from "../components/EmailDraftModal";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../components/ui/Popover";
 import jobApplicationService, { EmailDraft } from "../lib/api/jobApplicationService";
 import profileService from "../lib/api/profileService";
 
@@ -65,6 +70,9 @@ interface OpportunitiesPageState {
   emailDraft: EmailDraft | null;
   pendingApplicationId: string | null;
   currentJobForEmail: JobWithMatchScore | null;
+  showMatchingInfo: boolean;
+  appliedJobIds: Set<string>;
+  applicationsLoading: boolean;
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
@@ -86,15 +94,39 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       emailModalOpen: false,
       emailDraft: null,
       pendingApplicationId: null,
-      currentJobForEmail: null
+      currentJobForEmail: null,
+      showMatchingInfo: false,
+      appliedJobIds: new Set<string>(),
+      applicationsLoading: true
     };
   }
   
   componentDidMount() {
     this.fetchStudentProfile();
     this.checkCVProcessingStatus();
+    this.fetchUserApplications();
     this.fetchJobs();
   }
+  
+  // Fetch user applications to track applied job IDs
+  fetchUserApplications = async () => {
+    try {
+      const applications = await jobApplicationService.getStudentApplications();
+      const appliedJobIds = new Set(applications.map(app => app.jobId));
+      this.setState({ 
+        appliedJobIds,
+        applicationsLoading: false 
+      });
+      console.log('Fetched applied job IDs:', Array.from(appliedJobIds));
+    } catch (error) {
+      console.error("Error fetching user applications:", error);
+      // Don't block the page if applications fetch fails
+      this.setState({ 
+        appliedJobIds: new Set<string>(),
+        applicationsLoading: false 
+      });
+    }
+  };
   
   // Fetch student profile to check verification status
   fetchStudentProfile = async () => {
@@ -155,6 +187,11 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         // Map API response to our JobWithMatchScore interface
         const matchedJobs: JobWithMatchScore[] = matchedJobsData
           .filter(match => !match.viewed) // Filter out viewed jobs
+          .filter(match => {
+            // Filter out jobs that user has already applied to
+            const jobId = match.job?.id;
+            return jobId && !this.state.appliedJobIds.has(jobId);
+          })
           .map((match: any) => {
             // Handle the nested structure from the API response
             const job = match.job || {};
@@ -233,8 +270,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       const jobsData = await jobApplicationService.findJobs();
       
       if (jobsData && Array.isArray(jobsData)) {
-        // Map API response to our JobWithMatchScore interface
-        const mappedJobs: JobWithMatchScore[] = jobsData.map((job: any) => {
+        // Filter out jobs that user has already applied to, then map to our interface
+        const mappedJobs: JobWithMatchScore[] = jobsData
+          .filter(job => {
+            // Filter out jobs that user has already applied to
+            const jobId = job.id;
+            return jobId && !this.state.appliedJobIds.has(jobId);
+          })
+          .map((job: any) => {
           const employer = job.employer || {};
           const jobId = job.id;
           
@@ -304,6 +347,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
       const response = await jobApplicationService.applyForJob(apiJobId, {});
       console.log("Job application submitted successfully:", response);
+      
+      // Add the job ID to applied jobs set to prevent showing it again
+      this.setState(prevState => ({
+        appliedJobIds: new Set([...prevState.appliedJobIds, apiJobId])
+      }));
+      
       return { success: true, data: response };
     } catch (error) {
       console.error("Error applying for job:", error);
@@ -512,7 +561,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   render() {
     const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading, emailModalOpen, emailDraft, currentJobForEmail } = this.state;
     
-    if (loading || profileLoading) {
+    if (loading || profileLoading || this.state.applicationsLoading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -530,9 +579,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           <Button onClick={this.fetchJobs} className="w-full sm:w-auto text-sm sm:text-base">
             Find Matched Jobs
           </Button>
-          <Button onClick={this.findJobs} variant="outline" className="w-full sm:w-auto text-sm sm:text-base">
-            Find More Jobs
-          </Button>
+         
         </div>
         
         {/* Error Banner - Show inline instead of full screen */}
@@ -624,23 +671,114 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         ) : (
           <>
             {/* How matching works tooltip */}
-            <div className="mb-8">
-              <div className="text-sm text-primary flex items-center gap-1 hover:underline cursor-help">
-                <HelpCircle size={14} />
-                <span>How matching works</span>
-              </div>
-              <div className="hidden">
-                <h4 className="font-bold mb-2">How Job Matching Works</h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  Our AI-powered system matches your skills and experience with job requirements.
-                </p>
-                <ul className="text-xs space-y-1 list-disc pl-4">
-                  <li><span className="text-green-500 font-bold">80%+</span>: Strong match to your skills</li>
-                  <li><span className="text-blue-500 font-bold">60-79%</span>: Good match with some skill alignment</li>
-                  <li><span className="text-yellow-500 font-bold">40-59%</span>: Potential match worth exploring</li>
-                  <li><span className="text-red-500 font-bold">&lt;40%</span>: Limited match but still might be interesting</li>
-                </ul>
-              </div>
+            <div className="mb-6 sm:mb-8">
+              <Popover open={this.state.showMatchingInfo} onOpenChange={(open) => this.setState({ showMatchingInfo: open })}>
+                <PopoverTrigger asChild>
+                  <button 
+                    className="text-sm text-primary flex items-center gap-1.5 hover:underline cursor-pointer transition-all hover:gap-2 group"
+                    onClick={() => this.setState({ showMatchingInfo: !this.state.showMatchingInfo })}
+                  >
+                    <HelpCircle size={16} className="group-hover:rotate-12 transition-transform" />
+                    <span className="font-medium">How matching works</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 sm:w-96 p-0 overflow-hidden" align="center">
+                  <div className="bg-gradient-to-br from-primary/5 to-blue-50 dark:from-primary/10 dark:to-blue-950 p-4 border-b">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <h4 className="font-bold text-lg">AI-Powered Job Matching</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Our intelligent system analyzes your profile to find the best opportunities
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 space-y-4">
+                    {/* How it works */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <h5 className="font-semibold text-sm">What We Analyze</h5>
+                      </div>
+                      <ul className="text-xs space-y-1.5 ml-6 text-muted-foreground">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                          <span>Your technical skills vs. job requirements</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                          <span>Education background and major</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                          <span>Work experience and projects</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                          <span>Additional certifications and achievements</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    {/* Match score guide */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="h-4 w-4 text-primary" />
+                        <h5 className="font-semibold text-sm">Match Score Guide</h5>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className="w-12 h-1.5 bg-gradient-to-r from-green-400 to-green-600 rounded-full"></div>
+                          <span className="font-bold text-green-600">80-100%</span>
+                          <span className="text-muted-foreground">Strong Match</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-14">
+                          Excellent fit! You have most or all required skills. Apply with confidence.
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-xs mt-3">
+                          <div className="w-12 h-1.5 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"></div>
+                          <span className="font-bold text-blue-600">60-79%</span>
+                          <span className="text-muted-foreground">Good Match</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-14">
+                          Great opportunity! You meet many requirements. Highlight relevant skills in your application.
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-xs mt-3">
+                          <div className="w-12 h-1.5 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"></div>
+                          <span className="font-bold text-yellow-600">40-59%</span>
+                          <span className="text-muted-foreground">Potential Match</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-14">
+                          Worth considering! You have some relevant skills. Emphasize transferable experience.
+                        </p>
+                        
+                        <div className="flex items-center gap-2 text-xs mt-3">
+                          <div className="w-12 h-1.5 bg-gradient-to-r from-red-400 to-red-600 rounded-full"></div>
+                          <span className="font-bold text-red-600">&lt;40%</span>
+                          <span className="text-muted-foreground">Growth Opportunity</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-14">
+                          Challenge yourself! May require learning new skills. Great for career growth.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Tips */}
+                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 mt-4">
+                      <p className="text-xs text-blue-900 dark:text-blue-100 flex items-start gap-2">
+                        <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>
+                          <strong>Pro Tip:</strong> Keep your profile updated with new skills and projects to get better matches!
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             
             {jobs.length === 0 ? (

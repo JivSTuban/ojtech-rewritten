@@ -30,7 +30,7 @@ const getUserRole = (): string | null => {
   if (user && user.roles && user.roles.length > 0) {
     // Return the first role, or check for specific role hierarchy
     if (user.roles.includes('ROLE_ADMIN')) return 'ADMIN';
-    if (user.roles.includes('ROLE_EMPLOYER')) return 'EMPLOYER';
+    if (user.roles.includes('ROLE_NLO')) return 'NLO';
     if (user.roles.includes('ROLE_STUDENT')) return 'STUDENT';
     return user.roles[0]; // fallback to first role
   }
@@ -88,8 +88,8 @@ const updateProfile = async (data: any) => {
         };
         break;
         
-      case 'EMPLOYER':
-        endpoint = `${API_BASE_URL}/employer-profiles/me`;
+      case 'NLO':
+        endpoint = `${API_BASE_URL}/nlo/me`;
         // Format employer-specific data
         formattedData = {
           companyName: data.companyName,
@@ -162,7 +162,7 @@ const updateEmployerProfile = async (data: any) => {
     console.log('Sending formatted employer data to backend:', formattedData);
 
     const response = await axios.put(
-      `${API_BASE_URL}/employer-profiles/me`,
+      `${API_BASE_URL}/nlo/me`,
       formattedData,
       { 
         headers: {
@@ -314,10 +314,10 @@ const completeStudentOnboarding = async (data: any) => {
         onboardingEndpoint = `${API_BASE_URL}/student-profiles/complete-onboarding`;
         updateEndpoint = `${API_BASE_URL}/student-profiles/me`;
         break;
-      case 'EMPLOYER':
+      case 'NLO':
         // Employer onboarding might use a different endpoint
-        onboardingEndpoint = `${API_BASE_URL}/employer-profiles/complete-onboarding`;
-        updateEndpoint = `${API_BASE_URL}/employer-profiles/me`;
+        onboardingEndpoint = `${API_BASE_URL}/nlo/complete-onboarding`;
+        updateEndpoint = `${API_BASE_URL}/nlo/me`;
         break;
       case 'ADMIN':
       default:
@@ -384,8 +384,8 @@ const getCurrentUserProfileSmart = async () => {
       case 'STUDENT':
         endpoint = `${API_BASE_URL}/student-profiles/me`;
         break;
-      case 'EMPLOYER':
-        endpoint = `${API_BASE_URL}/employer-profiles/me`;
+      case 'NLO':
+        endpoint = `${API_BASE_URL}/nlo/me`;
         break;
       case 'ADMIN':
         // Admin can use the generic endpoint or student endpoint depending on needs
