@@ -192,9 +192,11 @@ Add all required environment variables in Render dashboard:
 - [ ] `CLOUDINARY_API_SECRET`
 - [ ] `GEMINI_API_KEY`
 
-#### Email
-- [ ] `EMAIL_USERNAME`
-- [ ] `EMAIL_PASSWORD`
+#### Email (Brevo API)
+- [ ] `EMAIL_ENABLED` (set to true)
+- [ ] `BREVO_API_KEY`
+- [ ] `BREVO_API_URL` (https://api.brevo.com/v3/smtp/email)
+- [ ] `SPRING_MAIL_EMAIL` (verified sender email)
 
 #### URLs
 - [ ] `FRONTEND_URL` (your frontend domain)

@@ -37,6 +37,7 @@ import com.ojtechapi.spring.jwtoauth.repositories.UserRepository;
 import com.ojtechapi.spring.jwtoauth.repositories.JobRepository;
 import com.ojtechapi.spring.jwtoauth.repositories.JobApplicationRepository;
 import com.ojtechapi.spring.jwtoauth.service.UserService;
+import com.ojtechapi.spring.jwtoauth.service.EmailService;
 import com.ojtechapi.spring.jwtoauth.service.interfaces.AdminJobService;
 import com.ojtechapi.spring.jwtoauth.dtos.admin.*;
 import com.ojtechapi.spring.jwtoauth.entities.*;
@@ -69,6 +70,9 @@ public class AdminController {
     
     @Autowired
     private AdminJobService adminJobService;
+    
+    @Autowired
+    private EmailService emailService;
     
     @Autowired
     private com.ojtechapi.spring.jwtoauth.repositories.NLOProfileRepository NLOProfileRepository;
@@ -119,6 +123,9 @@ public class AdminController {
                 return ResponseEntity.badRequest().body(new MessageResponse("Email already exists"));
             }
             
+            // Store plain password for email before encoding
+            String plainPassword = password;
+            
             User user = new User(username, email, passwordEncoder.encode(password));
             
             // Set role
@@ -140,7 +147,24 @@ public class AdminController {
             }
             
             userRepository.save(user);
-            return ResponseEntity.ok(new MessageResponse("User created successfully"));
+            
+            // Send verification email with account credentials
+            try {
+                System.out.println("🔄 Attempting to send verification email...");
+                System.out.println("   Email: " + email);
+                System.out.println("   Username: " + username);
+                System.out.println("   User ID: " + user.getId().toString());
+                
+                emailService.sendUserCreationEmail(email, username, plainPassword, user.getId().toString());
+                
+                System.out.println("✓ Verification email sent successfully to: " + email);
+            } catch (Exception emailException) {
+                System.err.println("✗ Failed to send verification email: " + emailException.getMessage());
+                emailException.printStackTrace(); // Print full stack trace for debugging
+                // Don't fail user creation if email fails - just log it
+            }
+            
+            return ResponseEntity.ok(new MessageResponse("User created successfully. Verification email sent to " + email));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
@@ -743,6 +767,74 @@ public class AdminController {
             return ResponseEntity.ok(employerList);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    // ==============================================
+    // Recent Activity Endpoint
+    // ==============================================
+    
+    @GetMapping("/recent-activity")
+    public ResponseEntity<?> getRecentActivity(@RequestParam(defaultValue = "10") int limit) {
+        try {
+            // Get recently created users sorted by creation date
+            Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+            Page<User> recentUsersPage = userRepository.findAll(pageable);
+            
+            List<com.ojtechapi.spring.jwtoauth.dtos.responses.RecentActivityDto> activities = 
+                recentUsersPage.getContent().stream()
+                    .map(user -> {
+                        // Get primary role name
+                        String roleName = "Student"; // Default
+                        if (!user.getRoles().isEmpty()) {
+                            Role primaryRole = user.getRoles().iterator().next();
+                            String roleStr = primaryRole.getName().name();
+                            if (roleStr.equals("ROLE_ADMIN")) {
+                                roleName = "Admin";
+                            } else if (roleStr.equals("ROLE_NLO")) {
+                                roleName = "NLO";
+                            } else if (roleStr.equals("ROLE_STUDENT")) {
+                                roleName = "Student";
+                            }
+                        }
+                        
+                        return new com.ojtechapi.spring.jwtoauth.dtos.responses.RecentActivityDto(
+                            user.getId(),
+                            user.getUsername(),
+                            user.getEmail(),
+                            roleName,
+                            "USER_CREATED",
+                            user.getCreatedAt()
+                        );
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(activities);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error fetching recent activity: " + e.getMessage()));
+        }
+    }
+
+    // ==============================================
+    // Email Testing Endpoint
+    // ==============================================
+    
+    @GetMapping("/test-email")
+    public ResponseEntity<?> testEmail(@RequestParam String email) {
+        try {
+            System.out.println("🧪 Testing email service...");
+            System.out.println("   Recipient: " + email);
+            
+            emailService.sendTestEmail(email, "OJTech - Email Test", 
+                "This is a test email to verify that the email service is working correctly. " +
+                "If you receive this email, your email configuration is set up properly!");
+            
+            System.out.println("✓ Test email sent successfully!");
+            return ResponseEntity.ok(new MessageResponse("Test email sent! Check inbox for: " + email));
+        } catch (Exception e) {
+            System.err.println("✗ Test email failed: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to send test email: " + e.getMessage()));
         }
     }
 

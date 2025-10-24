@@ -62,19 +62,18 @@ SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GITHUB_REDIRECT_URI=${APP_BASE_URL}/a
 GEMINI_API_KEY=<your-gemini-api-key>
 ```
 
-### Email Configuration (Brevo SMTP)
+### Email Configuration (Brevo API)
 ```
 EMAIL_ENABLED=true
-SPRING_MAIL_HOST=smtp-relay.brevo.com
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=991830001@smtp-brevo.com
-SPRING_MAIL_PASSWORD=<your-brevo-smtp-password>
-SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
-SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
-SPRING_MAIL_EMAIL=ojtech.team@gmail.com
+BREVO_API_KEY=<your-brevo-api-key>
+BREVO_API_URL=https://api.brevo.com/v3/smtp/email
+SPRING_MAIL_EMAIL=<your-verified-sender-email>
 ```
 
-**Note:** Email should work properly on Render (unlike local development with DNS issues).
+**Note:** 
+- Get API key from: https://app.brevo.com/settings/keys/api
+- The sender email must be verified in your Brevo account
+- Using API instead of SMTP for better reliability and easier configuration
 
 ### Application URLs
 ```
@@ -120,7 +119,7 @@ LOGGING_LEVEL_COM_MELARDEV_SPRING_JWTOAUTH=INFO
 
 ### 4. Third-Party Services
 - [ ] Verify Cloudinary credentials
-- [ ] Verify Brevo SMTP credentials
+- [ ] Verify Brevo API key and sender email
 - [ ] Verify Gemini API key
 
 ### 5. Production Settings
@@ -137,7 +136,8 @@ Render uses **dot notation** for nested properties. Spring Boot automatically co
 ```
 spring.datasource.url → SPRING_DATASOURCE_URL
 app.jwt.secret → APP_JWT_SECRET
-spring.mail.host → SPRING_MAIL_HOST
+brevo.api.key → BREVO_API_KEY
+spring.mail.email → SPRING_MAIL_EMAIL
 ```
 
 ---
