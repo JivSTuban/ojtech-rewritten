@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
@@ -14,6 +15,7 @@ import { useToast } from "../ui/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/Table";
 
 const NLOStudentVerificationPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('unverified');
   const [unverifiedStudents, setUnverifiedStudents] = useState<Student[]>([]);
   const [verifiedStudents, setVerifiedStudents] = useState<Student[]>([]);
@@ -363,7 +365,7 @@ const NLOStudentVerificationPage: React.FC = () => {
                       <Button
                         variant="secondary"
                         className="flex items-center gap-1"
-                        onClick={() => window.location.href = `/nlo/students/${student.id}`}
+                        onClick={() => navigate(`/nlo/students/${student.id}`)}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
