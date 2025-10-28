@@ -1,31 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Building2, Mail, Phone, MapPin, Users, Globe, FileText, X as XIcon, CheckCircle, Edit3 } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Card, CardContent } from '../ui/Card';
-import { useToast } from '../../components/ui/use-toast';
+import { Card, CardContent } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/Dialog";
+import { Input } from "../ui/Input";
+import { Textarea } from "../ui/Textarea";
+import { Badge } from "../ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/Select";
+import { Label } from "../ui/Label";
+import { 
+  Building2, 
+  Plus, 
+  Search, 
+  Loader2, 
+  Edit, 
+  CheckCircle, 
+  XCircle,
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  Briefcase,
+  Users,
+  X
+} from "lucide-react";
 import nloService, { Company, CompanyCreateRequest } from '../../lib/api/nloService';
-import apiClient from '../../lib/api/apiClient';
+import { useToast } from "../ui/use-toast";
 
 const CompanyManagementPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<'create' | 'edit' | 'activate' | 'deactivate'>('create');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const { toast } = useToast();
-  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<CompanyCreateRequest>({
     name: '',
+    email: '',
     website: '',
     description: '',
     location: '',
-    email: '',
     phone: '',
     industry: '',
     companySize: '',
@@ -35,65 +55,66 @@ const CompanyManagementPage: React.FC = () => {
     hrPhone: '',
   });
 
-  useEffect(() => {
-    fetchCompanies();
-    // Load form data from localStorage on mount
-    const savedFormData = localStorage.getItem('companyFormDraft');
-    if (savedFormData) {
-      try {
-        setFormData(JSON.parse(savedFormData));
-      } catch (error) {
-        console.error('Error loading saved form data:', error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    filterCompanies();
-  }, [companies, searchTerm, activeTab]);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const fetchCompanies = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
       const data = await nloService.getAllCompanies();
-      setCompanies(data);
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-      toast({ title: 'Failed to fetch companies', variant: 'destructive' });
+      setCompanies(Array.isArray(data) ? data : []);
+      setFilteredCompanies(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error fetching companies:', err);
+      setError('Failed to load companies. Please try again later.');
+      setCompanies([]);
+      setFilteredCompanies([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filterCompanies = () => {
-    let filtered = companies;
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
 
-    // Filter by active tab
-    if (activeTab === 'active') {
-      filtered = filtered.filter(company => company.active);
-    } else {
-      filtered = filtered.filter(company => !company.active);
-    }
+  // Filter companies based on search and active tab
+  useEffect(() => {
+    const filterCompanies = () => {
+      let filtered = companies;
 
-    if (searchTerm) {
-      filtered = filtered.filter(company =>
-        company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.industry?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+      // Filter by active status based on tab
+      if (activeTab === 'active') {
+        filtered = filtered.filter(c => c.active);
+      } else {
+        filtered = filtered.filter(c => !c.active);
+      }
 
-    setFilteredCompanies(filtered);
-  };
+      // Filter by search term
+      if (searchTerm) {
+        filtered = filtered.filter(company =>
+          company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.industry?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
 
-  const resetForm = () => {
+      setFilteredCompanies(filtered);
+    };
+
+    filterCompanies();
+  }, [searchTerm, companies, activeTab]);
+
+  const handleCreateClick = () => {
+    setSelectedCompany(null);
+    setActionType('create');
     setFormData({
       name: '',
+      email: '',
       website: '',
       description: '',
       location: '',
-      email: '',
       phone: '',
       industry: '',
       companySize: '',
@@ -102,73 +123,21 @@ const CompanyManagementPage: React.FC = () => {
       hrEmail: '',
       hrPhone: '',
     });
-    // Clear localStorage when resetting form
-    localStorage.removeItem('companyFormDraft');
+    setFormErrors({});
+    setDialogOpen(true);
   };
 
-  // Save form data to localStorage whenever it changes
-  const updateFormData = (updates: Partial<CompanyCreateRequest>) => {
-    const newFormData = { ...formData, ...updates };
-    setFormData(newFormData);
-    // Save to localStorage
-    localStorage.setItem('companyFormDraft', JSON.stringify(newFormData));
-  };
-
-  const handleCreateCompany = async (e: React.FormEvent) => {
+  const handleEditClick = (company: Company, e: React.MouseEvent) => {
     e.preventDefault();
-    try {
-      await nloService.createCompany(formData);
-      toast({ title: 'Company created successfully', variant: 'success' });
-      setIsCreateDialogOpen(false);
-      resetForm(); // This will also clear localStorage
-      fetchCompanies();
-    } catch (error) {
-      console.error('Error creating company:', error);
-      toast({ title: 'Failed to create company', variant: 'destructive' });
-    }
-  };
-
-  const handleEditCompany = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCompany) return;
-
-    try {
-      await nloService.updateCompany(editingCompany.id, formData);
-      toast({ title: 'Company updated successfully', variant: 'success' });
-      setIsEditDialogOpen(false);
-      setEditingCompany(null);
-      resetForm();
-      fetchCompanies();
-    } catch (error) {
-      console.error('Error updating company:', error);
-      toast({ title: 'Failed to update company', variant: 'destructive' });
-    }
-  };
-
-  const handleToggleStatus = async (company: Company) => {
-    try {
-      if (company.active) {
-        await nloService.deactivateCompany(company.id);
-        toast({ title: 'Company deactivated successfully', variant: 'success' });
-      } else {
-        await nloService.activateCompany(company.id);
-        toast({ title: 'Company activated successfully', variant: 'success' });
-      }
-      fetchCompanies();
-    } catch (error) {
-      console.error('Error toggling company status:', error);
-      toast({ title: 'Failed to update company status', variant: 'destructive' });
-    }
-  };
-
-  const openEditDialog = (company: Company) => {
-    setEditingCompany(company);
+    e.stopPropagation();
+    setSelectedCompany(company);
+    setActionType('edit');
     setFormData({
       name: company.name,
+      email: company.email,
       website: company.website || '',
       description: company.description || '',
       location: company.location || '',
-      email: company.email,
       phone: company.phone || '',
       industry: company.industry || '',
       companySize: company.companySize || '',
@@ -177,283 +146,115 @@ const CompanyManagementPage: React.FC = () => {
       hrEmail: company.hrEmail || '',
       hrPhone: company.hrPhone || '',
     });
-    setIsEditDialogOpen(true);
+    setFormErrors({});
+    setDialogOpen(true);
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleActivateClick = (company: Company, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedCompany(company);
+    setActionType('activate');
+    setConfirmDialogOpen(true);
+  };
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Please select an image file', variant: 'destructive' });
+  const handleDeactivateClick = (company: Company, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedCompany(company);
+    setActionType('deactivate');
+    setConfirmDialogOpen(true);
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = 'Company name is required';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Invalid email format';
+    }
+
+    if (formData.hrEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.hrEmail)) {
+      errors.hrEmail = 'Invalid HR email format';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFormSubmit = async () => {
+    if (!validateForm()) {
       return;
     }
 
-    setUploadingLogo(true);
     try {
-      // Get Cloudinary params
-      const { data: cloudParams } = await apiClient.get('/public/cloudinary/company-logo-params');
-
-      // Upload to Cloudinary - only include signed parameters
-      const cloudForm = new FormData();
-      cloudForm.append('file', file);
-      cloudForm.append('api_key', cloudParams.apiKey);
-      cloudForm.append('timestamp', String(cloudParams.timestamp));
-      cloudForm.append('signature', cloudParams.signature);
-      cloudForm.append('folder', cloudParams.folder);
-
-      const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudParams.cloudName}/image/upload`;
-      const cloudRes = await fetch(cloudinaryUrl, {
-        method: 'POST',
-        body: cloudForm,
-      });
-
-      const cloudJson = await cloudRes.json();
-      if (!cloudRes.ok) {
-        throw new Error(cloudJson?.error?.message || 'Upload failed');
+      if (actionType === 'create') {
+        await nloService.createCompany(formData);
+        toast({
+          title: 'Company Created',
+          description: `${formData.name} has been created successfully.`,
+          variant: 'default',
+        });
+      } else if (actionType === 'edit' && selectedCompany) {
+        await nloService.updateCompany(selectedCompany.id, formData);
+        toast({
+          title: 'Company Updated',
+          description: `${formData.name} has been updated successfully.`,
+          variant: 'default',
+        });
       }
 
-      const uploadedUrl = cloudJson.secure_url || cloudJson.url;
-      setFormData({ ...formData, logoUrl: uploadedUrl });
-      toast({ title: 'Logo uploaded successfully', variant: 'success' });
-    } catch (error: any) {
-      console.error('Logo upload error:', error);
-      const errorMsg = error?.message || 'Failed to upload logo';
-      toast({ title: errorMsg, variant: 'destructive' });
-    } finally {
-      setUploadingLogo(false);
+      setDialogOpen(false);
+      fetchCompanies();
+    } catch (err) {
+      console.error(`Error ${actionType === 'create' ? 'creating' : 'updating'} company:`, err);
+      toast({
+        title: 'Error',
+        description: `Failed to ${actionType === 'create' ? 'create' : 'update'} company. Please try again.`,
+        variant: 'destructive',
+      });
     }
   };
 
-  const CompanyForm = ({ onSubmit, submitText }: { onSubmit: (e: React.FormEvent) => void; submitText: string }) => (
-    <form onSubmit={onSubmit} className="space-y-6">
-      {/* Company Information Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Building2 className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Information</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Company Name <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={formData.name}
-              onChange={(e) => updateFormData({ name: e.target.value })}
-              required
-              placeholder="Enter company name"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
-                required
-                placeholder="company@example.com"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Phone</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
-                placeholder="+1 (555) 000-0000"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Website</label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.website}
-                onChange={(e) => updateFormData({ website: e.target.value })}
-                placeholder="https://example.com"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Industry</label>
-            <Input
-              value={formData.industry}
-              onChange={(e) => updateFormData({ industry: e.target.value })}
-              placeholder="e.g., Technology, Finance"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Company Size</label>
-            <div className="relative">
-              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.companySize}
-                onChange={(e) => updateFormData({ companySize: e.target.value })}
-                placeholder="e.g., 50-100 employees"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Address</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.location}
-                onChange={(e) => updateFormData({ location: e.target.value })}
-                placeholder="123 Main St, City, Country"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+  const handleConfirmAction = async () => {
+    if (!selectedCompany) return;
 
-      {/* Logo Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Building2 className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Logo</h3>
-        </div>
-        <div className="space-y-3">
-          {formData.logoUrl && (
-            <div className="relative w-32 h-32 border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white">
-              <img src={formData.logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => updateFormData({ logoUrl: '' })}
-                className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-              >
-                <XIcon className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              disabled={uploadingLogo}
-              className="flex-1"
-            />
-            {uploadingLogo && (
-              <span className="text-sm text-blue-600 font-medium flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                Uploading...
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Or enter logo URL manually:</p>
-          <Input
-            value={formData.logoUrl}
-            onChange={(e) => updateFormData({ logoUrl: e.target.value })}
-            placeholder="https://example.com/logo.png"
-            className="w-full"
-          />
-        </div>
-      </div>
+    try {
+      if (actionType === 'activate') {
+        await nloService.activateCompany(selectedCompany.id);
+        toast({
+          title: 'Company Activated',
+          description: `${selectedCompany.name} has been activated.`,
+          variant: 'default',
+        });
+      } else if (actionType === 'deactivate') {
+        await nloService.deactivateCompany(selectedCompany.id);
+        toast({
+          title: 'Company Deactivated',
+          description: `${selectedCompany.name} has been deactivated.`,
+          variant: 'default',
+        });
+      }
 
-      {/* HR Contact Information Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Mail className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">HR Contact Information</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Name</label>
-            <Input
-              value={formData.hrName}
-              onChange={(e) => updateFormData({ hrName: e.target.value })}
-              placeholder="John Doe"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="email"
-                value={formData.hrEmail}
-                onChange={(e) => updateFormData({ hrEmail: e.target.value })}
-                placeholder="hr@company.com"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">HR Phone</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                value={formData.hrPhone}
-                onChange={(e) => updateFormData({ hrPhone: e.target.value })}
-                placeholder="+1 (555) 000-0000"
-                className="pl-10 w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      setConfirmDialogOpen(false);
+      fetchCompanies();
+    } catch (err) {
+      console.error(`Error ${actionType} company:`, err);
+      toast({
+        title: 'Error',
+        description: `Failed to ${actionType} company. Please try again.`,
+        variant: 'destructive',
+      });
+    }
+  };
 
-      {/* Description Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <FileText className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Company Description</h3>
-        </div>
-        <textarea
-          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white resize-none"
-          rows={4}
-          value={formData.description}
-          onChange={(e) => updateFormData({ description: e.target.value })}
-          placeholder="Tell us about your company..."
-        />
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => {
-            setIsCreateDialogOpen(false);
-            setIsEditDialogOpen(false);
-            resetForm();
-          }}
-          className="px-6"
-        >
-          Cancel
-        </Button>
-        <Button type="submit" className="px-6 bg-blue-600 hover:bg-blue-700">
-          {submitText}
-        </Button>
-      </div>
-    </form>
-  );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const activeCompanies = companies.filter(c => c.active);
+  const inactiveCompanies = companies.filter(c => !c.active);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -461,9 +262,8 @@ const CompanyManagementPage: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold">Company Management</h1>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Company
+          <Button onClick={handleCreateClick} className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" /> Create New Company
           </Button>
         </div>
 
@@ -478,7 +278,7 @@ const CompanyManagementPage: React.FC = () => {
             }`}
           >
             <CheckCircle className="inline-block mr-2 h-4 w-4" />
-            Active Companies
+            Active Companies ({activeCompanies.length})
           </button>
           <button
             onClick={() => setActiveTab('inactive')}
@@ -488,8 +288,8 @@ const CompanyManagementPage: React.FC = () => {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            <XIcon className="inline-block mr-2 h-4 w-4" />
-            Inactive Companies
+            <X className="inline-block mr-2 h-4 w-4" />
+            Inactive Companies ({inactiveCompanies.length})
           </button>
         </div>
 
@@ -499,7 +299,7 @@ const CompanyManagementPage: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by company name, email, location, industry..."
+              placeholder="Search by company name, location, industry..."
               className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -507,19 +307,29 @@ const CompanyManagementPage: React.FC = () => {
           </div>
         </div>
 
-        {loading && <p className="text-center text-gray-400 py-12">Loading companies...</p>}
+        {error && (
+          <div className="mb-4 rounded-md border border-red-500/50 bg-red-500/10 p-3 text-red-400">
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        )}
 
         {!loading && companies.length === 0 && (
           <div className="text-center py-12">
             <Building2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">You haven't added any companies yet.</p>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
-              <Plus className="mr-2 h-4 w-4" /> Add Your First Company
+            <p className="text-gray-400 text-lg">No companies found.</p>
+            <Button onClick={handleCreateClick} className="mt-4 bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" /> Create Your First Company
             </Button>
           </div>
         )}
 
-        {companies.length > 0 && filteredCompanies.length === 0 && (
+        {!loading && companies.length > 0 && filteredCompanies.length === 0 && (
           <div className="text-center py-12">
             <Search className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">
@@ -540,7 +350,7 @@ const CompanyManagementPage: React.FC = () => {
         )}
 
         {/* Companies Grid */}
-        {companies.length > 0 && filteredCompanies.length > 0 && (
+        {!loading && filteredCompanies.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredCompanies.map((company) => {
               const companyInitials = company.name.substring(0, 2).toUpperCase();
@@ -553,7 +363,17 @@ const CompanyManagementPage: React.FC = () => {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {/* Company Logo/Avatar */}
                         {company.logoUrl ? (
-                          <img src={company.logoUrl} alt={company.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                          <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-800 border border-gray-700 flex-shrink-0">
+                            <img
+                              src={company.logoUrl}
+                              alt={company.name}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).parentElement!.innerHTML = `<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">${companyInitials}</div>`;
+                              }}
+                            />
+                          </div>
                         ) : (
                           <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                             {companyInitials}
@@ -573,13 +393,13 @@ const CompanyManagementPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      {/* Action Icons */}
+                      {/* Action Icon */}
                       <div className="flex gap-2 flex-shrink-0">
                         <button 
+                          onClick={(e) => handleEditClick(company, e)}
                           className="p-1.5 hover:bg-gray-800 rounded transition-colors"
-                          onClick={() => openEditDialog(company)}
                         >
-                          <Edit3 className="h-4 w-4 text-gray-400 hover:text-white" />
+                          <Edit className="h-4 w-4 text-gray-400 hover:text-white" />
                         </button>
                       </div>
                     </div>
@@ -607,10 +427,11 @@ const CompanyManagementPage: React.FC = () => {
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       {company.website && (
-                        <a 
-                          href={company.website} 
-                          target="_blank" 
+                        <a
+                          href={company.website}
+                          target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 rounded text-xs text-gray-300 hover:bg-gray-700 transition-colors"
                         >
                           <Globe className="h-3 w-3" />
@@ -623,6 +444,12 @@ const CompanyManagementPage: React.FC = () => {
                           <span>{company.companySize}</span>
                         </div>
                       )}
+                      {company.industry && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 rounded text-xs text-gray-300">
+                          <Briefcase className="h-3 w-3" />
+                          <span>{company.industry}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Description */}
@@ -630,36 +457,23 @@ const CompanyManagementPage: React.FC = () => {
                       {company.description || 'No description available.'}
                     </p>
 
-                    {/* HR Contact - Compact */}
-                    {(company.hrName || company.hrEmail) && (
-                      <div className="border-t border-gray-800 pt-3 mb-4">
-                        <h5 className="text-xs font-medium text-gray-500 mb-1">HR Contact</h5>
-                        {company.hrName && (
-                          <p className="text-sm text-gray-400">{company.hrName}</p>
-                        )}
-                        {company.hrEmail && (
-                          <p className="text-xs text-gray-500">{company.hrEmail}</p>
-                        )}
-                      </div>
-                    )}
-
                     {/* Footer Actions */}
                     <div className="flex gap-2 pt-4 border-t border-gray-800">
                       {company.active ? (
                         <Button 
                           variant="destructive" 
                           size="sm" 
-                          onClick={() => handleToggleStatus(company)} 
+                          onClick={(e) => handleDeactivateClick(company, e)}
                           disabled={loading}
                           className="w-full bg-red-600 hover:bg-red-700"
                         >
-                          <XIcon className="mr-1.5 h-3.5 w-3.5" /> Deactivate
+                          <XCircle className="mr-1.5 h-3.5 w-3.5" /> Deactivate
                         </Button>
                       ) : (
                         <Button 
                           variant="default" 
                           size="sm" 
-                          onClick={() => handleToggleStatus(company)} 
+                          onClick={(e) => handleActivateClick(company, e)}
                           disabled={loading}
                           className="w-full bg-green-600 hover:bg-green-700"
                         >
@@ -675,62 +489,242 @@ const CompanyManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Create Company Modal */}
-      {isCreateDialogOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Company</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsCreateDialogOpen(false);
-                  resetForm();
-                }}
-                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <XIcon className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <CompanyForm onSubmit={handleCreateCompany} submitText="Create Company" />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create/Edit Company Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {actionType === 'create' ? 'Create New Company' : 'Edit Company'}
+            </DialogTitle>
+          </DialogHeader>
 
-      {/* Edit Company Modal */}
-      {isEditDialogOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Company</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingCompany(null);
-                  resetForm();
-                }}
-                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <XIcon className="h-5 w-5" />
-              </Button>
+          <div className="space-y-4">
+            {/* Basic Information */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-300">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="name" className="text-gray-300">Company Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter company name"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                  {formErrors.name && <p className="text-sm text-red-400">{formErrors.name}</p>}
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="description" className="text-gray-300">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter company description"
+                    rows={3}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="industry" className="text-gray-300">Industry</Label>
+                  <Input
+                    id="industry"
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    placeholder="e.g., Technology, Finance"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companySize" className="text-gray-300">Company Size</Label>
+                  <Select
+                    value={formData.companySize}
+                    onValueChange={(value) => setFormData({ ...formData, companySize: value })}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectItem value="1-10">1-10 employees</SelectItem>
+                      <SelectItem value="11-50">11-50 employees</SelectItem>
+                      <SelectItem value="51-200">51-200 employees</SelectItem>
+                      <SelectItem value="201-500">201-500 employees</SelectItem>
+                      <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                      <SelectItem value="1000+">1000+ employees</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-            
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <CompanyForm onSubmit={handleEditCompany} submitText="Update Company" />
+
+            {/* Contact Information */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-300">Contact Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email" className="text-gray-300">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="company@example.com"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                  {formErrors.email && <p className="text-sm text-red-400">{formErrors.email}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="text-gray-300">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+1 234 567 8900"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="website" className="text-gray-300">Website</Label>
+                  <Input
+                    id="website"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    placeholder="https://example.com"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location" className="text-gray-300">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="City, Country"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* HR Contact */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-300">HR Contact (Optional)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="hrName" className="text-gray-300">HR Name</Label>
+                  <Input
+                    id="hrName"
+                    value={formData.hrName}
+                    onChange={(e) => setFormData({ ...formData, hrName: e.target.value })}
+                    placeholder="HR Manager Name"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hrEmail" className="text-gray-300">HR Email</Label>
+                  <Input
+                    id="hrEmail"
+                    type="email"
+                    value={formData.hrEmail}
+                    onChange={(e) => setFormData({ ...formData, hrEmail: e.target.value })}
+                    placeholder="hr@example.com"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                  {formErrors.hrEmail && <p className="text-sm text-red-400">{formErrors.hrEmail}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="hrPhone" className="text-gray-300">HR Phone</Label>
+                  <Input
+                    id="hrPhone"
+                    value={formData.hrPhone}
+                    onChange={(e) => setFormData({ ...formData, hrPhone: e.target.value })}
+                    placeholder="+1 234 567 8900"
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Logo URL */}
+            <div className="space-y-2">
+              <Label htmlFor="logoUrl" className="text-gray-300">Logo URL</Label>
+              <Input
+                id="logoUrl"
+                value={formData.logoUrl}
+                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                placeholder="https://example.com/logo.png"
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+              {formData.logoUrl && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-400 mb-2">Logo Preview:</p>
+                  <div className="h-16 w-16 rounded-lg overflow-hidden border border-gray-700 bg-gray-800 flex items-center justify-center">
+                    <img
+                      src={formData.logoUrl}
+                      alt="Logo preview"
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-gray-700 hover:bg-gray-800">
+              Cancel
+            </Button>
+            <Button onClick={handleFormSubmit} className="bg-blue-600 hover:bg-blue-700">
+              {actionType === 'create' ? 'Create Company' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Action Dialog */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-800 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {actionType === 'activate' ? 'Activate Company' : 'Deactivate Company'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedCompany && (
+            <>
+              <p className="text-base text-gray-300">
+                {actionType === 'activate'
+                  ? `Are you sure you want to activate ${selectedCompany.name}?`
+                  : `Are you sure you want to deactivate ${selectedCompany.name}?`}
+              </p>
+              <p className="text-sm text-gray-400">
+                {actionType === 'activate'
+                  ? 'This will make the company available for job postings.'
+                  : 'This will hide the company from job posting selections.'}
+              </p>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setConfirmDialogOpen(false)}
+              className="border-gray-700 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAction}
+              className={actionType === 'activate' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {actionType === 'activate' ? 'Activate' : 'Deactivate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

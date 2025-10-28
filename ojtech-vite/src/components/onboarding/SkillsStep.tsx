@@ -1,5 +1,6 @@
 import React, { Component, ChangeEvent } from 'react';
 import localStorageManager from '../../lib/utils/localStorageManager';
+import { toast } from '../ui/toast-utils';
 
 interface SkillsStepProps {
   skillsInput: string;
@@ -85,6 +86,12 @@ export default class SkillsStep extends Component<SkillsStepProps, SkillsStepSta
       // Save skills to localStorage
       localStorageManager.saveStepData('skills', this.props.skills);
       this.props.onNext();
+    } else {
+      toast.toast({
+        title: 'Missing Required Fields',
+        description: 'Please add at least one skill before continuing.',
+        variant: 'destructive'
+      });
     }
   };
   

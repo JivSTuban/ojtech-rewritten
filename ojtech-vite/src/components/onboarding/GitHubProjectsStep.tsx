@@ -242,7 +242,7 @@ export default class GitHubProjectsStep extends Component<GitHubProjectsStepProp
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-3">
               <label htmlFor="github-url" className="block text-sm font-medium text-gray-300">
-                Project URL <span className="text-gray-400">*</span>
+                Project URL
               </label>
             </div>
                 <div className="relative flex-1">

@@ -36,7 +36,9 @@ interface JobWithMatchScore extends Job {
   match_score: number | null;
   company_logo_url: string | null;
   viewed: boolean;
+  alreadyApplied?: boolean; // Add flag to track if email was sent
   original_id?: string; // Add original job ID for API calls
+  match_id?: string | null; // Add match ID for marking as viewed
 }
 
 // Define the toast interface (simplified for now)
@@ -186,11 +188,13 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         
         // Map API response to our JobWithMatchScore interface
         const matchedJobs: JobWithMatchScore[] = matchedJobsData
-          .filter(match => !match.viewed) // Filter out viewed jobs
           .filter(match => {
-            // Filter out jobs that user has already applied to
-            const jobId = match.job?.id;
-            return jobId && !this.state.appliedJobIds.has(jobId);
+            // Filter out jobs where email was already sent (alreadyApplied = true)
+            return !match.alreadyApplied;
+          })
+          .filter(match => {
+            // Filter out deactivated jobs
+            return match.job?.active !== false;
           })
           .map((match: any) => {
             // Handle the nested structure from the API response
@@ -208,6 +212,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             return {
               id: jobId,
               original_id: originalJobId, // Store the original job ID
+              match_id: match.id, // Store the match ID for marking as viewed
               employer_id: employer.id || '',
               title: job.title || 'Untitled Position',
               description: job.description || null,
@@ -224,9 +229,10 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               created_at: job.postedAt || new Date().toISOString(),
               updated_at: null,
               status: "active",
-              is_active: true,
+              is_active: job.active !== false, // Use actual active status from API
               match_score: match.matchScore,
-              viewed: match.viewed
+              viewed: match.viewed,
+              alreadyApplied: match.alreadyApplied || false
             };
           });
         
@@ -277,6 +283,10 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             const jobId = job.id;
             return jobId && !this.state.appliedJobIds.has(jobId);
           })
+          .filter(job => {
+            // Filter out deactivated jobs
+            return job.active !== false;
+          })
           .map((job: any) => {
           const employer = job.employer || {};
           const jobId = job.id;
@@ -284,6 +294,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           return {
             id: jobId,
             original_id: jobId, // Store the original job ID
+            match_id: null, // No match ID for simple find jobs
             employer_id: employer.id || '',
             title: job.title || 'Untitled Position',
             description: job.description || null,
@@ -337,37 +348,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     }
   };
   
-  // Apply for a job using the API
-  applyForJob = async (jobId: string) => {
+  // Prepare email draft WITHOUT creating application first
+  prepareEmailDraft = async (job: JobWithMatchScore) => {
     try {
-      // Find the job in our state to get the original ID if available
-      const job = this.state.jobs.find(j => j.id === jobId);
-      const apiJobId = job?.original_id || jobId;
+      // We'll prepare the email draft directly without application ID
+      // The application will be created when email is sent
+      const jobId = job.original_id || job.id;
+      const emailDraft = await jobApplicationService.prepareEmailDraftForJob(jobId);
       
-      // This uses the endpoint /api/applications/apply/{jobID} as defined in jobApplicationService
-      const response = await jobApplicationService.applyForJob(apiJobId, {});
-      console.log("Job application submitted successfully:", response);
-      
-      // Add the job ID to applied jobs set to prevent showing it again
-      this.setState(prevState => ({
-        appliedJobIds: new Set([...prevState.appliedJobIds, apiJobId])
-      }));
-      
-      return { success: true, data: response };
-    } catch (error) {
-      console.error("Error applying for job:", error);
-      return { success: false, error: "Failed to apply for job" };
-    }
-  };
-  
-  // Open email modal with draft
-  openEmailModal = async (applicationId: string, job: JobWithMatchScore) => {
-    try {
-      const emailDraft = await jobApplicationService.prepareApplicationEmail(applicationId);
       this.setState({
         emailModalOpen: true,
         emailDraft,
-        pendingApplicationId: applicationId,
+        pendingApplicationId: null, // No application ID yet
         currentJobForEmail: job
       });
     } catch (error) {
@@ -380,20 +372,29 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     }
   };
   
-  // Send application email
+  // Send application email - creates application AND sends email
   sendApplicationEmail = async (emailBody: string, subject: string, attachments?: File[]) => {
-    const { pendingApplicationId } = this.state;
-    if (!pendingApplicationId) return;
+    const { currentJobForEmail } = this.state;
+    if (!currentJobForEmail) return;
     
     try {
-      const result = await jobApplicationService.sendApplicationEmail(
-        pendingApplicationId, 
+      const jobId = currentJobForEmail.original_id || currentJobForEmail.id;
+      
+      // Create application AND send email in one call
+      const result = await jobApplicationService.applyAndSendEmail(
+        jobId,
         {
           subject,
           emailBody
         },
         attachments
       );
+      
+      // Email sent successfully - add the job to applied jobs set
+      this.setState(prevState => ({
+        appliedJobIds: new Set([...prevState.appliedJobIds, jobId])
+      }));
+      console.log(`Added job ${jobId} to applied jobs after successful email send`);
       
       this.toast({
         title: "Email Sent Successfully!",
@@ -440,24 +441,24 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       if (direction !== 'left' && direction !== 'right') return;
       
       console.log(`Swiped ${direction} on ${job.title}`);
-      this.setState(prevState => ({ 
-        currentIndex: index - 1,
-        lastRemovedJob: { job: job as JobWithMatchScore, direction: direction as 'left' | 'right' }
-      }));
       
       if (direction === 'right') {
-        const result = await this.applyForJob(job.id);
-        if (result.success && result.data) {
-          // Show email modal after successful application
-          await this.openEmailModal(result.data.id, job as JobWithMatchScore);
-        } else {
-          this.toast({
-            title: "Application Failed",
-            description: result.error || "Failed to apply for job",
-            variant: "destructive"
-          });
-        }
+        // Update UI state immediately
+        this.setState(prevState => ({ 
+          currentIndex: index - 1,
+          lastRemovedJob: { job: job as JobWithMatchScore, direction: 'right' },
+          currentJobForEmail: job as JobWithMatchScore
+        }));
+        
+        // Just prepare and show email modal - don't create application yet
+        await this.prepareEmailDraft(job as JobWithMatchScore);
       } else {
+        // Decline - update state immediately
+        this.setState(prevState => ({ 
+          currentIndex: index - 1,
+          lastRemovedJob: { job: job as JobWithMatchScore, direction: 'left' }
+        }));
+        
         const result = await this.declineJob(job.id);
         if (result.success) {
           this.toast({

@@ -112,7 +112,7 @@ export class GitHubCallbackPage extends Component<{}, GitHubCallbackPageState> {
       } else if (user.roles?.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
         this.setState({
           isProcessing: false,
-          redirectTo: '/employer/jobs',
+          redirectTo: '/nlo/jobs',
         });
       } else {
         this.setState({

@@ -28,6 +28,7 @@ interface JobDetails {
   maxSalary?: number;
   currency?: string;
   postedAt: string;
+  active: boolean;
   employer: JobEmployer;
 }
 
@@ -38,6 +39,7 @@ interface JobMatch {
   matchedAt: string;
   matchDetails?: string;
   viewed: boolean;
+  alreadyApplied?: boolean; // New field to track if email was sent
 }
 
 // Get all applications for the logged-in student
@@ -119,18 +121,18 @@ interface CV {
 
 const getEmployerCVDetails = async (cvId: string): Promise<CV> => {
   console.log("jobApplicationService.getEmployerCVDetails called with cvId:", cvId);
-  const response = await apiClient.get(`/api/cvs/employer/view/${cvId}`);
+  const response = await apiClient.get(`/cvs/employer/view/${cvId}`);
   return response.data;
 };
 
 const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }> => {
-  const response = await apiClient.put(`/api/student/job-matches/${matchId}/viewed`);
+  const response = await apiClient.put(`/job-matches/${matchId}/viewed`);
   return response.data;
 };
 
 // Find jobs using simple search endpoint
 const findJobs = async (): Promise<JobDetails[]> => {
-  const response = await apiClient.get('/simple-findjobs');
+  const response = await apiClient.get('/findjobs');
   return response.data;
 };
 
@@ -182,6 +184,42 @@ const sendApplicationEmail = async (
   return response.data;
 };
 
+// Prepare email draft for a job WITHOUT creating application first
+const prepareEmailDraftForJob = async (jobId: string): Promise<EmailDraft> => {
+  // This will use a new endpoint that prepares email draft without requiring application ID
+  const response = await apiClient.get(`/jobs/${jobId}/prepare-email-draft`);
+  return response.data;
+};
+
+// Apply for job AND send email in one atomic operation
+const applyAndSendEmail = async (
+  jobId: string,
+  emailData: {
+    subject: string;
+    emailBody: string;
+  },
+  attachments?: File[]
+): Promise<{ success: boolean; message: string; emailsSentToday: number; emailsRemaining: number }> => {
+  const formData = new FormData();
+  formData.append('subject', emailData.subject);
+  formData.append('emailBody', emailData.emailBody);
+  
+  // Add file attachments if any
+  if (attachments && attachments.length > 0) {
+    attachments.forEach((file) => {
+      formData.append('attachments', file);
+    });
+  }
+  
+  // This endpoint will create the application AND send email atomically
+  const response = await apiClient.post(`${API_URL}/apply-and-send/${jobId}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
 const jobApplicationService = {
   getStudentApplications,
   getJobApplications,
@@ -196,6 +234,8 @@ const jobApplicationService = {
   getApplicationDetails,
   prepareApplicationEmail,
   sendApplicationEmail,
+  prepareEmailDraftForJob,
+  applyAndSendEmail,
 };
 
 export default jobApplicationService;

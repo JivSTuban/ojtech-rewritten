@@ -30,112 +30,144 @@ interface CompanyInfoFormProps {
 }
 
 interface CompanyInfoFormState {
-  formData: FormValues;
-  errors: Partial<Record<keyof FormValues, string>>;
-  touched: Partial<Record<keyof FormValues, boolean>>;
+  companyName: string;
+  companyWebsite: string;
+  companySize: string;
+  industry: string;
+  companyDescription: string;
+  errors: {
+    companyWebsite?: string;
+    companySize?: string;
+    industry?: string;
+    companyDescription?: string;
+  };
+  touched: {
+    companyWebsite?: boolean;
+    companySize?: boolean;
+    industry?: boolean;
+    companyDescription?: boolean;
+  };
 }
 
 export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfoFormState> {
   constructor(props: CompanyInfoFormProps) {
     super(props);
     this.state = {
-      formData: {
-        companyName: props.initialData?.companyName || '',
-        companyWebsite: props.initialData?.companyWebsite || '',
-        companySize: props.initialData?.companySize || '',
-        industry: props.initialData?.industry || '',
-        companyDescription: props.initialData?.companyDescription || ''
-      },
+      companyName: props.initialData?.companyName || '',
+      companyWebsite: props.initialData?.companyWebsite || '',
+      companySize: props.initialData?.companySize || '',
+      industry: props.initialData?.industry || '',
+      companyDescription: props.initialData?.companyDescription || '',
       errors: {},
       touched: {}
     };
   }
 
-  handleChange = (name: keyof FormValues, value: string) => {
-    this.setState(prevState => ({
-      formData: {
-        ...prevState.formData,
-        [name]: value
-      },
-      touched: {
-        ...prevState.touched,
-        [name]: true
-      }
-    }), () => this.validateField(name));
-  };
-
-  handleSelectChange = (name: keyof FormValues, value: string) => {
-    this.handleChange(name, value);
-  };
-
-  validateField = (name: keyof FormValues) => {
-    const { formData } = this.state;
-    let error = '';
-
-    switch (name) {
-      case 'companyWebsite':
-        if (formData.companyWebsite && !formData.companyWebsite.match(/^(https?:\/\/)?(www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$/)) {
-          error = 'Please enter a valid URL';
-        }
-        break;
-      case 'companySize':
-        if (!formData.companySize) {
-          error = 'Please select a company size';
-        }
-        break;
-      case 'industry':
-        if (!formData.industry) {
-          error = 'Please enter an industry';
-        }
-        break;
-      case 'companyDescription':
-        if (!formData.companyDescription) {
-          error = 'Please provide a company description';
-        } else if (formData.companyDescription.length < 50) {
-          error = 'Description must be at least 50 characters';
-        }
-        break;
-      default:
-        break;
+  validateWebsite = (value: string): string => {
+    if (value && !value.match(/^(https?:\/\/)?(www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$/)) {
+      return 'Please enter a valid URL';
     }
-
-    this.setState(prevState => ({
-      errors: {
-        ...prevState.errors,
-        [name]: error
-      }
-    }));
-
-    return error === '';
+    return '';
   };
 
-  validateForm = () => {
-    const fields: Array<keyof FormValues> = ['companySize', 'industry', 'companyDescription'];
+  validateCompanySize = (value: string): string => {
+    if (!value) {
+      return 'Please select a company size';
+    }
+    return '';
+  };
+
+  validateIndustry = (value: string): string => {
+    if (!value) {
+      return 'Please enter an industry';
+    }
+    return '';
+  };
+
+  validateDescription = (value: string): string => {
+    if (!value) {
+      return 'Please provide a company description';
+    }
+    if (value.length < 50) {
+      return 'Description must be at least 50 characters';
+    }
+    return '';
+  };
+
+  handleWebsiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    this.setState({
+      companyWebsite: value,
+      touched: { ...this.state.touched, companyWebsite: true },
+      errors: { ...this.state.errors, companyWebsite: this.validateWebsite(value) }
+    });
+  };
+
+  handleCompanySizeChange = (value: string) => {
+    this.setState({
+      companySize: value,
+      touched: { ...this.state.touched, companySize: true },
+      errors: { ...this.state.errors, companySize: this.validateCompanySize(value) }
+    });
+  };
+
+  handleIndustryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    this.setState({
+      industry: value,
+      touched: { ...this.state.touched, industry: true },
+      errors: { ...this.state.errors, industry: this.validateIndustry(value) }
+    });
+  };
+
+  handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    this.setState({
+      companyDescription: value,
+      touched: { ...this.state.touched, companyDescription: true },
+      errors: { ...this.state.errors, companyDescription: this.validateDescription(value) }
+    });
+  };
+
+  validateForm = (): boolean => {
+    const { companySize, industry, companyDescription, companyWebsite } = this.state;
     
-    // Mark all fields as touched
-    const touched = fields.reduce((acc, field) => ({
-      ...acc,
-      [field]: true
-    }), {});
-    
-    this.setState({ touched });
-    
-    // Validate all fields
-    const isValid = fields.every(field => this.validateField(field));
-    
-    return isValid;
+    const errors = {
+      companyWebsite: this.validateWebsite(companyWebsite),
+      companySize: this.validateCompanySize(companySize),
+      industry: this.validateIndustry(industry),
+      companyDescription: this.validateDescription(companyDescription)
+    };
+
+    const touched = {
+      companyWebsite: true,
+      companySize: true,
+      industry: true,
+      companyDescription: true
+    };
+
+    this.setState({ errors, touched });
+
+    return !errors.companyWebsite && !errors.companySize && !errors.industry && !errors.companyDescription;
   };
 
   handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (this.validateForm()) {
-      this.props.onSubmit(this.state.formData);
+      const { companyName, companyWebsite, companySize, industry, companyDescription } = this.state;
+      this.props.onSubmit({
+        companyName,
+        companyWebsite,
+        companySize,
+        industry,
+        companyDescription
+      });
     }
   };
 
   render() {
-    const { formData, errors, touched } = this.state;
+    const { companyName, companyWebsite, companySize, industry, companyDescription, errors, touched } = this.state;
     const { isLoading } = this.props;
     
     return (
@@ -145,10 +177,10 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
           <p className="text-gray-500">Tell us about your company to help attract the right candidates</p>
         </div>
         
-        {formData.companyName && (
+        {companyName && (
           <div className="mb-6 pb-6 border-b">
             <h3 className="font-medium text-lg">Company Name</h3>
-            <p className="text-muted-foreground">{formData.companyName}</p>
+            <p className="text-muted-foreground">{companyName}</p>
           </div>
         )}
         
@@ -160,8 +192,8 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
                 <FormControl>
                   <Input 
                     placeholder="https://www.example.com" 
-                    value={formData.companyWebsite}
-                    onChange={e => this.handleChange('companyWebsite', e.target.value)}
+                    value={companyWebsite}
+                    onChange={this.handleWebsiteChange}
                   />
                 </FormControl>
                 <FormDescription>Optional but recommended</FormDescription>
@@ -176,8 +208,8 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
                 <FormItem>
                   <FormLabel>Company Size</FormLabel>
                   <Select 
-                    value={formData.companySize}
-                    onValueChange={value => this.handleSelectChange('companySize', value)}
+                    value={companySize}
+                    onValueChange={this.handleCompanySizeChange}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -204,8 +236,8 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
                   <FormControl>
                     <Input
                       placeholder="Enter industry"
-                      value={formData.industry}
-                      onChange={e => this.handleChange('industry', e.target.value)}
+                      value={industry}
+                      onChange={this.handleIndustryChange}
                     />
                   </FormControl>
                   {touched.industry && errors.industry && (
@@ -221,8 +253,8 @@ export class CompanyInfoForm extends Component<CompanyInfoFormProps, CompanyInfo
                 <FormControl>
                   <Textarea
                     placeholder="Tell us about your company, its mission, and what makes it unique..."
-                    value={formData.companyDescription}
-                    onChange={e => this.handleChange('companyDescription', e.target.value)}
+                    value={companyDescription}
+                    onChange={this.handleDescriptionChange}
                     rows={5}
                   />
                 </FormControl>

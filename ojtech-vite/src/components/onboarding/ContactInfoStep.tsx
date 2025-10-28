@@ -1,6 +1,7 @@
 import React, { Component, ChangeEvent } from 'react';
 import localStorageManager from '../../lib/utils/localStorageManager';
 import githubService from '../../lib/api/githubService';
+import { toast } from '../ui/toast-utils';
 
 interface StudentProfileData {
   phoneNumber?: string;
@@ -169,6 +170,12 @@ export default class ContactInfoStep extends Component<ContactInfoStepProps, Con
       });
       
       this.props.onNext();
+    } else {
+      toast.toast({
+        title: 'Invalid Phone Number',
+        description: this.state.phoneError || 'Please enter a valid Philippine phone number.',
+        variant: 'destructive'
+      });
     }
   };
 

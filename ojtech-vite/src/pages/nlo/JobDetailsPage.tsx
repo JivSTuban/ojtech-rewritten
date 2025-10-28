@@ -53,6 +53,20 @@ interface Job {
   closingDate?: string;
   skillsPreferred?: string;
   company?: Company;
+  // Flattened company fields from API response
+  companyId?: string;
+  companyName?: string;
+  companyWebsite?: string;
+  companyDescription?: string;
+  companyLocation?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyIndustry?: string;
+  companySize?: string;
+  companyLogoUrl?: string;
+  hrName?: string;
+  hrEmail?: string;
+  hrPhone?: string;
 }
 
 interface JobDetailsPageProps {
@@ -332,7 +346,7 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
               </CardContent>
             </Card>
 
-            {job.company && (
+            {(job.company || job.companyName) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -341,11 +355,11 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {job.company.logoUrl && (
+                  {(job.company?.logoUrl || job.companyLogoUrl) && (
                     <div className="flex justify-center mb-4">
                       <img 
-                        src={job.company.logoUrl} 
-                        alt={`${job.company.name} logo`}
+                        src={job.company?.logoUrl || job.companyLogoUrl} 
+                        alt={`${job.company?.name || job.companyName} logo`}
                         className="h-16 w-auto object-contain"
                       />
                     </div>
@@ -353,84 +367,117 @@ class JobDetailsPageClass extends Component<JobDetailsPageProps, JobDetailsPageS
                   
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Company Name</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{job.company.name}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{job.company?.name || job.companyName}</p>
                   </div>
 
-                  {job.company.industry && (
+                  {(job.company?.industry || job.companyIndustry) && (
                     <div>
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Industry</p>
-                      <p className="text-gray-900 dark:text-white">{job.company.industry}</p>
+                      <p className="text-gray-900 dark:text-white">{job.company?.industry || job.companyIndustry}</p>
                     </div>
                   )}
 
-                  {job.company.companySize && (
+                  {(job.company?.companySize || job.companySize) && (
                     <div>
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Company Size</p>
-                      <p className="text-gray-900 dark:text-white">{job.company.companySize}</p>
+                      <p className="text-gray-900 dark:text-white">{job.company?.companySize || job.companySize}</p>
                     </div>
                   )}
 
-                  {job.company.location && (
+                  {(job.company?.location || job.companyLocation) && (
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Location</p>
-                        <p className="text-gray-900 dark:text-white">{job.company.location}</p>
+                        <p className="text-gray-900 dark:text-white">{job.company?.location || job.companyLocation}</p>
                       </div>
                     </div>
                   )}
 
-                  {job.company.website && (
+                  {(job.company?.website || job.companyWebsite) && (
                     <div className="flex items-start gap-2">
                       <Globe className="h-4 w-4 text-gray-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Website</p>
                         <a 
-                          href={job.company.website} 
+                          href={job.company?.website || job.companyWebsite} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {job.company.website}
+                          {job.company?.website || job.companyWebsite}
                         </a>
                       </div>
                     </div>
                   )}
 
-                  {job.company.email && (
+                  {(job.company?.email || job.companyEmail) && (
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-gray-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</p>
                         <a 
-                          href={`mailto:${job.company.email}`}
+                          href={`mailto:${job.company?.email || job.companyEmail}`}
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {job.company.email}
+                          {job.company?.email || job.companyEmail}
                         </a>
                       </div>
                     </div>
                   )}
 
-                  {job.company.phone && (
+                  {(job.company?.phone || job.companyPhone) && (
                     <div className="flex items-start gap-2">
                       <Phone className="h-4 w-4 text-gray-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone</p>
                         <a 
-                          href={`tel:${job.company.phone}`}
+                          href={`tel:${job.company?.phone || job.companyPhone}`}
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {job.company.phone}
+                          {job.company?.phone || job.companyPhone}
                         </a>
                       </div>
                     </div>
                   )}
 
-                  {job.company.description && (
+                  {(job.company?.description || job.companyDescription) && (
                     <div>
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">About</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{job.company.description}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{job.company?.description || job.companyDescription}</p>
+                    </div>
+                  )}
+
+                  {(job.hrName || job.hrEmail || job.hrPhone) && (
+                    <div className="border-t pt-4 mt-4">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">HR Contact</p>
+                      {job.hrName && (
+                        <div className="mb-2">
+                          <p className="text-sm text-gray-900 dark:text-white font-medium">{job.hrName}</p>
+                        </div>
+                      )}
+                      {job.hrEmail && (
+                        <div className="flex items-start gap-2 mb-2">
+                          <Mail className="h-4 w-4 text-gray-500 mt-0.5" />
+                          <a 
+                            href={`mailto:${job.hrEmail}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                          >
+                            {job.hrEmail}
+                          </a>
+                        </div>
+                      )}
+                      {job.hrPhone && (
+                        <div className="flex items-start gap-2">
+                          <Phone className="h-4 w-4 text-gray-500 mt-0.5" />
+                          <a 
+                            href={`tel:${job.hrPhone}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                          >
+                            {job.hrPhone}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
