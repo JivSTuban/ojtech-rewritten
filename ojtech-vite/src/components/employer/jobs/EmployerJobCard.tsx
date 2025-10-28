@@ -83,7 +83,7 @@ export class EmployerJobCard extends Component<EmployerJobCardProps> {
                 )}
               </div>
               <div>
-                <Link to={`/employer/jobs/${job.id}`} className="text-lg font-medium hover:text-primary transition-colors">
+                <Link to={`/nlo/jobs/${job.id}`} className="text-lg font-medium hover:text-primary transition-colors">
                   {job.title}
                 </Link>
                 <p className="text-sm text-muted-foreground">{job.company}</p>

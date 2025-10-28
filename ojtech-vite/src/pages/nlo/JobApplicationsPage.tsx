@@ -1436,12 +1436,12 @@ export const JobApplicationsPage: React.FC = () => {
   // Handle case when jobId is undefined (should not happen with proper routing)
   if (!jobId) {
     console.log("JobApplicationsPage - No jobId, redirecting to jobs list");
-    return <Navigate to="/employer/jobs" />;
+    return <Navigate to="/nlo/jobs" />;
   }
   
   // Handle navigation back to jobs list
   const handleBackToJobs = () => {
-    navigate('/employer/jobs');
+    navigate('/nlo/jobs');
   };
   
   return <JobApplicationsPageClass jobId={jobId} onBackToJobs={handleBackToJobs} />;

@@ -208,7 +208,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
           skillsPreferred: job.skillsPreferred || [],
           closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '',
           active: job.active === undefined ? true : job.active,
-          companyId: job.company?.id || undefined,
+          companyId: job.companyId || job.company?.id || undefined,
         },
         requiredSkillInput: '',
         preferredSkillInput: ''
@@ -533,6 +533,34 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     Associate this job with a company profile created by NLO staff
                   </p>
                 </div>
+
+                {/* Company Information Display */}
+                {selectedCompany && (
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-white">Selected Company Details</h3>
+                      {selectedCompany.logoUrl && (
+                        <img 
+                          src={selectedCompany.logoUrl} 
+                          alt={`${selectedCompany.name} logo`}
+                          className="h-8 w-auto object-contain"
+                        />
+                      )}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <p className="text-gray-400">Company Name</p>
+                        <p className="text-white font-medium">{selectedCompany.name}</p>
+                      </div>
+                      {selectedCompany.location && (
+                        <div>
+                          <p className="text-gray-400">Location</p>
+                          <p className="text-white">{selectedCompany.location}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Job Location */}
                 <div className="space-y-3">

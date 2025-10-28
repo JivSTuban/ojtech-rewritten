@@ -336,7 +336,7 @@ export class RegisterPage extends Component<{}, RegisterPageState> {
         if (user.roles?.includes('ROLE_STUDENT')) {
           this.setState({ redirectTo: '/applications' });
         } else if (user.roles?.includes('ROLE_NLO')) {
-          this.setState({ redirectTo: '/employer/jobs' });
+          this.setState({ redirectTo: '/nlo/jobs' });
         } else if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
         } else {

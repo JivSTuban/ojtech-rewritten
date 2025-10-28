@@ -180,7 +180,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
         if (user.roles?.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
         } else if (user.roles?.includes('ROLE_NLO')) {
-          this.setState({ redirectTo: '/employer/jobs' });
+          this.setState({ redirectTo: '/nlo/jobs' });
         } else if (user.roles?.includes('ROLE_STUDENT')) {
           this.setState({ redirectTo: '/applications' });
         } else {
@@ -230,68 +230,48 @@ export class LoginPage extends Component<{}, LoginPageState> {
   handleGoogleLogin = async (tokenId: string) => {
     if (!this.context || !this.context.googleLogin) {
       const errorMessage = 'Google authentication service is not available';
-      
       toast.destructive({
         title: "Authentication Error",
         description: errorMessage
       });
-      
-      this.setState({ 
-        error: errorMessage
-      });
+      this.setState({ error: errorMessage });
       return;
     }
     
     this.setState({ isGoogleLoading: true, error: null });
     
     try {
-      await this.context.googleLogin(tokenId);
+      const user = await this.context.googleLogin(tokenId);
       
-      // Show success toast
       toast.success({
         title: "Login Successful",
         description: "You have been successfully signed in with Google."
       });
       
-      // Check user role and determine where to redirect
-      if (this.context && this.context.user) {
-        const { user } = this.context;
-        
-        // Redirect based on user role and onboarding status
-        if (user.roles?.includes('ROLE_ADMIN')) {
+      if (user && user.roles) {
+        if (user.roles.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
-        } else if (user.roles?.includes('ROLE_NLO') && !user.hasCompletedOnboarding) {
+        } else if (user.roles.includes('ROLE_NLO') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/employer' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
+        } else if (user.roles.includes('ROLE_STUDENT') && !user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/onboarding/student' });
-        } else if (user.roles?.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
-          // Redirect students with completed onboarding to applications page
+        } else if (user.roles.includes('ROLE_STUDENT') && user.hasCompletedOnboarding) {
           this.setState({ redirectTo: '/applications' });
-        } else if (user.roles?.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
-          // Redirect employers with completed onboarding to jobs page
-          this.setState({ redirectTo: '/employer/jobs' });
+        } else if (user.roles.includes('ROLE_NLO') && user.hasCompletedOnboarding) {
+          this.setState({ redirectTo: '/nlo/jobs' });
         } else {
-          // Default fallback
           this.setState({ redirectTo: '/' });
         }
       } else {
-        // If context or user is not available after login, redirect to home
         this.setState({ redirectTo: '/' });
       }
     } catch (error: any) {
-      console.error('Google authentication error:', error);
-      
       const errorMessage = error.message || 'Google authentication failed. Please try again.';
-      
       toast.destructive({
         title: "Authentication Error",
         description: errorMessage
       });
-      
-      this.setState({ 
-        error: errorMessage,
-        isGoogleLoading: false
-      });
+      this.setState({ error: errorMessage, isGoogleLoading: false });
     }
   };
   

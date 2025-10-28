@@ -129,7 +129,7 @@ public class JobController {
         }
         
         // Default response (for employers or unauthenticated users)
-        return ResponseEntity.ok(job);
+        return ResponseEntity.ok(new JobResponseDTO(job));
     }
     
     @GetMapping("/employer")

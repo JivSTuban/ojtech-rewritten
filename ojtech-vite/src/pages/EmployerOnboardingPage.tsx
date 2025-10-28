@@ -128,12 +128,12 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     try {
       // Check if onboarding is already completed
       if (this.context.onboardingCompleted) {
-        console.log('Onboarding already completed, redirecting to employer dashboard');
+        console.log('Onboarding already completed, redirecting to nlo dashboard');
         this.setState({ isCompleted: true });
         
-        // Redirect to employer dashboard
+        // Redirect to nlo dashboard
         setTimeout(() => {
-          window.location.href = '/employer/jobs';
+          window.location.href = '/nlo/jobs';
         }, 500);
         return;
       }
@@ -147,7 +147,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
         if (response.data) {
           const profileData = response.data;
           
-          // If onboarding is already completed, redirect to employer dashboard
+          // If onboarding is already completed, redirect to nlo dashboard
           if (profileData.hasCompletedOnboarding) {
             this.setState({ isCompleted: true });
             
@@ -156,9 +156,9 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
               await this.context.updateOnboardingStatus(true);
             }
             
-            // Redirect to employer dashboard
+            // Redirect to nlo dashboard
             setTimeout(() => {
-              window.location.href = '/employer/jobs';
+              window.location.href = '/nlo/jobs';
             }, 500);
             return;
           }
@@ -523,7 +523,7 @@ export class EmployerOnboardingPage extends Component<{}, EmployerOnboardingPage
     }
     
     if (isCompleted) {
-      return <Navigate to="/employer/jobs" />;
+      return <Navigate to="/nlo/jobs" />;
     }
     
     const steps = [
