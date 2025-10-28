@@ -28,6 +28,7 @@ interface JobDetails {
   maxSalary?: number;
   currency?: string;
   postedAt: string;
+  active: boolean;
   employer: JobEmployer;
 }
 
@@ -119,18 +120,18 @@ interface CV {
 
 const getEmployerCVDetails = async (cvId: string): Promise<CV> => {
   console.log("jobApplicationService.getEmployerCVDetails called with cvId:", cvId);
-  const response = await apiClient.get(`/api/cvs/employer/view/${cvId}`);
+  const response = await apiClient.get(`/cvs/employer/view/${cvId}`);
   return response.data;
 };
 
 const markJobMatchViewed = async (matchId: string): Promise<{ success: boolean }> => {
-  const response = await apiClient.put(`/api/student/job-matches/${matchId}/viewed`);
+  const response = await apiClient.put(`/job-matches/${matchId}/viewed`);
   return response.data;
 };
 
 // Find jobs using simple search endpoint
 const findJobs = async (): Promise<JobDetails[]> => {
-  const response = await apiClient.get('/simple-findjobs');
+  const response = await apiClient.get('/findjobs');
   return response.data;
 };
 

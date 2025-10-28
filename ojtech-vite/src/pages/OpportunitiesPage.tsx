@@ -37,6 +37,7 @@ interface JobWithMatchScore extends Job {
   company_logo_url: string | null;
   viewed: boolean;
   original_id?: string; // Add original job ID for API calls
+  match_id?: string | null; // Add match ID for marking as viewed
 }
 
 // Define the toast interface (simplified for now)
@@ -192,6 +193,10 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             const jobId = match.job?.id;
             return jobId && !this.state.appliedJobIds.has(jobId);
           })
+          .filter(match => {
+            // Filter out deactivated jobs
+            return match.job?.active !== false;
+          })
           .map((match: any) => {
             // Handle the nested structure from the API response
             const job = match.job || {};
@@ -208,6 +213,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             return {
               id: jobId,
               original_id: originalJobId, // Store the original job ID
+              match_id: match.id, // Store the match ID for marking as viewed
               employer_id: employer.id || '',
               title: job.title || 'Untitled Position',
               description: job.description || null,
@@ -224,7 +230,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               created_at: job.postedAt || new Date().toISOString(),
               updated_at: null,
               status: "active",
-              is_active: true,
+              is_active: job.active !== false, // Use actual active status from API
               match_score: match.matchScore,
               viewed: match.viewed
             };
@@ -277,6 +283,10 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             const jobId = job.id;
             return jobId && !this.state.appliedJobIds.has(jobId);
           })
+          .filter(job => {
+            // Filter out deactivated jobs
+            return job.active !== false;
+          })
           .map((job: any) => {
           const employer = job.employer || {};
           const jobId = job.id;
@@ -284,6 +294,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
           return {
             id: jobId,
             original_id: jobId, // Store the original job ID
+            match_id: null, // No match ID for simple find jobs
             employer_id: employer.id || '',
             title: job.title || 'Untitled Position',
             description: job.description || null,
@@ -382,7 +393,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   
   // Send application email
   sendApplicationEmail = async (emailBody: string, subject: string, attachments?: File[]) => {
-    const { pendingApplicationId } = this.state;
+    const { pendingApplicationId, currentJobForEmail } = this.state;
     if (!pendingApplicationId) return;
     
     try {
@@ -394,6 +405,17 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         },
         attachments
       );
+      
+      // Mark job match as viewed after successful email send
+      if (currentJobForEmail?.match_id) {
+        try {
+          await jobApplicationService.markJobMatchViewed(currentJobForEmail.match_id);
+          console.log(`Marked job match ${currentJobForEmail.match_id} as viewed`);
+        } catch (viewError) {
+          console.error('Error marking job match as viewed:', viewError);
+          // Don't fail the whole operation if marking as viewed fails
+        }
+      }
       
       this.toast({
         title: "Email Sent Successfully!",

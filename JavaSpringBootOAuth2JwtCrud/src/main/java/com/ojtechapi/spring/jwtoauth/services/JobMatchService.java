@@ -253,7 +253,11 @@ public class JobMatchService {
     }
     
     public List<JobMatch> getStudentMatches(UUID studentId) {
-        return jobMatchRepository.findByStudentIdOrderByMatchScoreDesc(studentId);
+        List<JobMatch> allMatches = jobMatchRepository.findByStudentIdOrderByMatchScoreDesc(studentId);
+        // Filter to only return matches with 60% or above match score
+        return allMatches.stream()
+                .filter(match -> match.getMatchScore() != null && match.getMatchScore() >= 60.0)
+                .collect(java.util.stream.Collectors.toList());
     }
     
     /**

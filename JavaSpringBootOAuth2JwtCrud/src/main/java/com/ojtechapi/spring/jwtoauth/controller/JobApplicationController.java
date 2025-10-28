@@ -155,14 +155,13 @@ public class JobApplicationController {
         // Always generate a cover letter automatically
         String coverLetter = coverLetterService.generateCoverLetter(studentProfile.getId(), jobId, cvId);
 
-        // Create application with PENDING status (will be updated to APPLIED after email is sent)
+        // Create application with PENDING status (appliedAt and lastUpdatedAt will be set after email is sent)
         JobApplication application = new JobApplication();
         application.setStudent(studentProfile);
         application.setJob(job);
         application.setCv(cv);
         application.setCoverLetter(coverLetter);
-        application.setAppliedAt(LocalDateTime.now());
-        application.setLastUpdatedAt(LocalDateTime.now());
+        // Do not set appliedAt and lastUpdatedAt yet - they will be set when email is successfully sent
 
         application = jobApplicationRepository.save(application);
         
@@ -425,12 +424,14 @@ public class JobApplicationController {
             );
             
             // Email sent successfully - now update application status to APPLIED
+            LocalDateTime now = LocalDateTime.now();
             application.setEmailSent(true);
-            application.setEmailSentAt(LocalDateTime.now());
+            application.setEmailSentAt(now);
             application.setEmailBody(emailBody);
             application.setEmailSubject(subject);
             application.setStatus(ApplicationStatus.APPLIED); // Status only changes after successful email
-            application.setLastUpdatedAt(LocalDateTime.now());
+            application.setAppliedAt(now); // Set appliedAt when email is successfully sent
+            application.setLastUpdatedAt(now); // Set lastUpdatedAt when email is successfully sent
             jobApplicationRepository.save(application);
             
             // Increment email count
