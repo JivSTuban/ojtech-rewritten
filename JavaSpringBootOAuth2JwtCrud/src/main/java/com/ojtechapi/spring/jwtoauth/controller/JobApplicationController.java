@@ -30,10 +30,10 @@ import com.ojtechapi.spring.jwtoauth.dtos.responses.JobApplicationResponseDTO;
 import com.ojtechapi.spring.jwtoauth.dtos.responses.MessageResponse;
 import com.ojtechapi.spring.jwtoauth.entities.ApplicationStatus;
 import com.ojtechapi.spring.jwtoauth.entities.CV;
-import com.ojtechapi.spring.jwtoauth.entities.NLOProfile;
 import com.ojtechapi.spring.jwtoauth.entities.Job;
 import com.ojtechapi.spring.jwtoauth.entities.JobApplication;
 import com.ojtechapi.spring.jwtoauth.entities.JobMatch;
+import com.ojtechapi.spring.jwtoauth.entities.NLOProfile;
 import com.ojtechapi.spring.jwtoauth.entities.StudentEmailTracking;
 import com.ojtechapi.spring.jwtoauth.entities.StudentProfile;
 import com.ojtechapi.spring.jwtoauth.exceptions.BadRequestException;
@@ -161,7 +161,6 @@ public class JobApplicationController {
         application.setJob(job);
         application.setCv(cv);
         application.setCoverLetter(coverLetter);
-        application.setStatus(ApplicationStatus.PENDING);
         application.setAppliedAt(LocalDateTime.now());
         application.setLastUpdatedAt(LocalDateTime.now());
 
@@ -408,7 +407,7 @@ public class JobApplicationController {
         }
         
         try {
-            // Send email
+            // Send email - this must succeed before we update the application status
             emailService.sendJobApplicationEmail(
                 recipientEmail,
                 recipientName,
@@ -425,12 +424,13 @@ public class JobApplicationController {
                 attachments
             );
             
-            // Update application with email details and change status to APPLIED
+            // Email sent successfully - now update application status to APPLIED
             application.setEmailSent(true);
             application.setEmailSentAt(LocalDateTime.now());
             application.setEmailBody(emailBody);
             application.setEmailSubject(subject);
-            application.setStatus(ApplicationStatus.APPLIED);
+            application.setStatus(ApplicationStatus.APPLIED); // Status only changes after successful email
+            application.setLastUpdatedAt(LocalDateTime.now());
             jobApplicationRepository.save(application);
             
             // Increment email count
@@ -444,6 +444,7 @@ public class JobApplicationController {
                 "emailsRemaining", 10 - tracking.getEmailCount()
             ));
         } catch (Exception e) {
+            // Email failed - application remains in PENDING status
             throw new BadRequestException("Failed to send email: " + e.getMessage());
         }
     }

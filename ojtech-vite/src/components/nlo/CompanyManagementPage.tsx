@@ -215,7 +215,7 @@ const CompanyManagementPage: React.FC = () => {
       }
 
       const uploadedUrl = cloudJson.secure_url || cloudJson.url;
-      setFormData({ ...formData, logoUrl: uploadedUrl });
+      updateFormData({ logoUrl: uploadedUrl });
       toast({ title: 'Logo uploaded successfully', variant: 'success' });
     } catch (error: any) {
       console.error('Logo upload error:', error);

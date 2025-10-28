@@ -1,5 +1,6 @@
 import React, { Component, ChangeEvent } from 'react';
 import localStorageManager from '../../lib/utils/localStorageManager';
+import { toast } from '../ui/toast-utils';
 
 interface StudentProfileData {
   firstName?: string;
@@ -108,6 +109,12 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
       });
       
       this.props.onNext();
+    } else {
+      toast.toast({
+        title: 'Missing Required Fields',
+        description: 'Please fill in all required fields before continuing.',
+        variant: 'destructive'
+      });
     }
   };
 

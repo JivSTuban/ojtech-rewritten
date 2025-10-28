@@ -1,5 +1,6 @@
 import React, { Component, ChangeEvent } from 'react';
 import localStorageManager from '../../lib/utils/localStorageManager';
+import { toast } from '../ui/toast-utils';
 
 interface BioStepProps {
   bio: string | null | undefined;
@@ -39,6 +40,14 @@ export default class BioStep extends Component<BioStepProps> {
         localStorageManager.saveStepData('bio', this.props.bio);
       }
       this.props.onNext();
+    } else {
+      const currentLength = this.props.bio ? this.props.bio.length : 0;
+      const minLength = 50;
+      toast.toast({
+        title: 'Bio Too Short',
+        description: `Please write at least ${minLength - currentLength} more characters (minimum ${minLength} characters required).`,
+        variant: 'destructive'
+      });
     }
   };
 
