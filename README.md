@@ -5,8 +5,8 @@ A comprehensive On-the-Job Training (OJT) management platform built with **React
 ## 🎯 Project Overview
 
 OJTech is a three-role platform designed to streamline the OJT process:
-- **Students**: Browse opportunities, apply for jobs, manage profiles and generate AI-powered resumes
-- **NLO (Network Liaison Officer)**: Post job opportunities, review applications, manage company profiles
+- **Students**: Complete Onboarding process, Browse opportunities, apply for jobs with AI powered Cover Letter, manage profiles and generate AI-powered CV, View Application History
+- **NLO (Networking and Linkages Office)**: Post job opportunities, manage company profiles, Verify student profiles
 - **Admin**: Oversee platform operations, manage users, and monitor activities
 
 ---
