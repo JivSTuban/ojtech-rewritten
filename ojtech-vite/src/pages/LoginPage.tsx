@@ -25,11 +25,11 @@ interface LoginPageState {
 export class LoginPage extends Component<{}, LoginPageState> {
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
-  
+
   // GitHub OAuth Configuration
   private GITHUB_CLIENT_ID = 'Ov23li4gxkGK900aEkLs';
   private GITHUB_REDIRECT_URI = `${window.location.origin}/auth/github/callback`;
-  
+
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -42,29 +42,29 @@ export class LoginPage extends Component<{}, LoginPageState> {
       showPassword: false
     };
   }
-  
+
   componentDidMount() {
     // Check if already logged in
     if (this.context && this.context.user) {
       this.setState({ redirectTo: '/' });
     }
-    
+
     // Use stored email from registration
     const storedEmail = sessionStorage.getItem('registrationEmail');
-    
+
     if (storedEmail) {
       this.setState({ email: storedEmail });
     }
-    
+
     // Check if redirected from registration
     const urlParams = new URLSearchParams(window.location.search);
     const fromRegistration = urlParams.get('fromRegistration');
     if (fromRegistration === 'true') {
       const email = sessionStorage.getItem('registrationEmail');
-      const message = email 
+      const message = email
         ? `Registration successful! Please log in with your email "${email}" and password.`
         : 'Registration successful! Please log in with your credentials.';
-      
+
       // Show toast notification only
       toast.success({
         title: "Registration Successful",
@@ -72,34 +72,34 @@ export class LoginPage extends Component<{}, LoginPageState> {
       });
     }
   }
-  
+
   handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    this.setState({ 
-      ...this.state, 
+    this.setState({
+      ...this.state,
       [name]: value,
       error: null
     } as Pick<LoginPageState, keyof LoginPageState>);
   };
-  
+
   // Helper method to create initial profile if needed
   createInitialProfileIfNeeded = async () => {
     try {
       // Check if we have stored full name from registration
       const fullName = sessionStorage.getItem('registrationFullName');
-      
+
       if (fullName) {
         console.log('Creating initial profile with stored full name:', fullName);
-        
+
         try {
           // Try to create the initial profile
           await profileService.createInitialProfile(fullName);
           console.log('Successfully created initial profile');
-          
+
           // Clear stored registration data after successful profile creation
           sessionStorage.removeItem('registrationEmail');
           sessionStorage.removeItem('registrationFullName');
-          
+
           // Refresh user data to get updated profile information
           if (this.context && this.context.fetchUserProfile) {
             await this.context.fetchUserProfile();
@@ -114,12 +114,12 @@ export class LoginPage extends Component<{}, LoginPageState> {
       // Don't block the login flow if this fails
     }
   };
-  
+
   handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const { email, password } = this.state;
-    
+
     // Make sure the context is defined
     if (!this.context || !this.context.login) {
       toast.destructive({
@@ -129,38 +129,38 @@ export class LoginPage extends Component<{}, LoginPageState> {
       this.setState({ error: "Authentication service not available" });
       return;
     }
-    
+
     const { login } = this.context;
-    
+
     this.setState({ error: null, isLoading: true });
-    
+
     try {
       // Use the login method from AuthContext with email and password as separate parameters
       await login(email, password);
-      
+
       // Show success toast
       toast.success({
         title: "Login Successful",
         description: "You have been successfully logged in."
       });
-      
+
       // After successful login, try to create initial profile if needed
       await this.createInitialProfileIfNeeded();
-      
+
       // Check user role and determine where to redirect
       if (this.context && this.context.user) {
         const { user } = this.context;
-        
+
         console.log('Login redirect logic - User:', user);
         console.log('hasCompletedOnboarding:', user.hasCompletedOnboarding);
         console.log('needsOnboarding:', this.context.needsOnboarding);
-        
+
         // PRIORITY CHECK: Password reset requirement (highest priority)
         if (this.context.requiresPasswordReset) {
           this.setState({ redirectTo: '/change-password' });
           return;
         }
-        
+
         // SECOND PRIORITY: Onboarding requirement
         // Check BOTH needsOnboarding AND hasCompletedOnboarding to be safe
         if (this.context.needsOnboarding && user.hasCompletedOnboarding !== true) {
@@ -174,7 +174,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
           }
           return;
         }
-        
+
         // FINAL: Role-based redirect after onboarding is complete
         console.log('User has completed onboarding, redirecting to role-based page...');
         if (user.roles?.includes('ROLE_ADMIN')) {
@@ -192,34 +192,34 @@ export class LoginPage extends Component<{}, LoginPageState> {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       // Provide more helpful error message for 403 errors
       if (error.response?.status === 403) {
         const email = sessionStorage.getItem('registrationEmail');
-        const errorMessage = email 
-          ? `Invalid credentials. Please use your email "${email}" and password.` 
+        const errorMessage = email
+          ? `Invalid credentials. Please use your email "${email}" and password.`
           : "Invalid email or password. Please make sure you're using the email address you registered with.";
-        
+
         // Show toast notification
         toast.destructive({
           title: "Login Failed",
           description: errorMessage
         });
-        
-        this.setState({ 
+
+        this.setState({
           error: errorMessage,
           isLoading: false
         });
       } else {
         const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please try again.';
-        
+
         // Show toast notification
         toast.destructive({
           title: "Login Error",
           description: errorMessage
         });
-        
-        this.setState({ 
+
+        this.setState({
           error: errorMessage,
           isLoading: false
         });
@@ -237,17 +237,17 @@ export class LoginPage extends Component<{}, LoginPageState> {
       this.setState({ error: errorMessage });
       return;
     }
-    
+
     this.setState({ isGoogleLoading: true, error: null });
-    
+
     try {
       const user = await this.context.googleLogin(tokenId);
-      
+
       toast.success({
         title: "Login Successful",
         description: "You have been successfully signed in with Google."
       });
-      
+
       if (user && user.roles) {
         if (user.roles.includes('ROLE_ADMIN')) {
           this.setState({ redirectTo: '/admin/dashboard' });
@@ -274,7 +274,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
       this.setState({ error: errorMessage, isGoogleLoading: false });
     }
   };
-  
+
   togglePasswordVisibility = () => {
     this.setState(prevState => ({
       showPassword: !prevState.showPassword
@@ -284,18 +284,18 @@ export class LoginPage extends Component<{}, LoginPageState> {
   handleGitHubLogin = () => {
     // Construct GitHub OAuth URL
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${this.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(this.GITHUB_REDIRECT_URI)}&scope=user:email`;
-    
+
     // Redirect to GitHub for authorization
     window.location.href = githubAuthUrl;
   };
-  
+
   render() {
     const { email, password, error, isLoading, isGoogleLoading, redirectTo, showPassword } = this.state;
-    
+
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
     }
-    
+
     return (
       <AuthLayout>
         <Card className="w-full p-6 space-y-6">
@@ -303,7 +303,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
             <h1 className="text-2xl font-bold">Welcome back</h1>
             <p className="text-muted-foreground">Sign in to your account</p>
           </div>
-          
+
           <form onSubmit={this.handleSubmit} className="space-y-4">
             <div className="space-y-4">
               <div>
@@ -319,9 +319,12 @@ export class LoginPage extends Component<{}, LoginPageState> {
                   placeholder="Enter your email address"
                 />
               </div>
-              
+
               <div>
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
@@ -343,16 +346,22 @@ export class LoginPage extends Component<{}, LoginPageState> {
                       <Eye className="h-4 w-4" />
                     )}
                   </button>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
               </div>
             </div>
-            
+
             {error && (
               <div className="bg-red-50 text-red-500 p-3 rounded-md">
                 {error}
               </div>
             )}
-            
+
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -364,7 +373,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
               )}
             </Button>
           </form>
-          
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
@@ -375,7 +384,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
               </span>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="w-full">
               {isGoogleLoading ? (
@@ -405,8 +414,8 @@ export class LoginPage extends Component<{}, LoginPageState> {
                 />
               )}
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full flex items-center justify-center"
               onClick={this.handleGitHubLogin}
               type="button"
@@ -415,7 +424,7 @@ export class LoginPage extends Component<{}, LoginPageState> {
               GitHub
             </Button>
           </div>
-          
+
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link

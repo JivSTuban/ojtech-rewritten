@@ -238,9 +238,15 @@ export function generateResumeHtml(resumeData) {
 }
 
 /**
- * Get the professional title from experience data
+ * Get the professional title from contactInfo or experience data
  */
 function getTitle(data) {
+  // First check if professionalTitle is set in contactInfo
+  if (data.contactInfo?.professionalTitle) {
+    return data.contactInfo.professionalTitle;
+  }
+  
+  // Fall back to first experience title if available
   if (data.experience && data.experience.experiences && data.experience.experiences.length > 0) {
     return data.experience.experiences[0].title || 'Professional';
   }

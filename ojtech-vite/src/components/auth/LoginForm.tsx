@@ -25,33 +25,33 @@ export class LoginForm extends Component<{}, LoginFormState> {
 
   handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     const { email, password } = this.state;
-    
+
     if (!email || !password) {
       this.setState({ error: 'Please enter both email and password' });
       return;
     }
-    
+
     this.setState({ isLoading: true, error: null });
-    
+
     try {
       const { error } = await this.context.signIn(email, password);
-      
+
       if (error) {
-        this.setState({ 
-          error: error.message || 'Failed to sign in', 
-          isLoading: false 
+        this.setState({
+          error: error.message || 'Failed to sign in',
+          isLoading: false
         });
         return;
       }
-      
+
       // Successful login will be handled by the auth provider
     } catch (err) {
       console.error('Login error:', err);
-      this.setState({ 
-        error: 'An unexpected error occurred', 
-        isLoading: false 
+      this.setState({
+        error: 'An unexpected error occurred',
+        isLoading: false
       });
     }
   };
@@ -69,13 +69,13 @@ export class LoginForm extends Component<{}, LoginFormState> {
     return (
       <div className="w-full max-w-md mx-auto">
         <h2 className="text-2xl font-bold mb-6">Log In</h2>
-        
+
         {error && (
           <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4">
             {error}
           </div>
         )}
-        
+
         <form onSubmit={this.handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -91,7 +91,7 @@ export class LoginForm extends Component<{}, LoginFormState> {
               required
             />
           </div>
-          
+
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium mb-1">
               Password
@@ -106,7 +106,7 @@ export class LoginForm extends Component<{}, LoginFormState> {
               required
             />
           </div>
-          
+
           <Button
             type="submit"
             className="w-full"

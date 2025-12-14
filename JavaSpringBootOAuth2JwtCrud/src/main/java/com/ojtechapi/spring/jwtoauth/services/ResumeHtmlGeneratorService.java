@@ -26,7 +26,15 @@ public class ResumeHtmlGeneratorService {
         html.append("<head>");
         html.append("<meta charset=\"UTF-8\">");
         html.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-        html.append("<title>Resume</title>");
+        html.append("<meta name=\"description\" content=\"Professional Resume\">");
+        html.append("<title>Resume - ");
+        JsonNode contactInfo = data.has("contactInfo") ? data.get("contactInfo") : data.get("personalInfo");
+        if (contactInfo != null && contactInfo.has("name")) {
+            html.append(escapeHtml(contactInfo.get("name").asText()));
+        } else {
+            html.append("Professional Resume");
+        }
+        html.append("</title>");
         html.append(getStyles());
         html.append("</head>");
         html.append("<body>");
@@ -85,19 +93,21 @@ public class ResumeHtmlGeneratorService {
         html.append("<div>");
         
         if (contactInfo.has("email")) {
+            String email = contactInfo.get("email").asText();
             html.append("<p class=\"social-item\">");
             html.append("<svg class=\"social-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\">");
             html.append("<path d=\"M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z\"/>");
             html.append("</svg>");
-            html.append(escapeHtml(contactInfo.get("email").asText()));
+            html.append("<a href=\"mailto:").append(escapeHtml(email)).append("\" style=\"color: #333; text-decoration: none;\">").append(escapeHtml(email)).append("</a>");
             html.append("</p>");
         }
         if (contactInfo.has("phone") && !contactInfo.get("phone").asText().isEmpty()) {
+            String phone = contactInfo.get("phone").asText();
             html.append("<p class=\"social-item\">");
             html.append("<svg class=\"social-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\">");
             html.append("<path d=\"M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z\"/>");
             html.append("</svg>");
-            html.append(escapeHtml(contactInfo.get("phone").asText()));
+            html.append("<a href=\"tel:").append(escapeHtml(phone.replaceAll("[^0-9+]", ""))).append("\" style=\"color: #333; text-decoration: none;\">").append(escapeHtml(phone)).append("</a>");
             html.append("</p>");
         }
         if (contactInfo.has("location") && !contactInfo.get("location").asText().isEmpty()) {
@@ -117,11 +127,15 @@ public class ResumeHtmlGeneratorService {
             html.append("</p>");
         }
         if (contactInfo.has("github") && !contactInfo.get("github").asText().isEmpty()) {
+            String githubUrl = contactInfo.get("github").asText();
             html.append("<p class=\"social-item\">");
             html.append("<svg class=\"social-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\">");
             html.append("<path d=\"M12 .5C5.37.5 0 5.78 0 12.292c0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.335-1.725-1.335-1.725-1.087-.731.084-.716.084-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209.96-.262 1.98-.392 3-.398 1.02.006 2.04.136 3 .398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56C20.565 21.917 24 17.495 24 12.292 24 5.78 18.627.5 12 .5z\"/>");
             html.append("</svg>");
-            html.append(escapeHtml(contactInfo.get("github").asText()));
+            if (!githubUrl.startsWith("http")) {
+                githubUrl = "https://" + githubUrl;
+            }
+            html.append("<a href=\"").append(escapeHtml(githubUrl)).append("\" style=\"color: #333; text-decoration: none;\">").append(escapeHtml(contactInfo.get("github").asText())).append("</a>");
             html.append("</p>");
         }
         if (contactInfo.has("portfolio") && !contactInfo.get("portfolio").asText().isEmpty()) {
@@ -143,21 +157,90 @@ public class ResumeHtmlGeneratorService {
         if (!data.has("skills")) return "";
         
         JsonNode skills = data.get("skills");
-        JsonNode skillsList = skills.has("skillsList") ? skills.get("skillsList") : skills;
-        
-        if (skillsList == null || !skillsList.isArray() || skillsList.size() == 0) return "";
-        
         StringBuilder html = new StringBuilder();
         html.append("<section class=\"section\">");
         html.append("<h2 class=\"section-title\">SKILLS</h2>");
         html.append("<div class=\"section-content\">");
-        html.append("<ul class=\"skills-list\">");
         
-        for (JsonNode skill : skillsList) {
-            html.append("<li>").append(escapeHtml(skill.asText())).append("</li>");
+        // Check if skills are organized by category
+        if (skills.has("programmingLanguages") || skills.has("webFrameworks") || 
+            skills.has("toolsTechnologies") || skills.has("coreConcepts")) {
+            
+            // Programming Languages
+            if (skills.has("programmingLanguages")) {
+                JsonNode langList = skills.get("programmingLanguages");
+                if (langList.isArray() && langList.size() > 0) {
+                    html.append("<div class=\"skills-category\">");
+                    html.append("<strong>Programming Languages:</strong> ");
+                    html.append("<span>");
+                    for (int i = 0; i < langList.size(); i++) {
+                        if (i > 0) html.append(", ");
+                        html.append(escapeHtml(langList.get(i).asText()));
+                    }
+                    html.append("</span>");
+                    html.append("</div>");
+                }
+            }
+            
+            // Web Frameworks/Libraries
+            if (skills.has("webFrameworks")) {
+                JsonNode webList = skills.get("webFrameworks");
+                if (webList.isArray() && webList.size() > 0) {
+                    html.append("<div class=\"skills-category\">");
+                    html.append("<strong>Web Frameworks/Libraries:</strong> ");
+                    html.append("<span>");
+                    for (int i = 0; i < webList.size(); i++) {
+                        if (i > 0) html.append(", ");
+                        html.append(escapeHtml(webList.get(i).asText()));
+                    }
+                    html.append("</span>");
+                    html.append("</div>");
+                }
+            }
+            
+            // Tools & Technologies
+            if (skills.has("toolsTechnologies")) {
+                JsonNode toolsList = skills.get("toolsTechnologies");
+                if (toolsList.isArray() && toolsList.size() > 0) {
+                    html.append("<div class=\"skills-category\">");
+                    html.append("<strong>Tools & Technologies:</strong> ");
+                    html.append("<span>");
+                    for (int i = 0; i < toolsList.size(); i++) {
+                        if (i > 0) html.append(", ");
+                        html.append(escapeHtml(toolsList.get(i).asText()));
+                    }
+                    html.append("</span>");
+                    html.append("</div>");
+                }
+            }
+            
+            // Core Concepts
+            if (skills.has("coreConcepts")) {
+                JsonNode conceptsList = skills.get("coreConcepts");
+                if (conceptsList.isArray() && conceptsList.size() > 0) {
+                    html.append("<div class=\"skills-category\">");
+                    html.append("<strong>Core Concepts:</strong> ");
+                    html.append("<span>");
+                    for (int i = 0; i < conceptsList.size(); i++) {
+                        if (i > 0) html.append(", ");
+                        html.append(escapeHtml(conceptsList.get(i).asText()));
+                    }
+                    html.append("</span>");
+                    html.append("</div>");
+                }
+            }
+        } else {
+            // Fallback: simple list format
+            JsonNode skillsList = skills.has("skillsList") ? skills.get("skillsList") : skills;
+            if (skillsList != null && skillsList.isArray() && skillsList.size() > 0) {
+                html.append("<ul class=\"skills-list\">");
+                for (JsonNode skill : skillsList) {
+                    html.append("<li>").append(escapeHtml(skill.asText())).append("</li>");
+                }
+                html.append("</ul>");
+            }
         }
         
-        html.append("</ul>");
         html.append("</div>");
         html.append("</section>");
         
@@ -181,10 +264,7 @@ public class ResumeHtmlGeneratorService {
             html.append("<p class=\"education-item\">").append(escapeHtml(education.get("major").asText())).append("</p>");
         }
         if (education.has("graduationYear") && !education.get("graduationYear").asText().isEmpty()) {
-            html.append("<p class=\"education-item\">Class of ").append(escapeHtml(education.get("graduationYear").asText())).append("</p>");
-        }
-        if (education.has("location") && !education.get("location").asText().isEmpty()) {
-            html.append("<p class=\"education-item text-gray\">").append(escapeHtml(education.get("location").asText())).append("</p>");
+            html.append("<p class=\"education-item\">").append(escapeHtml(education.get("graduationYear").asText())).append("</p>");
         }
         
         html.append("</div>");
@@ -209,12 +289,12 @@ public class ResumeHtmlGeneratorService {
         for (JsonNode cert : certList) {
             if (cert.has("name")) {
                 html.append("<div class=\"cert-item\">");
-                html.append("<p><strong>").append(escapeHtml(cert.get("name").asText())).append("</strong></p>");
+                html.append("<strong>").append(escapeHtml(cert.get("name").asText())).append("</strong>");
                 if (cert.has("issuer")) {
-                    html.append("<p>").append(escapeHtml(cert.get("issuer").asText())).append("</p>");
+                    html.append("<p style=\"font-size: 9pt; color: #7f8c8d; margin-top: 4px;\">").append(escapeHtml(cert.get("issuer").asText())).append("</p>");
                 }
                 if (cert.has("dateReceived") && !cert.get("dateReceived").asText().isEmpty()) {
-                    html.append("<p class=\"text-gray\">").append(escapeHtml(cert.get("dateReceived").asText())).append("</p>");
+                    html.append("<p style=\"font-size: 8.5pt; color: #95a5a6; margin-top: 2px;\">").append(escapeHtml(cert.get("dateReceived").asText())).append("</p>");
                 }
                 html.append("</div>");
             }
@@ -230,21 +310,26 @@ public class ResumeHtmlGeneratorService {
         if (!data.has("professionalSummary")) return "";
         
         JsonNode summary = data.get("professionalSummary");
-        JsonNode summaryPoints = summary.has("summaryPoints") ? summary.get("summaryPoints") : summary;
-        
-        if (summaryPoints == null || !summaryPoints.isArray() || summaryPoints.size() == 0) return "";
-        
         StringBuilder html = new StringBuilder();
         html.append("<section class=\"section\">");
         html.append("<h2 class=\"section-title\">PROFESSIONAL SUMMARY</h2>");
         html.append("<div class=\"section-content\">");
-        html.append("<ul class=\"summary-list\">");
+        html.append("<div class=\"summary-text\">");
         
-        for (JsonNode point : summaryPoints) {
-            html.append("<li>").append(escapeHtml(point.asText())).append("</li>");
+        // Check if summary is an array of points or a single text field
+        if (summary.has("summaryPoints") && summary.get("summaryPoints").isArray()) {
+            JsonNode summaryPoints = summary.get("summaryPoints");
+            for (int i = 0; i < summaryPoints.size(); i++) {
+                String point = summaryPoints.get(i).asText();
+                html.append("<p>").append(escapeHtml(point)).append("</p>");
+            }
+        } else if (summary.has("text") && !summary.get("text").asText().isEmpty()) {
+            html.append("<p>").append(escapeHtml(summary.get("text").asText())).append("</p>");
+        } else if (summary.isTextual() && !summary.asText().isEmpty()) {
+            html.append("<p>").append(escapeHtml(summary.asText())).append("</p>");
         }
         
-        html.append("</ul>");
+        html.append("</div>");
         html.append("</div>");
         html.append("</section>");
         
@@ -257,7 +342,17 @@ public class ResumeHtmlGeneratorService {
         JsonNode experience = data.get("experience");
         JsonNode experiences = experience.has("experiences") ? experience.get("experiences") : experience;
         
-        if (experiences == null || !experiences.isArray() || experiences.size() == 0) return "";
+        if (experiences == null || !experiences.isArray() || experiences.size() == 0) {
+            // Show "No experience listed" if empty
+            StringBuilder html = new StringBuilder();
+            html.append("<section class=\"section\">");
+            html.append("<h2 class=\"section-title\">EXPERIENCE</h2>");
+            html.append("<div class=\"section-content\">");
+            html.append("<p class=\"no-content\">No experience listed</p>");
+            html.append("</div>");
+            html.append("</section>");
+            return html.toString();
+        }
         
         StringBuilder html = new StringBuilder();
         html.append("<section class=\"section\">");
@@ -265,20 +360,20 @@ public class ResumeHtmlGeneratorService {
         html.append("<div class=\"section-content\">");
         
         for (JsonNode exp : experiences) {
-            html.append("<div class=\"experience-item\">");
+            html.append("<div class=\"exp-item\">");
             
             if (exp.has("title")) {
                 html.append("<h3 class=\"exp-title\">").append(escapeHtml(exp.get("title").asText())).append("</h3>");
             }
             if (exp.has("company")) {
-                html.append("<p class=\"exp-company\">").append(escapeHtml(exp.get("company").asText()));
+                html.append("<p class=\"exp-meta\">").append(escapeHtml(exp.get("company").asText()));
                 if (exp.has("location") && !exp.get("location").asText().isEmpty()) {
                     html.append(" | ").append(escapeHtml(exp.get("location").asText()));
                 }
                 html.append("</p>");
             }
             if (exp.has("dateRange")) {
-                html.append("<p class=\"exp-date\">").append(escapeHtml(exp.get("dateRange").asText())).append("</p>");
+                html.append("<p class=\"exp-meta\">").append(escapeHtml(exp.get("dateRange").asText())).append("</p>");
             }
             
             if (exp.has("achievements") && exp.get("achievements").isArray() && exp.get("achievements").size() > 0) {
@@ -318,7 +413,7 @@ public class ResumeHtmlGeneratorService {
                 html.append("<h3 class=\"project-title\">").append(escapeHtml(project.get("name").asText())).append("</h3>");
             }
             if (project.has("technologies") && !project.get("technologies").asText().isEmpty()) {
-                html.append("<p class=\"project-tech\">").append(escapeHtml(project.get("technologies").asText())).append("</p>");
+                html.append("<p class=\"project-tech\"><strong>Technologies:</strong> ").append(escapeHtml(project.get("technologies").asText())).append("</p>");
             }
             
             if (project.has("highlights") && project.get("highlights").isArray() && project.get("highlights").size() > 0) {
@@ -339,28 +434,92 @@ public class ResumeHtmlGeneratorService {
     }
 
     private String getStyles() {
-        return "<style>" +
-            "* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; }" +
-            "body { background-color: #fff; color: #333; line-height: 1.6; font-size: 10pt; padding: 0; margin: 0; }" +
-            "@media print { body { width: 100%; margin: 0; padding: 0; background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .resume-container { box-shadow: none; border: none; } }" +
-            ".resume-container { max-width: 8.5in; margin: 0 auto; background-color: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }" +
-            ".header { background-color: #2a2a2a; color: white; padding: 30px; text-align: center; }" +
-            ".header h1 { font-size: 24pt; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: bold; }" +
-            ".header h2 { font-size: 14pt; font-weight: normal; text-transform: uppercase; letter-spacing: 1px; }" +
-            ".content { display: flex; }" +
-            ".left-column { width: 30%; padding: 20px; background-color: #f8f8f8; border-right: 1px solid #eee; }" +
-            ".right-column { width: 70%; padding: 20px; }" +
-            ".section { margin-bottom: 20px; }" +
-            ".section-title { font-size: 12pt; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 12px; font-weight: bold; color: #333; }" +
-            ".social-item { display: flex; align-items: center; margin-bottom: 6px; font-size: 9pt; }" +
-            ".social-icon { color: #2a2a2a; margin-right: 8px; min-width: 16px; }" +
-            "ul { list-style-type: disc; padding-left: 18px; margin-bottom: 10px; }" +
-            "li { margin-bottom: 6px; font-size: 9pt; }" +
-            ".exp-item, .project-item, .edu-item, .cert-item { margin-bottom: 15px; }" +
-            ".exp-item h4, .project-item h4 { font-size: 11pt; margin-bottom: 3px; }" +
-            ".exp-meta, .project-meta { font-size: 9pt; color: #666; margin-bottom: 6px; font-style: italic; }" +
-            ".summary-list li { margin-bottom: 8px; }" +
-            "</style>";
+        StringBuilder css = new StringBuilder();
+        css.append("<style>");
+        
+        // Base styles
+        css.append("* { margin: 0; padding: 0; box-sizing: border-box; }");
+        css.append("body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #2c3e50; ");
+        css.append("font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; font-size: 10pt; padding: 20px; }");
+        
+        // Container
+        css.append(".resume-container { max-width: 8.5in; margin: 0 auto; background: #fff; ");
+        css.append("box-shadow: 0 10px 40px rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; }");
+        
+        // Header
+        css.append(".header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: #fff; ");
+        css.append("padding: 50px 40px; text-align: center; }");
+        css.append(".header h1 { font-size: 32pt; text-transform: uppercase; letter-spacing: 4px; ");
+        css.append("margin-bottom: 12px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }");
+        css.append(".header h2 { font-size: 16pt; font-weight: 300; text-transform: uppercase; letter-spacing: 3px; }");
+        
+        // Layout
+        css.append(".content { display: flex; background: #fff; }");
+        css.append(".left-column { width: 35%; padding: 35px 25px; background: #f8f9fa; border-right: 2px solid #e9ecef; }");
+        css.append(".right-column { width: 65%; padding: 35px 30px; background: #fff; }");
+        
+        // Sections
+        css.append(".section { margin-bottom: 30px; }");
+        css.append(".section-title { font-size: 12pt; text-transform: uppercase; font-weight: 700; color: #2c3e50; ");
+        css.append("margin-bottom: 15px; padding-bottom: 8px; border-bottom: 3px solid #3498db; letter-spacing: 1px; }");
+        
+        // Contact
+        css.append(".social-item { display: flex; align-items: center; margin-bottom: 12px; font-size: 9.5pt; color: #34495e; }");
+        css.append(".social-item a { color: #2c3e50; text-decoration: none; }");
+        css.append(".social-item a:hover { color: #3498db; }");
+        css.append(".social-icon { color: #3498db; margin-right: 12px; min-width: 18px; }");
+        
+        // Lists
+        css.append("ul { list-style: none; padding-left: 0; margin-bottom: 10px; }");
+        css.append("ul li { margin-bottom: 8px; font-size: 9.5pt; line-height: 1.7; color: #34495e; ");
+        css.append("padding-left: 20px; position: relative; }");
+        css.append("ul li::before { content: '▸'; position: absolute; left: 0; color: #3498db; font-weight: bold; }");
+        
+        // Skills
+        css.append(".skills-category { margin-bottom: 15px; padding: 12px; background: #f8f9fa; ");
+        css.append("border-radius: 6px; border-left: 4px solid #3498db; }");
+        css.append(".skills-category strong { font-size: 9.5pt; color: #2c3e50; display: block; margin-bottom: 6px; }");
+        
+        // Education
+        css.append(".education-item { margin-bottom: 10px; font-size: 9.5pt; line-height: 1.6; }");
+        css.append(".education-item strong { font-size: 10.5pt; color: #2c3e50; font-weight: 600; ");
+        css.append("display: block; margin-bottom: 4px; }");
+        
+        // Experience/Projects
+        css.append(".exp-item, .project-item { margin-bottom: 25px; padding: 15px; background: #f8f9fa; ");
+        css.append("border-radius: 6px; border-left: 4px solid #3498db; }");
+        css.append(".exp-title, .project-title { font-size: 12pt; font-weight: 700; color: #2c3e50; margin-bottom: 6px; }");
+        css.append(".exp-meta, .project-tech { font-size: 9pt; color: #7f8c8d; margin-bottom: 8px; font-style: italic; }");
+        css.append(".project-tech strong { color: #34495e; font-style: normal; }");
+        
+        // Summary
+        css.append(".summary-text { font-size: 9.5pt; line-height: 1.8; color: #34495e; }");
+        css.append(".summary-text p { margin-bottom: 12px; text-align: justify; }");
+        
+        // Certifications
+        css.append(".cert-item { margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 6px; }");
+        css.append(".cert-item strong { font-size: 10pt; color: #2c3e50; display: block; margin-bottom: 4px; }");
+        
+        // No content
+        css.append(".no-content { font-size: 9pt; color: #95a5a6; font-style: italic; padding: 10px; ");
+        css.append("background: #f8f9fa; border-radius: 4px; text-align: center; }");
+        
+        // Print styles
+        css.append("@media print {");
+        css.append("body { background: #fff !important; padding: 0; }");
+        css.append(".resume-container { box-shadow: none; border-radius: 0; }");
+        css.append(".header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }");
+        css.append("}");
+        
+        // Mobile styles
+        css.append("@media (max-width: 768px) {");
+        css.append(".content { flex-direction: column; }");
+        css.append(".left-column, .right-column { width: 100%; }");
+        css.append(".left-column { border-right: none; border-bottom: 2px solid #e9ecef; }");
+        css.append("}");
+        
+        css.append("</style>");
+        return css.toString();
     }
 
     private String generateErrorHtml(String errorMessage) {

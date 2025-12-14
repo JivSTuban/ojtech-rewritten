@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../apiConfig';
 // Constants
 const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const MODEL = 'gemini-2.5-flash-preview-05-20';
+const MODEL =  import.meta.env.VITE_GEMINI_API_MODEL;
 
 // Add these interfaces at the top of the file
 interface ResumeData {
@@ -189,6 +189,7 @@ function generateHTMLFromJSON(jsonData: ResumeData | any): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${name} - Resume</title>
+      <!--email_off-->
       <style>
         * {
           margin: 0;
@@ -305,13 +306,15 @@ function generateHTMLFromJSON(jsonData: ResumeData | any): string {
           }
         }
       </style>
+      <!--/email_off-->
     </head>
     <body>
+      <!--email_off-->
       <div class="resume-container">
         <header class="header">
           <h1>${name}</h1>
           <div class="contact-info">
-            ${email ? `<div>${email}</div>` : ''}
+            ${email ? `<div data-cfasync="false"><span data-cfasync="false">${email}</span></div>` : ''}
             ${phone ? `<div>${phone}</div>` : ''}
             ${location ? `<div>${location}</div>` : ''}
             
@@ -407,6 +410,7 @@ function generateHTMLFromJSON(jsonData: ResumeData | any): string {
         </section>
         ` : ''}
       </div>
+      <!--/email_off-->
     </body>
     </html>
     `;
@@ -505,10 +509,10 @@ function createCVPrompt(profileData: any): string {
     STUDENT INFORMATION:
     -------------------
     Full Name: ${firstName} ${lastName}
-    Email: ${email}
-    Phone: ${phoneNumber}
-    Location: ${location}
-    Address: ${address}
+    Email: ${email || 'NOT PROVIDED'}
+    Phone: ${phoneNumber || 'NOT PROVIDED'}
+    Location: ${location || 'NOT PROVIDED'}
+    Address: ${address || 'NOT PROVIDED'}
     
     Education:
     University: ${university}
@@ -536,6 +540,19 @@ function createCVPrompt(profileData: any): string {
     
     ATS-OPTIMIZATION REQUIREMENTS:
     ----------------------------
+    CRITICAL INSTRUCTIONS FOR CONTACT INFORMATION:
+    - You MUST use the EXACT values provided in the STUDENT INFORMATION section above
+    - Do NOT modify, change, or create placeholder values
+    - Do NOT use generic placeholders like "your.email@example.com" or "[email protected]"
+    - If a value shows "NOT PROVIDED", use an empty string "" in the JSON
+    - The name field should be exactly: "${firstName} ${lastName}".trim()
+    - The email field should be exactly: ${email ? `"${email}"` : '""'}
+    - The phone field should be exactly: ${phoneNumber ? `"${phoneNumber}"` : '""'}
+    - The location field should be exactly: ${location ? `"${location}"` : '""'}
+    - The linkedin field should be exactly: ${linkedinUrl ? `"${linkedinUrl}"` : '""'}
+    - The github field should be exactly: ${githubUrl ? `"${githubUrl}"` : '""'}
+    - The portfolio field should be exactly: ${portfolioUrl ? `"${portfolioUrl}"` : '""'}
+    
     1. Return a JSON object with the following standard resume sections in this order:
        {
          "contactInfo": {

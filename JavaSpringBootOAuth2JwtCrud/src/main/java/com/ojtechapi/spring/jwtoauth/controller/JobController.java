@@ -73,6 +73,9 @@ public class JobController {
     @org.springframework.beans.factory.annotation.Value("${backend.base-url}")
     private String baseUrl;
     
+    @org.springframework.beans.factory.annotation.Value("${frontend.base-url:http://localhost:5173}")
+    private String frontendUrl;
+    
     @GetMapping
     public ResponseEntity<Page<Job>> getAllJobs(
             @RequestParam(defaultValue = "0") int page,
@@ -530,8 +533,8 @@ public class JobController {
         String emailBody = generateEmailBody(studentName, job.getTitle(), coverLetter);
         String subject = "Job Application for " + job.getTitle() + " - " + studentName;
         
-        // Generate CV view URL
-        String cvUrl = baseUrl + "/api/cvs/" + cv.getId() + "/view";
+        // Generate CV view URL - use frontend URL for CV viewer
+        String cvUrl = frontendUrl + "/cv/" + cv.getId();
         
         // Get email from User entity or fallback
         String studentEmail = student.getUser() != null ? student.getUser().getEmail() : student.getEmail();
@@ -566,11 +569,18 @@ public class JobController {
     }
     
     private String generateEmailBody(String studentName, String jobTitle, String coverLetter) {
+        // If a cover letter is provided, use it as-is since it's already a complete, formatted letter
+        if (coverLetter != null && !coverLetter.trim().isEmpty()) {
+            return coverLetter;
+        }
+        
+        // Otherwise, generate a basic email body
         return String.format(
-            "I am writing to express my interest in the %s position.\n\n%s\n\n" +
+            "I am writing to express my interest in the %s position.\n\n" +
+            "Please find my application materials attached.\n\n" +
             "I have attached my CV for your review. I would welcome the opportunity to discuss how my skills align with your needs.\n\n" +
             "Thank you for considering my application.\n\nBest regards,\n%s",
-            jobTitle, coverLetter != null ? coverLetter : "Please find my application materials attached.", studentName
+            jobTitle, studentName
         );
     }
 }

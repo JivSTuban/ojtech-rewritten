@@ -59,12 +59,12 @@ export default class ReviewStep extends Component<ReviewStepProps> {
     const { expandedReadme } = this.state;
 
     return (
-      <div className="space-y-6">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-white">
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="text-center mb-4 sm:mb-8">
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
             Review Your Profile
           </h3>
-          <p className="text-gray-400 mt-2">
+          <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
             Please review all your information before submitting
           </p>
         </div>
@@ -376,10 +376,10 @@ export default class ReviewStep extends Component<ReviewStepProps> {
           </div>
         </div>
 
-        <div className="flex justify-between pt-6">
+        <div className="flex justify-between pt-4 sm:pt-6 gap-2 sm:gap-0">
           <button
             onClick={onPrev}
-            className="px-6 py-2.5 rounded-lg font-medium text-white border border-gray-600 hover:bg-gray-800 transition-all duration-300"
+            className="px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium text-white border border-gray-600 hover:bg-gray-800 transition-all duration-300 text-sm sm:text-base"
           >
             Back
           </button>
@@ -387,7 +387,7 @@ export default class ReviewStep extends Component<ReviewStepProps> {
             onClick={onSubmit}
             disabled={isLoading}
             className={`
-              px-6 py-2.5 rounded-lg font-medium text-white
+              px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium text-white text-sm sm:text-base
               transition-all duration-300 shadow-lg
               ${isLoading 
                 ? 'bg-gray-600 cursor-not-allowed' 
@@ -396,14 +396,20 @@ export default class ReviewStep extends Component<ReviewStepProps> {
             `}
           >
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <span className="flex items-center gap-1.5 sm:gap-2">
+                <svg className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Submitting...
+                <span className="hidden sm:inline">Submitting...</span>
+                <span className="sm:hidden">...</span>
               </span>
-            ) : 'Complete Onboarding'}
+            ) : (
+              <>
+                <span className="hidden sm:inline">Complete Onboarding</span>
+                <span className="sm:hidden">Complete</span>
+              </>
+            )}
           </button>
         </div>
       </div>

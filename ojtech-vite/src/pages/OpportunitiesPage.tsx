@@ -75,6 +75,7 @@ interface OpportunitiesPageState {
   showMatchingInfo: boolean;
   appliedJobIds: Set<string>;
   applicationsLoading: boolean;
+  isPreparingEmail: boolean;
 }
 
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
@@ -99,7 +100,8 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       currentJobForEmail: null,
       showMatchingInfo: false,
       appliedJobIds: new Set<string>(),
-      applicationsLoading: true
+      applicationsLoading: true,
+      isPreparingEmail: false
     };
   }
   
@@ -351,6 +353,8 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Prepare email draft WITHOUT creating application first
   prepareEmailDraft = async (job: JobWithMatchScore) => {
     try {
+      this.setState({ isPreparingEmail: true });
+      
       // We'll prepare the email draft directly without application ID
       // The application will be created when email is sent
       const jobId = job.original_id || job.id;
@@ -360,10 +364,12 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         emailModalOpen: true,
         emailDraft,
         pendingApplicationId: null, // No application ID yet
-        currentJobForEmail: job
+        currentJobForEmail: job,
+        isPreparingEmail: false
       });
     } catch (error) {
       console.error("Error preparing email:", error);
+      this.setState({ isPreparingEmail: false });
       this.toast({
         title: "Error",
         description: "Failed to prepare email. Please try again.",
@@ -915,6 +921,22 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                 </TinderCard>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Email Preparation Loading Modal */}
+        {this.state.isPreparingEmail && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Preparing Your Application</h3>
+              <p className="text-gray-600">
+                Generating personalized cover letter and preparing email draft...
+              </p>
+              <p className="text-sm text-gray-500 mt-3">
+                This may take a few moments
+              </p>
+            </div>
           </div>
         )}
         

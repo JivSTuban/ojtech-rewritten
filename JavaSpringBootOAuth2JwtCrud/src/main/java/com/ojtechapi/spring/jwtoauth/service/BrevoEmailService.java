@@ -144,6 +144,11 @@ public class BrevoEmailService {
         request.put("subject", subject);
         request.put("htmlContent", htmlContent);
         
+        // Add tags for email categorization
+        ArrayNode tags = objectMapper.createArrayNode();
+        tags.add("job-application");
+        request.set("tags", tags);
+        
         // Attachments (optional)
         if (attachments != null && !attachments.isEmpty()) {
             ArrayNode attachmentsArray = objectMapper.createArrayNode();

@@ -134,6 +134,7 @@ public class SecurityConfig {
                                 .requestMatchers("/api/public/cloudinary/**").permitAll()
                                 .requestMatchers("/api/public/**").permitAll()
                                 .requestMatchers("/api/cvs/*/view").permitAll()
+                                .requestMatchers("/api/cvs/*/data").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -173,7 +174,9 @@ public class SecurityConfig {
             "http://localhost:5174",
             "http://localhost:3000", 
             "https://ojtech-pinger.netlify.app", 
-            "https://ojtech-testing.netlify.app", 
+            "https://ojtech.online", 
+            "https://open.ojtech.online", 
+            "https://ojtech-testing.netlify.app",
             "http://localhost:8081",
             "https://ojtech.aetherrflare.org"
         ));

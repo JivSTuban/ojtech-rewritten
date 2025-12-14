@@ -122,25 +122,25 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
     const { formData, onChange, onPrev } = this.props;
 
     return (
-      <div className="space-y-8 max-w-3xl mx-auto">
+      <div className="space-y-4 sm:space-y-6 max-w-2xl mx-auto">
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-400">
+          <h3 className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-400">
             Personal Information
           </h3>
-          <p className="text-gray-400 mt-2">
+          <p className="text-gray-400 mt-1 text-sm">
             Let's get to know you better
           </p>
         </div>
 
-        <div className="bg-gray-900/60 rounded-xl p-6 backdrop-blur-sm border border-gray-800/50 shadow-xl shadow-black/5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
+        <div className="bg-gray-900/60 rounded-xl p-3 sm:p-4 backdrop-blur-sm border border-gray-800/50 shadow-xl shadow-black/5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-1">
+              <label htmlFor="firstName" className="block text-xs font-medium text-gray-300">
                 First Name <span className="text-gray-400">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -151,18 +151,18 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                   value={formData.firstName || ''}
                   onChange={onChange}
                   required
-                  className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                  className="w-full pl-9 bg-black/80 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
                   placeholder="Your first name"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
+            <div className="space-y-1">
+              <label htmlFor="lastName" className="block text-xs font-medium text-gray-300">
                 Last Name <span className="text-gray-400">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -173,23 +173,23 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                   value={formData.lastName || ''}
                   onChange={onChange}
                   required
-                  className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                  className="w-full pl-9 bg-black/80 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
                   placeholder="Your last name"
                 />
               </div>
             </div>
           </div>
           
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-300 mb-4">Address</h4>
-            <div className="space-y-4">
+          <div className="mt-3 sm:mt-4">
+            <h4 className="text-xs font-medium text-gray-300 mb-2 sm:mb-3">Address</h4>
+            <div className="space-y-2.5 sm:space-y-3">
               <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="city" className="block text-xs font-medium text-gray-300 mb-1">
                   City <span className="text-gray-400">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
@@ -200,20 +200,20 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                     value={formData.city || ''}
                     onChange={onChange}
                     required
-                    className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                    className="w-full pl-9 bg-black/80 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
                     placeholder="e.g. Cebu City"
                   />
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
-                  <label htmlFor="province" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="province" className="block text-xs font-medium text-gray-300 mb-1">
                     Province <span className="text-gray-400">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
@@ -224,7 +224,7 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                       value={formData.province || ''}
                       onChange={onChange}
                       required
-                      className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300 appearance-none"
+                      className="w-full pl-9 bg-black/80 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300 appearance-none"
                     >
                       <option value="">Select province</option>
                       {PHILIPPINE_PROVINCES.map(province => (
@@ -232,7 +232,7 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                       ))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
@@ -240,12 +240,12 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                 </div>
                 
                 <div>
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="postalCode" className="block text-xs font-medium text-gray-300 mb-1">
                     Postal Code <span className="text-gray-400">*</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
@@ -264,7 +264,7 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
                       required
                       maxLength={4}
                       pattern="[0-9]{4}"
-                      className="w-full pl-10 bg-black/80 border border-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
+                      className="w-full pl-9 bg-black/80 border border-gray-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:border-transparent transition-all duration-300"
                       placeholder="e.g. 6000"
                     />
                   </div>
@@ -273,24 +273,24 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
             </div>
           </div>
           
-          <div className="mt-6 bg-gray-900/40 border border-gray-800/40 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <div className="mt-3 sm:mt-4 bg-gray-900/40 border border-gray-800/40 rounded-lg p-2.5 sm:p-3">
+            <div className="flex items-start gap-2">
+              <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
-              <p className="text-sm text-gray-400">
+              <p className="text-xs text-gray-400">
                 Your name will be visible to employers when you apply for internships. Make sure it matches your legal name.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-between pt-6">
+        <div className="flex justify-between pt-3 sm:pt-4 gap-2 sm:gap-0">
           <button
             onClick={onPrev}
-            className="px-6 py-3 rounded-lg font-medium text-white border border-gray-700/50 hover:bg-gray-900/30 transition-all duration-300 flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 rounded-lg font-medium text-white border border-gray-700/50 hover:bg-gray-900/30 transition-all duration-300 flex items-center gap-1.5 text-sm"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
             </svg>
             Back
@@ -299,8 +299,8 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
             onClick={this.handleNext}
             disabled={!this.isValid()}
             className={`
-              px-6 py-3 rounded-lg font-medium text-white
-              transition-all duration-300 flex items-center gap-2
+              px-3 sm:px-4 py-2 rounded-lg font-medium text-white text-sm
+              transition-all duration-300 flex items-center gap-1.5
               ${!this.isValid() 
                 ? 'bg-gray-900/50 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-gray-600 to-gray-800 hover:from-gray-700 hover:to-gray-900 hover:shadow-lg hover:shadow-black/20'
@@ -308,7 +308,7 @@ export default class PersonalInfoStep extends Component<PersonalInfoStepProps> {
             `}
           >
             Continue to Education
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
             </svg>
           </button>
