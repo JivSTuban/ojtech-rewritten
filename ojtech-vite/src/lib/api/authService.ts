@@ -56,25 +56,25 @@ const register = async (data: SignupData) => {
 
 const login = async (data: LoginData) => {
   console.log('Login function called with raw data:', data);
-  
+
   const loginData = {
     usernameOrEmail: data.usernameOrEmail,
     password: data.password
   };
-  
+
   console.log('Sending login request with data:', JSON.stringify(loginData, null, 2));
   console.log('To URL:', `${AUTH_API_URL}/signin`);
-  
+
   try {
     const response = await axios.post(`${AUTH_API_URL}/signin`, loginData);
     console.log('Login response status:', response.status);
     console.log('Login response data structure:', Object.keys(response.data));
-    
+
     if (response.data.accessToken) {
       console.log('Access token received (first 10 chars):', response.data.accessToken.substring(0, 10) + '...');
       localStorage.setItem('user', JSON.stringify(response.data));
       console.log('User data stored in localStorage with key "user"');
-      
+
       // Verify storage
       const storedData = localStorage.getItem('user');
       if (storedData) {
@@ -97,12 +97,12 @@ const login = async (data: LoginData) => {
 
 const googleLogin = async (tokenId: string) => {
   console.log('Google login function called with token (first 10 chars):', tokenId.substring(0, 10) + '...');
-  
+
   try {
     const response = await axios.post(`${AUTH_API_URL}/oauth2/google`, { tokenId });
-    
+
     console.log('Google auth backend response:', response.data);
-    
+
     if (response.data && response.data.accessToken) {
       localStorage.setItem('user', JSON.stringify(response.data));
       return response.data;
@@ -118,12 +118,12 @@ const googleLogin = async (tokenId: string) => {
 
 const githubLogin = async (code: string) => {
   console.log('GitHub login function called with code (first 10 chars):', code.substring(0, 10) + '...');
-  
+
   try {
     const response = await axios.post(`${AUTH_API_URL}/github`, { code });
-    
+
     console.log('GitHub auth backend response:', response.data);
-    
+
     if (response.data && response.data.accessToken) {
       localStorage.setItem('user', JSON.stringify(response.data));
       return response.data;
@@ -140,19 +140,19 @@ const githubLogin = async (code: string) => {
 const logout = () => {
   // Remove user authentication data
   localStorage.removeItem('user');
-  
+
   // Clear all onboarding and form draft data
   localStorage.removeItem('ojtech_employer_onboarding');
   localStorage.removeItem('ojtech_student_onboarding');
   localStorage.removeItem('companyFormDraft');
-  
+
   // Clear any other app-specific data (you can add more keys as needed)
-  const keysToRemove = Object.keys(localStorage).filter(key => 
+  const keysToRemove = Object.keys(localStorage).filter(key =>
     key.startsWith('ojtech_') || key.includes('onboarding') || key.includes('Draft')
   );
-  
+
   keysToRemove.forEach(key => localStorage.removeItem(key));
-  
+
   console.log('User logged out, all localStorage data cleared');
 };
 
@@ -161,7 +161,7 @@ const getCurrentUser = (): UserData | null => {
   if (userStr) {
     try {
       const userData = JSON.parse(userStr) as UserData;
-     
+
       return userData;
     } catch (error) {
       console.error('Error parsing user data from localStorage:', error);
@@ -202,9 +202,9 @@ const changePassword = async (data: ChangePasswordRequest) => {
     if (!user) {
       throw new Error('User not authenticated');
     }
-    
+
     const response = await axios.post(
-      `${AUTH_API_URL}/change-password`, 
+      `${AUTH_API_URL}/change-password`,
       data,
       {
         headers: {
@@ -212,7 +212,7 @@ const changePassword = async (data: ChangePasswordRequest) => {
         }
       }
     );
-    
+
     console.log('Password changed successfully');
     return response.data;
   } catch (error: any) {
@@ -220,6 +220,34 @@ const changePassword = async (data: ChangePasswordRequest) => {
     if (error.response) {
       console.error('Error response:', error.response.data);
     }
+    throw error;
+  }
+};
+
+const forgotPassword = async (email: string) => {
+  try {
+    console.log('Sending forgot password request for:', email);
+    const response = await axios.post(`${AUTH_API_URL}/forgot-password`, { email });
+    console.log('Forgot password response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    throw error;
+  }
+};
+
+const resetPassword = async (token: string, newPassword: string, confirmPassword: string) => {
+  try {
+    console.log('Sending password reset request with token');
+    const response = await axios.post(`${AUTH_API_URL}/reset-password`, {
+      token,
+      newPassword,
+      confirmPassword
+    });
+    console.log('Password reset response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Reset password error:', error);
     throw error;
   }
 };
@@ -233,6 +261,8 @@ const authService = {
   getCurrentUser,
   checkAuthStatus,
   changePassword,
+  forgotPassword,
+  resetPassword,
 };
 
 export default authService; 

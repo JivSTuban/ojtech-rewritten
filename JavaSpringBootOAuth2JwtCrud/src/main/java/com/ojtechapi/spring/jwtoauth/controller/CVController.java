@@ -82,11 +82,15 @@ public class CVController {
     /**
      * PUBLIC endpoint for anyone to view a student's CV by ID (used in emails)
      * No authentication required - allows employers to view CV from email links
+     * Returns JSON data that will be rendered by the frontend
      */
-    @GetMapping("/{id}/view")
-    public ResponseEntity<String> getPublicCVView(@PathVariable UUID id) {
+    @GetMapping("/{id}/data")
+    public ResponseEntity<String> getPublicCVData(@PathVariable UUID id) {
+        System.out.println("📄 Public CV data request for ID: " + id);
+        
         Optional<CV> cvOpt = cvRepository.findById(id);
         if (cvOpt.isEmpty()) {
+            System.out.println("❌ CV not found: " + id);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
         }
         
@@ -94,33 +98,33 @@ public class CVController {
         
         // Only return active CVs publicly
         if (!cv.isActive()) {
+            System.out.println("❌ CV is not active: " + id);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found or not available");
         }
         
-        // 1. Try HTML content if available (already formatted)
-        if (cv.getHtmlContent() != null && !cv.getHtmlContent().trim().isEmpty()) {
-            return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(cv.getHtmlContent());
-        }
-        
-        // 2. Try parsed resume (JSON) - convert to HTML
+        // Return parsed resume JSON data
         if (cv.getParsedResume() != null && !cv.getParsedResume().trim().isEmpty()) {
-            try {
-                String htmlContent = resumeHtmlGeneratorService.generateResumeHtml(cv.getParsedResume());
-                return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(htmlContent);
-            } catch (Exception e) {
-                System.err.println("Error generating HTML from resume JSON: " + e.getMessage());
-                // Fall back to returning JSON if HTML generation fails
-                return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(cv.getParsedResume());
-            }
+            System.out.println("✅ Returning CV data for: " + id + " (length: " + cv.getParsedResume().length() + ")");
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(cv.getParsedResume());
         }
         
+        System.out.println("❌ CV content not available for: " + id);
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV content not available");
+    }
+    
+    /**
+     * PUBLIC endpoint that redirects to the frontend CV viewer page
+     * This maintains backward compatibility with email links
+     */
+    @GetMapping("/{id}/view")
+    public ResponseEntity<Void> redirectToCVViewer(@PathVariable UUID id) {
+        // Redirect to frontend CV viewer page
+        String frontendUrl = System.getenv().getOrDefault("FRONTEND_URL", "http://localhost:5173");
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(java.net.URI.create(frontendUrl + "/cv/" + id))
+                .build();
     }
     
     /**

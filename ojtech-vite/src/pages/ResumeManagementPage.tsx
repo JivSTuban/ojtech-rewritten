@@ -90,6 +90,7 @@ interface ResumeData {
     linkedin?: string;
     github?: string;
     portfolio?: string;
+    professionalTitle?: string;
   };
   personalInfo?: {
     name: string;
@@ -384,6 +385,14 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
         if (iframeDoc) {
           const bodyContent = iframeDoc.body.innerHTML;
           console.log('Iframe body content length:', bodyContent.length);
+          
+          // Debug: Check if email is actually in the HTML
+          const emailMatches = bodyContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+          if (emailMatches) {
+            console.log('Emails found in CV HTML:', emailMatches);
+          } else {
+            console.warn('No email addresses found in CV HTML');
+          }
         }
       } catch (e) {
         console.error('Error checking iframe content:', e);
@@ -444,7 +453,8 @@ const createEmptyResumeData = (): ResumeData => ({
     address: '',
     linkedin: '',
     github: '',
-    portfolio: ''
+    portfolio: '',
+    professionalTitle: ''
   }
 });
 
@@ -514,8 +524,8 @@ const EditableResumeView: React.FC<{
           <Input
             placeholder="Professional Title"
             className="text-center text-sm sm:text-base"
-            value="PROFESSIONAL"
-         
+            value={editedData.contactInfo.professionalTitle || ''}
+            onChange={(e) => handleChange('contactInfo', 'professionalTitle', e.target.value)}
           />
         </div>
         
@@ -1439,10 +1449,14 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
       console.log('Starting CV generation process with token:', token.substring(0, 15) + '...');
       
       // Prepare the profile data for CV generation
+      // Ensure email is properly extracted from user context
+      const userEmail = user?.email || '';
+      console.log('User email for CV generation:', userEmail);
+      
       const profileData: Record<string, any> = {
         firstName: studentProfile.firstName || '',
         lastName: studentProfile.lastName || '',
-        email: user?.email || '',
+        email: userEmail,
         phoneNumber: studentProfile.phoneNumber || '',
         location: studentProfile.location || '',
         address: studentProfile.address || '',
@@ -2109,7 +2123,10 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     
     if (data.contactInfo) {
       if ('name' in data.contactInfo) {
-        processedContactInfo = data.contactInfo;
+        processedContactInfo = {
+          ...data.contactInfo,
+          professionalTitle: data.contactInfo.professionalTitle || ''
+        };
       } else if ('firstName' in data.contactInfo) {
         const firstName = data.contactInfo.firstName || '';
         const lastName = data.contactInfo.lastName || '';
@@ -2121,7 +2138,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
           address: undefined,
           linkedin: undefined, 
           github: undefined,
-          portfolio: undefined
+          portfolio: undefined,
+          professionalTitle: (data.contactInfo as any).professionalTitle || ''
         };
       }
     } else if (data.personalInfo) {
@@ -2133,7 +2151,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
         address: undefined,
         linkedin: undefined,
         github: undefined,
-        portfolio: undefined
+        portfolio: undefined,
+        professionalTitle: ''
       };
     }
     
@@ -2180,7 +2199,8 @@ export class ResumeManagementPage extends Component<ResumeManagementPageProps, R
     return {
       contactInfo: { 
         name: '', 
-        email: '' 
+        email: '',
+        professionalTitle: ''
       },
       professionalSummary: { 
         summaryPoints: [] 

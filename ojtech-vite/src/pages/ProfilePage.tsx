@@ -174,11 +174,11 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
         `;
       }
     };
-    
+
     // Process HTML content - handle both JSON and HTML formats
     const processHtml = (content: string) => {
       console.log('Processing HTML content, length:', content.length);
-      
+
       if (!content || content.trim() === '') {
         console.warn('Empty HTML content received');
         return `
@@ -204,41 +204,41 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
           </html>
         `;
       }
-      
+
       // Check if it looks like HTML
-      const isHtml = content.includes('<!DOCTYPE html>') || 
-                    content.includes('<html>') || 
-                    (content.includes('<') && content.includes('</'));
-      
+      const isHtml = content.includes('<!DOCTYPE html>') ||
+        content.includes('<html>') ||
+        (content.includes('<') && content.includes('</'));
+
       // Check if it looks like JSON
-      const isJson = (content.startsWith('{') && content.endsWith('}')) || 
-                     (content.includes('\\\"') && content.includes('\\\"'));
-                   
+      const isJson = (content.startsWith('{') && content.endsWith('}')) ||
+        (content.includes('\\\"') && content.includes('\\\"'));
+
       console.log('Content appears to be:', isHtml ? 'HTML' : isJson ? 'JSON' : 'Unknown format');
-      
+
       // If it's already HTML, use it directly
       if (isHtml) {
         return content;
       }
-      
+
       // If it might be JSON, try to parse and convert
       if (isJson) {
         try {
           // Handle multiple levels of escaping
           let processedContent = content;
-          
+
           // Handle string with quotes at start and end
           if (processedContent.startsWith('"') && processedContent.endsWith('"')) {
             processedContent = processedContent.substring(1, processedContent.length - 1);
           }
-          
+
           // Handle escaped quotes and backslashes
           processedContent = processedContent.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-          
+
           // Parse the JSON data
           const jsonData = JSON.parse(processedContent);
           console.log('Successfully parsed JSON data:', Object.keys(jsonData));
-          
+
           // Use our resumeHtmlGenerator to create HTML
           try {
             const htmlContent = resumeHtmlGenerator.generateResumeHtml(jsonData);
@@ -291,7 +291,7 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
           `;
         }
       }
-      
+
       // If we couldn't determine the format, wrap it in basic HTML
       return `
         <!DOCTYPE html>
@@ -321,7 +321,7 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
         </html>
       `;
     };
-    
+
     // Process the HTML content and update state
     try {
       const processed = processHtml(html);
@@ -363,7 +363,7 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
   const handleIframeLoad = () => {
     console.log('Iframe loaded!');
     setIframeLoaded(true);
-    
+
     // Check if iframe content is loaded correctly
     if (iframeRef.current) {
       try {
@@ -403,178 +403,178 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
 // Component to display student profile
 const StudentProfileDisplay: React.FC<{ profile: StudentProfileData, email: string, username: string }> = ({ profile, email, username }) => {
   const [showResetPasswordModal, setShowResetPasswordModal] = React.useState(false);
-  
+
   return (
-  <div className="space-y-6">
-    <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({username})</h3>
-    <p><strong>Email:</strong> {email}</p>
-    {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
-    {(profile.city || profile.province || profile.postalCode) && (
-      <p className="flex items-center gap-2">
-        <strong>Address:</strong>
-        <span className="flex items-center gap-1">
-          <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {[profile.city, profile.province, profile.postalCode].filter(Boolean).join(', ')}
-        </span>
-      </p>
-    )}
-    
-    {/* Education Section */}
-    <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-      <h4 className="text-lg font-medium mb-2">Education</h4>
-    {profile.university && <p><strong>University:</strong> {profile.university}</p>}
-    {profile.major && <p><strong>Major:</strong> {profile.major}</p>}
-    {profile.graduationYear && <p><strong>Graduation Year:</strong> {profile.graduationYear}</p>}
-    </div>
-    
-    {/* Bio Section */}
-    {profile.bio && (
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold">{profile.firstName} {profile.lastName} ({username})</h3>
+      <p><strong>Email:</strong> {email}</p>
+      {profile.phoneNumber && <p><strong>Phone:</strong> {profile.phoneNumber}</p>}
+      {(profile.city || profile.province || profile.postalCode) && (
+        <p className="flex items-center gap-2">
+          <strong>Address:</strong>
+          <span className="flex items-center gap-1">
+            <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {[profile.city, profile.province, profile.postalCode].filter(Boolean).join(', ')}
+          </span>
+        </p>
+      )}
+
+      {/* Education Section */}
       <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium mb-2">About Me</h4>
-        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded">
-          <p className="italic">{profile.bio}</p>
-        </div>
+        <h4 className="text-lg font-medium mb-2">Education</h4>
+        {profile.university && <p><strong>University:</strong> {profile.university}</p>}
+        {profile.major && <p><strong>Major:</strong> {profile.major}</p>}
+        {profile.graduationYear && <p><strong>Graduation Year:</strong> {profile.graduationYear}</p>}
       </div>
-    )}
-    
-    {/* Skills Section */}
-    {profile.skills && profile.skills.length > 0 && (
-      <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium mb-2">Skills</h4>
-        <div className="flex flex-wrap gap-2">
-          {profile.skills.map((skill: string, index: number) => (
-            <span 
-              key={index}
-              className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-sm"
-            >
-              {skill}
-            </span>
+
+      {/* Bio Section */}
+      {profile.bio && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium mb-2">About Me</h4>
+          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded">
+            <p className="italic">{profile.bio}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Skills Section */}
+      {profile.skills && profile.skills.length > 0 && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium mb-2">Skills</h4>
+          <div className="flex flex-wrap gap-2">
+            {profile.skills.map((skill: string, index: number) => (
+              <span
+                key={index}
+                className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full text-sm"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Work Experience Section */}
+      {profile.experiences && profile.experiences.length > 0 && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium mb-2">Work Experience</h4>
+          {profile.experiences.map((exp: WorkExperience, index: number) => (
+            <div key={index} className="work-item mb-4">
+              <h5 className="font-medium">{exp.title}</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {exp.company} • {exp.location}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                {exp.startDate} - {exp.endDate || 'Present'}
+              </p>
+              <p className="mt-2">{exp.description}</p>
+            </div>
           ))}
         </div>
-      </div>
-    )}
-    
-    {/* Work Experience Section */}
-    {profile.experiences && profile.experiences.length > 0 && (
-      <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium mb-2">Work Experience</h4>
-        {profile.experiences.map((exp: WorkExperience, index: number) => (
-          <div key={index} className="work-item mb-4">
-            <h5 className="font-medium">{exp.title}</h5>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {exp.company} • {exp.location}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              {exp.startDate} - {exp.endDate || 'Present'}
-            </p>
-            <p className="mt-2">{exp.description}</p>
-          </div>
-        ))}
-      </div>
-    )}
-    
-    {/* Certifications Section */}
-    {profile.certifications && profile.certifications.length > 0 && (
-      <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium mb-2">Certifications</h4>
-        {profile.certifications.map((cert: Certification, index: number) => (
-          <div key={index} className="certification-item mb-4">
-            <h5 className="font-medium">{cert.name}</h5>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {cert.issuer}
-              {cert.dateReceived && ` • ${new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`}
-            </p>
-            {cert.credentialUrl && (
-              <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
-                View Credential
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
-    )}
-    
-    {/* GitHub Projects */}
-    {profile.githubProjects && profile.githubProjects.length > 0 && (
-      <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-        <h4 className="text-lg font-medium mb-2">Projects</h4>
-        {profile.githubProjects.map((project: GitHubProject, index: number) => (
-          <div key={index} className="project-item mb-4">
-            <h5 className="font-medium">
-              <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                {project.name}
-              </a>
-            </h5>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{project.description}</p>
-            {project.technologies && project.technologies.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {project.technologies.map((tech: string, techIndex: number) => (
-                  <span key={techIndex} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    )}
-    
-    {/* Links */}
-    <div className="flex space-x-4 mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-      {profile.githubUrl && (
-        <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
-          <Github className="h-4 w-4 mr-1" /> GitHub
-        </a>
       )}
-      {profile.linkedinUrl && (
-        <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
-          <Linkedin className="h-4 w-4 mr-1" /> LinkedIn
-        </a>
+
+      {/* Certifications Section */}
+      {profile.certifications && profile.certifications.length > 0 && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium mb-2">Certifications</h4>
+          {profile.certifications.map((cert: Certification, index: number) => (
+            <div key={index} className="certification-item mb-4">
+              <h5 className="font-medium">{cert.name}</h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {cert.issuer}
+                {cert.dateReceived && ` • ${new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`}
+              </p>
+              {cert.credentialUrl && (
+                <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline">
+                  View Credential
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
       )}
-      {profile.portfolioUrl && (
-        <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
-          <Globe className="h-4 w-4 mr-1" /> Portfolio
-        </a>
+
+      {/* GitHub Projects */}
+      {profile.githubProjects && profile.githubProjects.length > 0 && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <h4 className="text-lg font-medium mb-2">Projects</h4>
+          {profile.githubProjects.map((project: GitHubProject, index: number) => (
+            <div key={index} className="project-item mb-4">
+              <h5 className="font-medium">
+                <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                  {project.name}
+                </a>
+              </h5>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{project.description}</p>
+              {project.technologies && project.technologies.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {project.technologies.map((tech: string, techIndex: number) => (
+                    <span key={techIndex} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* Links */}
+      <div className="flex space-x-4 mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+        {profile.githubUrl && (
+          <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+            <Github className="h-4 w-4 mr-1" /> GitHub
+          </a>
+        )}
+        {profile.linkedinUrl && (
+          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+            <Linkedin className="h-4 w-4 mr-1" /> LinkedIn
+          </a>
+        )}
+        {profile.portfolioUrl && (
+          <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
+            <Globe className="h-4 w-4 mr-1" /> Portfolio
+          </a>
+        )}
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-4">
+        <Link to="/onboarding/student" className="inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
+        <button
+          onClick={() => setShowResetPasswordModal(true)}
+          className="inline-block text-sm text-indigo-600 hover:text-indigo-500 flex items-center gap-1 cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+          </svg>
+          Reset Password
+        </button>
+      </div>
+
+      {/* Reset Password Modal */}
+      <Dialog open={showResetPasswordModal} onOpenChange={setShowResetPasswordModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              You will be redirected to the password change page.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowResetPasswordModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => window.location.href = '/change-password'}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-    
-    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-4">
-      <Link to="/onboarding/student" className="inline-block text-sm text-indigo-600 hover:text-indigo-500">Edit Profile</Link>
-      <button 
-        onClick={() => setShowResetPasswordModal(true)}
-        className="inline-block text-sm text-indigo-600 hover:text-indigo-500 flex items-center gap-1 cursor-pointer"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-        </svg>
-        Reset Password
-      </button>
-    </div>
-    
-    {/* Reset Password Modal */}
-    <Dialog open={showResetPasswordModal} onOpenChange={setShowResetPasswordModal}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
-          <DialogDescription>
-            You will be redirected to the password change page.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowResetPasswordModal(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => window.location.href = '/change-password'}>
-            Continue
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  </div>
   );
 };
 
@@ -583,7 +583,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
   <div className="space-y-8">
     <div className="flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">Company Profile</h1>
-      <Button 
+      <Button
         onClick={onEditClick}
         className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white"
       >
@@ -599,9 +599,9 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
         <div className="flex-shrink-0 w-full md:w-auto flex justify-center md:block">
           {(profile.logoUrl || profile.companyLogoUrl) ? (
             <div className="w-32 h-32 bg-gray-800/50 rounded-xl border border-gray-700/30 flex items-center justify-center overflow-hidden shadow-lg">
-              <img 
-                src={profile.logoUrl || profile.companyLogoUrl} 
-                alt={`${profile.companyName} logo`} 
+              <img
+                src={profile.logoUrl || profile.companyLogoUrl}
+                alt={`${profile.companyName} logo`}
                 className="w-full h-full object-contain"
               />
             </div>
@@ -626,7 +626,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
         <div className="flex-grow w-full md:w-auto text-center md:text-left mt-4 md:mt-0">
           <h2 className="text-3xl font-bold text-white mb-2">{profile.companyName}</h2>
           <p className="text-gray-400 mb-4">@{username}</p>
-          
+
           <div className="flex flex-wrap gap-3 justify-center md:justify-start">
             {profile.industry && (
               <span className="bg-gray-800 text-gray-300 px-4 py-2 rounded-md text-sm flex items-center shadow-sm hover:bg-gray-750 transition-colors">
@@ -645,11 +645,11 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
               </span>
             )}
             {(profile.companyWebsite || profile.websiteUrl) && (
-              <a 
-                href={profile.websiteUrl ? (profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`) : 
-                     (profile.companyWebsite && profile.companyWebsite.startsWith('http') ? profile.companyWebsite : `https://${profile.companyWebsite || ''}`)} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={profile.websiteUrl ? (profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`) :
+                  (profile.companyWebsite && profile.companyWebsite.startsWith('http') ? profile.companyWebsite : `https://${profile.companyWebsite || ''}`)}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gray-800 text-gray-300 px-4 py-2 rounded-md text-sm flex items-center hover:bg-gray-700 transition-colors shadow-sm"
               >
                 <Globe className="w-4 h-4 mr-2 text-gray-400" />
@@ -676,7 +676,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
           ) : (
             <p className="text-gray-500 italic">No company description provided</p>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
             {profile.companyAddress && (
               <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-3 shadow-sm">
@@ -692,7 +692,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
                 </div>
               </div>
             )}
-            
+
             {profile.websiteUrl && (
               <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-3 shadow-sm">
                 <div className="bg-gray-800/50 p-2 rounded-lg">
@@ -700,10 +700,10 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
                 </div>
                 <div>
                   <p className="text-gray-400 font-medium mb-1">Website</p>
-                  <a 
-                    href={profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href={profile.websiteUrl.startsWith('http') ? profile.websiteUrl : `https://${profile.websiteUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-gray-300 hover:text-white hover:underline transition-colors"
                   >
                     {profile.websiteUrl}
@@ -751,7 +751,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
         </svg>
         Company Contact
       </h3>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         {profile.contactPersonName ? (
           <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-start gap-4 shadow-sm">
@@ -779,7 +779,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
             </div>
           </div>
         )}
-        
+
         <div className="space-y-4">
           {profile.contactPersonEmail && (
             <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-center gap-3 shadow-sm">
@@ -792,7 +792,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
               </div>
             </div>
           )}
-          
+
           {profile.contactPersonPhone && (
             <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 flex items-center gap-3 shadow-sm">
               <div className="bg-gray-800/50 p-2 rounded-lg">
@@ -804,7 +804,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
               </div>
             </div>
           )}
-          
+
           {!profile.contactPersonEmail && !profile.contactPersonPhone && (
             <div className="bg-black/20 rounded-lg p-4 border border-gray-800/30 shadow-sm">
               <p className="text-gray-500 italic">No contact information provided</p>
@@ -813,7 +813,7 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
         </div>
       </div>
     </div>
-    
+
     {/* Account Actions */}
     <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 shadow-xl">
       <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
@@ -823,8 +823,8 @@ const EmployerProfileDisplay: React.FC<{ profile: EmployerProfileData, email: st
         </svg>
         Account Settings
       </h3>
-      <Link 
-        to="/change-password" 
+      <Link
+        to="/change-password"
         className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -847,16 +847,16 @@ const withToast = (WrappedComponent: typeof Component) => {
 export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   declare context: AuthContextType;
   static contextType = AuthContext;
-  
+
   private readonly API_BASE_URL: string;
-  
+
   constructor(props: ProfilePageProps) {
     super(props);
     this.API_BASE_URL = normalizedApiBaseUrl;
-    
+
     // Ensure API URL is properly set
     console.log('Profile page using API base URL:', this.API_BASE_URL);
-    
+
     this.state = {
       studentProfile: null,
       employerProfile: null,
@@ -880,11 +880,11 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       showResetPasswordModal: false
     };
   }
-  
+
   componentDidMount() {
     this.loadUserProfile();
   }
-  
+
   // Get the token from localStorage or context
   getAuthToken = (): string | null => {
     // First try from context
@@ -892,13 +892,13 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
     if (user?.accessToken) {
       return user.accessToken;
     }
-    
+
     // Then try from localStorage as standalone token
     const token = localStorage.getItem('token');
     if (token) {
       return token;
     }
-    
+
     // Finally, try to parse from the user object in localStorage
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -911,15 +911,15 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         console.error('Error parsing user data from localStorage:', e);
       }
     }
-    
+
     return null;
   };
-  
+
   // Load user profile data
   loadUserProfile = async () => {
     try {
       const { user, fetchUserProfile } = this.context || {};
-      
+
       if (!user) {
         console.log("User not found in context, attempting to refresh");
         // Instead of immediately logging out, try to refresh the user profile
@@ -931,8 +931,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             const refreshedUser = this.context?.user;
             if (!refreshedUser) {
               console.log("Still not authenticated after refresh, redirecting to login");
-        window.location.href = '/login';
-        return;
+              window.location.href = '/login';
+              return;
             }
           } else {
             window.location.href = '/login';
@@ -944,23 +944,23 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           return;
         }
       }
-      
+
       const token = this.getAuthToken();
       if (!token) {
         console.log("No token found anywhere, redirecting to login");
         window.location.href = '/login';
         return;
       }
-      
+
       // Determine if the user is a student or employer
       const currentUser = user || (this.context && this.context.user);
       const isStudent = currentUser?.roles?.includes('ROLE_STUDENT');
       const isEmployer = currentUser?.roles?.includes('ROLE_NLO');
-      
+
       if (isStudent) {
         try {
-        await this.loadStudentProfile(token);
-        await this.loadResumeData(token);
+          await this.loadStudentProfile(token);
+          await this.loadResumeData(token);
         } catch (profileError) {
           console.error('Error loading student profile:', profileError);
           // Don't log out immediately for profile errors
@@ -968,7 +968,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         }
       } else if (isEmployer) {
         try {
-        await this.loadEmployerProfile(token);
+          await this.loadEmployerProfile(token);
         } catch (profileError) {
           console.error('Error loading employer profile:', profileError);
           // Don't log out immediately for profile errors
@@ -981,26 +981,26 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       this.setState({ loading: false });
     }
   };
-  
+
   // Load student profile
   loadStudentProfile = async (token: string) => {
     try {
       console.log('Attempting to load student profile data');
-      
+
       // Use smart profile fetching that adapts to user role
       const rawProfileData = await profileService.getCurrentUserProfileSmart();
-      
+
       if (rawProfileData) {
         console.log('Student profile loaded:', rawProfileData);
         console.log('Raw university data:', rawProfileData.university, 'Type:', typeof rawProfileData.university);
         console.log('Raw bio data:', rawProfileData.bio, 'Type:', typeof rawProfileData.bio);
-        
+
         // Check for null or undefined fields
         const fields = ['university', 'major', 'graduationYear', 'bio', 'skills', 'experiences', 'certifications'];
         fields.forEach(field => {
           console.log(`Field ${field}:`, (rawProfileData as any)[field], 'Type:', typeof (rawProfileData as any)[field]);
         });
-        
+
         // Parse GitHub projects if they come as a string
         let githubProjects = rawProfileData.githubProjects;
         if (typeof githubProjects === 'string') {
@@ -1011,8 +1011,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             githubProjects = [];
           }
         }
-        
-              // Create a properly formatted student profile object with safe defaults
+
+        // Create a properly formatted student profile object with safe defaults
         // Handle the case where bio and university might be in the parent Profile object
         const profileData: StudentProfileData = {
           id: rawProfileData.id || null,
@@ -1023,11 +1023,11 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           location: rawProfileData.location || '',
           address: rawProfileData.address || '',
           // Special handling for fields that might be inherited from the parent Profile class
-          university: rawProfileData.university || '',  
+          university: rawProfileData.university || '',
           major: rawProfileData.major || '',
           graduationYear: rawProfileData.graduationYear || null,
-          bio: typeof rawProfileData.bio === 'string' 
-            ? rawProfileData.bio 
+          bio: typeof rawProfileData.bio === 'string'
+            ? rawProfileData.bio
             : (rawProfileData.bio ? JSON.stringify(rawProfileData.bio) : ''),
           linkedinUrl: rawProfileData.linkedinUrl || '',
           githubUrl: rawProfileData.githubUrl || '',
@@ -1041,10 +1041,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           certifications: Array.isArray(rawProfileData.certifications) ? rawProfileData.certifications : [],
           githubProjects: Array.isArray(githubProjects) ? githubProjects : []
         };
-        
+
         console.log('Processed profile data:', profileData);
-        
-        this.setState({ 
+
+        this.setState({
           studentProfile: profileData,
           skills: Array.isArray(rawProfileData.skills) ? rawProfileData.skills : []
         }, () => {
@@ -1053,7 +1053,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       }
     } catch (error: any) {
       console.error('Error loading student profile (primary):', error);
-      
+
       // If unauthorized (401/403), try to refresh the token and retry
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         try {
@@ -1064,7 +1064,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           } else {
             console.log('No fetchUserProfile method available in context');
           }
-          
+
           // Get the new token and retry
           const newToken = this.getAuthToken();
           if (newToken) {
@@ -1073,12 +1073,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 'Authorization': `Bearer ${newToken}`
               }
             });
-            
+
             if (retryResponse.data) {
               console.log('Retry profile response:', retryResponse.data);
               console.log('Retry university data:', retryResponse.data.university, 'Type:', typeof retryResponse.data.university);
               console.log('Retry bio data:', retryResponse.data.bio, 'Type:', typeof retryResponse.data.bio);
-              
+
               // Parse GitHub projects if they come as a string
               let githubProjects = retryResponse.data.githubProjects;
               if (typeof githubProjects === 'string') {
@@ -1089,7 +1089,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                   githubProjects = [];
                 }
               }
-              
+
               const profileData: StudentProfileData = {
                 id: retryResponse.data.id || null,
                 firstName: retryResponse.data.firstName || '',
@@ -1102,8 +1102,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 university: retryResponse.data.university || '',
                 major: retryResponse.data.major || '',
                 graduationYear: retryResponse.data.graduationYear || null,
-                bio: typeof retryResponse.data.bio === 'string' 
-                  ? retryResponse.data.bio 
+                bio: typeof retryResponse.data.bio === 'string'
+                  ? retryResponse.data.bio
                   : (retryResponse.data.bio ? JSON.stringify(retryResponse.data.bio) : ''),
                 linkedinUrl: retryResponse.data.linkedinUrl || '',
                 githubUrl: retryResponse.data.githubUrl || '',
@@ -1117,10 +1117,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 certifications: Array.isArray(retryResponse.data.certifications) ? retryResponse.data.certifications : [],
                 githubProjects: Array.isArray(githubProjects) ? githubProjects : []
               };
-              
+
               console.log('Processed retry profile data:', profileData);
-              
-              this.setState({ 
+
+              this.setState({
                 studentProfile: profileData,
                 skills: Array.isArray(retryResponse.data.skills) ? retryResponse.data.skills : []
               }, () => {
@@ -1133,7 +1133,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           console.error('Failed to refresh token and retry:', retryError);
         }
       }
-      
+
       // If 404 errors, try a fallback to the profiles/me endpoint
       if (error.response && error.response.status === 404) {
         try {
@@ -1143,12 +1143,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               'Authorization': `Bearer ${token}`
             }
           });
-          
+
           if (fallbackResponse.data) {
             console.log('Fallback profile loaded:', fallbackResponse.data);
             console.log('Fallback university data:', fallbackResponse.data.university, 'Type:', typeof fallbackResponse.data.university);
             console.log('Fallback bio data:', fallbackResponse.data.bio, 'Type:', typeof fallbackResponse.data.bio);
-            
+
             // Parse GitHub projects if they come as a string
             let githubProjects = fallbackResponse.data.githubProjects;
             if (typeof githubProjects === 'string') {
@@ -1159,7 +1159,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 githubProjects = [];
               }
             }
-            
+
             // Convert the generic profile data to student profile format with safe defaults
             const profileData: StudentProfileData = {
               id: fallbackResponse.data.id || null,
@@ -1173,8 +1173,8 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               university: fallbackResponse.data.university || '',
               major: fallbackResponse.data.major || '',
               graduationYear: fallbackResponse.data.graduationYear || null,
-              bio: typeof fallbackResponse.data.bio === 'string' 
-                ? fallbackResponse.data.bio 
+              bio: typeof fallbackResponse.data.bio === 'string'
+                ? fallbackResponse.data.bio
                 : (fallbackResponse.data.bio ? JSON.stringify(fallbackResponse.data.bio) : ''),
               linkedinUrl: fallbackResponse.data.linkedinUrl || '',
               githubUrl: fallbackResponse.data.githubUrl || '',
@@ -1188,10 +1188,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               certifications: Array.isArray(fallbackResponse.data.certifications) ? fallbackResponse.data.certifications : [],
               githubProjects: Array.isArray(githubProjects) ? githubProjects : []
             };
-            
+
             console.log('Processed fallback profile data:', profileData);
-            
-            this.setState({ 
+
+            this.setState({
               studentProfile: profileData,
               skills: Array.isArray(fallbackResponse.data.skills) ? fallbackResponse.data.skills : []
             }, () => {
@@ -1202,7 +1202,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         } catch (fallbackError) {
           console.error('Fallback profile load also failed:', fallbackError);
           // Set empty profile state
-          this.setState({ 
+          this.setState({
             studentProfile: {
               firstName: '',
               lastName: '',
@@ -1214,7 +1214,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               experiences: [],
               certifications: [],
               githubProjects: []
-            } 
+            }
           }, () => {
             console.log('Set empty profile state:', this.state.studentProfile);
           });
@@ -1222,22 +1222,22 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       }
     }
   };
-  
+
   // Load employer profile
   loadEmployerProfile = async (token: string) => {
     try {
       console.log('Attempting to load employer profile data');
-      
+
       // Try employer-profiles/me endpoint first, which should have the most complete data
       const response = await axios.get(`${this.API_BASE_URL}/employer-profiles/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.data) {
         console.log('Employer profile loaded:', response.data);
-        
+
         // Create a properly formatted employer profile object with safe defaults
         const profileData: EmployerProfileData = {
           id: response.data.id || null,
@@ -1257,16 +1257,16 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           verified: response.data.verified || false,
           hasCompletedOnboarding: response.data.hasCompletedOnboarding || false
         };
-        
+
         console.log('Processed employer profile data:', profileData);
-        
+
         this.setState({ employerProfile: profileData }, () => {
           console.log('State updated with employer profile:', this.state.employerProfile);
         });
       }
     } catch (error: any) {
       console.error('Error loading employer profile (primary):', error);
-      
+
       // If unauthorized (401/403), try to refresh the token and retry
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         try {
@@ -1277,7 +1277,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           } else {
             console.log('No fetchUserProfile method available in context');
           }
-          
+
           // Get the new token and retry
           const newToken = this.getAuthToken();
           if (newToken) {
@@ -1286,10 +1286,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 'Authorization': `Bearer ${newToken}`
               }
             });
-            
+
             if (retryResponse.data) {
               console.log('Retry employer profile response:', retryResponse.data);
-              
+
               const profileData: EmployerProfileData = {
                 id: retryResponse.data.id || null,
                 companyName: retryResponse.data.companyName || '',
@@ -1308,9 +1308,9 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                 verified: retryResponse.data.verified || false,
                 hasCompletedOnboarding: retryResponse.data.hasCompletedOnboarding || false
               };
-              
+
               console.log('Processed retry employer profile data:', profileData);
-              
+
               this.setState({ employerProfile: profileData }, () => {
                 console.log('State updated with retry employer profile:', this.state.employerProfile);
               });
@@ -1321,7 +1321,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
           console.error('Failed to refresh token and retry employer profile:', retryError);
         }
       }
-      
+
       // If 404 errors or other issues, try a fallback to the profiles/me endpoint
       try {
         console.log('Employer profile not found, trying fallback endpoint');
@@ -1330,10 +1330,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         if (fallbackResponse.data) {
           console.log('Fallback employer profile loaded:', fallbackResponse.data);
-          
+
           // Convert the generic profile data to employer profile format with safe defaults
           const profileData: EmployerProfileData = {
             id: fallbackResponse.data.id || null,
@@ -1353,9 +1353,9 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             verified: fallbackResponse.data.verified || false,
             hasCompletedOnboarding: fallbackResponse.data.hasCompletedOnboarding || false
           };
-          
+
           console.log('Processed fallback employer profile data:', profileData);
-          
+
           this.setState({ employerProfile: profileData }, () => {
             console.log('State updated with fallback employer profile:', this.state.employerProfile);
           });
@@ -1364,38 +1364,38 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       } catch (fallbackError) {
         console.error('Fallback employer profile load also failed:', fallbackError);
         // Set empty profile state
-        this.setState({ 
+        this.setState({
           employerProfile: {
             companyName: ''
-          } 
+          }
         }, () => {
           console.log('Set empty employer profile state:', this.state.employerProfile);
         });
       }
     }
   };
-  
+
   // Load resume data
   loadResumeData = async (token: string | null) => {
     if (!token) {
       console.error('No authentication token found');
       return;
     }
-    
+
     try {
       const response = await axios.get(`${this.API_BASE_URL}/cvs/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       console.log('Resume data loaded:', response.data);
-      
+
       if (response.data && response.data.length > 0) {
         const cvData = response.data[0]; // Get the first CV if array
-        this.setState({ 
+        this.setState({
           cvData: cvData,
           hasResume: true
         });
-        
+
         // Make sure we have a valid ID before loading the content
         if (cvData.id) {
           // Load the CV content
@@ -1406,18 +1406,18 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               // Accept any status code to handle errors gracefully
               validateStatus: (status) => true
             });
-            
+
             // Check if the response was successful
             if (contentResponse.status >= 200 && contentResponse.status < 300) {
               if (contentResponse.data) {
                 const contentStr = contentResponse.data;
                 console.log('Resume content loaded, length:', contentStr.length);
-                
+
                 // Check if it looks like HTML
-                const isHtml = contentStr.includes('<!DOCTYPE html>') || 
-                              contentStr.includes('<html>') || 
-                              (contentStr.includes('<') && contentStr.includes('</'));
-                
+                const isHtml = contentStr.includes('<!DOCTYPE html>') ||
+                  contentStr.includes('<html>') ||
+                  (contentStr.includes('<') && contentStr.includes('</'));
+
                 // If it's HTML, use it directly
                 if (isHtml) {
                   console.log('Content is HTML, using directly');
@@ -1426,41 +1426,41 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                   });
                   return;
                 }
-                
+
                 // Otherwise, treat as JSON
                 try {
                   // Parse and convert to HTML
                   const jsonData = JSON.parse(contentStr);
                   const resumeHtml = this.generateHTMLFromJSON(jsonData);
                   console.log('Parsed JSON data and generated HTML, length:', resumeHtml.length);
-                  
+
                   this.setState({
                     resumeHtml
                   });
                 } catch (e) {
                   console.error('Error parsing JSON content:', e);
-                  this.setState({ 
+                  this.setState({
                     resumeHtml: contentStr // Fall back to raw content
                   });
                 }
               } else {
                 console.warn('CV content response was empty');
-                this.setState({ 
+                this.setState({
                   resumeHtml: null
                 });
               }
             } else {
               // Handle error responses
               console.error(`Error loading CV content, status: ${contentResponse.status}`, contentResponse.data);
-              
+
               // Keep the CV data but don't show content
-              this.setState({ 
+              this.setState({
                 resumeHtml: null
               });
             }
           } catch (contentError) {
             console.error('Error loading CV content:', contentError);
-            this.setState({ 
+            this.setState({
               resumeHtml: null
             });
           }
@@ -1470,11 +1470,11 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       } else if (response.data && !Array.isArray(response.data)) {
         // Handle case where response.data is a single object, not an array
         const cvData = response.data;
-        this.setState({ 
+        this.setState({
           cvData: cvData,
           hasResume: true
         });
-        
+
         // Make sure we have a valid ID before loading the content
         if (cvData.id) {
           // Load the CV content (same logic as above)
@@ -1484,16 +1484,16 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
               responseType: 'text',
               validateStatus: (status) => true
             });
-            
+
             if (contentResponse.status >= 200 && contentResponse.status < 300) {
               if (contentResponse.data) {
                 const contentStr = contentResponse.data;
                 console.log('Resume content loaded, length:', contentStr.length);
-                
-                const isHtml = contentStr.includes('<!DOCTYPE html>') || 
-                              contentStr.includes('<html>') || 
-                              (contentStr.includes('<') && contentStr.includes('</'));
-                
+
+                const isHtml = contentStr.includes('<!DOCTYPE html>') ||
+                  contentStr.includes('<html>') ||
+                  (contentStr.includes('<') && contentStr.includes('</'));
+
                 if (isHtml) {
                   console.log('Content is HTML, using directly');
                   this.setState({
@@ -1501,36 +1501,36 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
                   });
                   return;
                 }
-                
+
                 try {
                   const jsonData = JSON.parse(contentStr);
                   const resumeHtml = this.generateHTMLFromJSON(jsonData);
                   console.log('Parsed JSON data and generated HTML, length:', resumeHtml.length);
-                  
+
                   this.setState({
                     resumeHtml
                   });
                 } catch (e) {
                   console.error('Error parsing JSON content:', e);
-                  this.setState({ 
+                  this.setState({
                     resumeHtml: contentStr
                   });
                 }
               } else {
                 console.warn('CV content response was empty');
-                this.setState({ 
+                this.setState({
                   resumeHtml: null
                 });
               }
             } else {
               console.error(`Error loading CV content, status: ${contentResponse.status}`, contentResponse.data);
-              this.setState({ 
+              this.setState({
                 resumeHtml: null
               });
             }
           } catch (contentError) {
             console.error('Error loading CV content:', contentError);
-            this.setState({ 
+            this.setState({
               resumeHtml: null
             });
           }
@@ -1548,7 +1548,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
   generateHTMLFromJSON = (jsonData: any): string => {
     try {
       console.log('Generating HTML from JSON data of type:', typeof jsonData);
-      
+
       // Use the resumeHtmlGenerator for all HTML generation
       try {
         const html = resumeHtmlGenerator.generateResumeHtml(jsonData);
@@ -1604,22 +1604,22 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       `;
     }
   };
-  
+
   // Handle tab change
   handleTabChange = (value: string) => {
     this.setState({ currentTab: value });
   };
-  
+
   // Open education edit modal
   handleOpenEducationModal = () => {
     this.setState({ isEducationModalOpen: true });
   };
-  
+
   // Close education edit modal
   handleCloseEducationModal = () => {
     this.setState({ isEducationModalOpen: false });
   };
-  
+
   // Refresh profile after education update
   handleEducationSaved = () => {
     const token = this.getAuthToken();
@@ -1627,17 +1627,17 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       this.loadStudentProfile(token);
     }
   };
-  
+
   // Open profile edit modal
   handleOpenProfileModal = () => {
     this.setState({ isProfileModalOpen: true });
   };
-  
+
   // Close profile edit modal
   handleCloseProfileModal = () => {
     this.setState({ isProfileModalOpen: false });
   };
-  
+
   // Refresh profile after profile update
   handleProfileSaved = () => {
     const token = this.getAuthToken();
@@ -1645,17 +1645,17 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       this.loadStudentProfile(token);
     }
   };
-  
+
   // Open employer profile edit modal
   handleOpenEmployerProfileModal = () => {
     this.setState({ isEmployerProfileModalOpen: true });
   };
-  
+
   // Close employer profile edit modal
   handleCloseEmployerProfileModal = () => {
     this.setState({ isEmployerProfileModalOpen: false });
   };
-  
+
   // Refresh employer profile after update
   handleEmployerProfileSaved = () => {
     const token = this.getAuthToken();
@@ -1663,7 +1663,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       this.loadEmployerProfile(token);
     }
   };
-  
+
   // Helper method to show toasts
   private showToast = (props: ToastProps) => {
     const toastContext = this.context as unknown as { toast?: (props: ToastProps) => void };
@@ -1771,12 +1771,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       this.setState({ uploadPreOjtLoading: false });
     }
   };
-  
+
   render() {
-    const { 
-      loading, 
-      studentProfile, 
-      employerProfile, 
+    const {
+      loading,
+      studentProfile,
+      employerProfile,
       isEducationModalOpen,
       isProfileModalOpen,
       isEmployerProfileModalOpen,
@@ -1786,12 +1786,12 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
       resumeHtml,
       hasResume
     } = this.state;
-    
+
     console.log('Render - studentProfile:', studentProfile);
     console.log('Render - bio:', studentProfile?.bio, 'university:', studentProfile?.university);
-    
+
     const { user } = this.context || {};
-    
+
     // Check for user and roles first
     if (!user) {
       return (
@@ -1803,10 +1803,10 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         </div>
       );
     }
-    
+
     const isStudent = Array.isArray(user.roles) && user.roles.includes('ROLE_STUDENT');
     const isEmployer = Array.isArray(user.roles) && user.roles.includes('ROLE_NLO');
-    
+
     // For students, wait until student profile is loaded
     if (isStudent && !studentProfile) {
       return (
@@ -1818,7 +1818,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         </div>
       );
     }
-    
+
     // For employers, wait until employer profile is loaded
     if (isEmployer && !employerProfile) {
       return (
@@ -1830,465 +1830,484 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
         </div>
       );
     }
-    
+
     return (
       <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">User Profile</h1>
-        
+
         {isStudent && (
           <div className="grid md:grid-cols-12 gap-4 sm:gap-6">
             {/* Left column for tabs */}
             <div className="md:col-span-12">
               <Card className="overflow-hidden bg-gray-900/60 border-gray-800/50">
-                  <div className="p-4 sm:p-6">
-                        <div className="space-y-4 sm:space-y-8">
-                          {/* Profile header with name and contact */}
-                          <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-4 sm:p-6 rounded-lg border border-gray-800/50 shadow-lg">
-                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 sm:gap-6">
-                              <div className="space-y-3 sm:space-y-4 flex-1">
-                                <div>
-                                  <h2 className="text-xl sm:text-2xl font-bold text-white break-words">{studentProfile.firstName} {studentProfile.lastName}</h2>
-                                  <p className="text-sm sm:text-base text-gray-400">@{user?.username}</p>
-                                </div>
+                <div className="p-4 sm:p-6">
+                  <div className="space-y-4 sm:space-y-8">
+                    {/* Profile header with name and contact */}
+                    <div className="bg-gradient-to-br from-gray-900/80 to-black/90 p-4 sm:p-6 rounded-lg border border-gray-800/50 shadow-lg">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 sm:gap-6">
+                        <div className="space-y-3 sm:space-y-4 flex-1">
+                          <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white break-words">{studentProfile.firstName} {studentProfile.lastName}</h2>
+                            <p className="text-sm sm:text-base text-gray-400">@{user?.username}</p>
+                          </div>
 
-                                {/* Contact Information */}
-                                <div className="space-y-1.5 sm:space-y-2">
-                                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                                    <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                                    <span className="break-all">{user?.email}</span>
-                                  </div>
-                                  {studentProfile.phoneNumber && (
-                                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                                      <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                                      <span className="break-words">{studentProfile.phoneNumber}</span>
-                                    </div>
-                                  )}
-                                  {studentProfile.location && (
-                                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                      </svg>
-                                      <span className="break-words">{studentProfile.location}</span>
-                                    </div>
-                                  )}
-                                  {studentProfile.address && (
-                                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                                      <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                      </svg>
-                                      <span className="break-words">{studentProfile.address}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Professional Links */}
-                              <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
-                                {studentProfile.githubUrl && (
-                                  <a 
-                                    href={studentProfile.githubUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
-                                  >
-                                    <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    <span>GitHub</span>
-                                  </a>
-                                )}
-                                {studentProfile.linkedinUrl && (
-                                  <a 
-                                    href={studentProfile.linkedinUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
-                                  >
-                                    <Linkedin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    <span>LinkedIn</span>
-                                  </a>
-                                )}
-                                {studentProfile.portfolioUrl && (
-                                  <a 
-                                    href={studentProfile.portfolioUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
-                                  >
-                                    <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                    <span>Portfolio</span>
-                                  </a>
-                                )}
-                              </div>
+                          {/* Contact Information */}
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                              <span className="break-all">{user?.email}</span>
                             </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                            {/* Education section */}
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <div className="flex justify-between items-start mb-3 sm:mb-4">
-                                <h3 className="text-lg sm:text-xl font-semibold text-white">Education</h3>
+                            {studentProfile.phoneNumber && (
+                              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                                <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                                <span className="break-words">{studentProfile.phoneNumber}</span>
                               </div>
-                              {studentProfile.university && studentProfile.university.trim() !== '' ? (
-                                <div>
-                                  <p className="text-base sm:text-lg font-medium text-white break-words">{studentProfile.university}</p>
-                                  {studentProfile.major && studentProfile.major.trim() !== '' && (
-                                    <p className="text-sm sm:text-base text-gray-400 break-words">{studentProfile.major}</p>
-                                  )}
-                                  {studentProfile.graduationYear && (
-                                    <p className="text-gray-500 text-xs sm:text-sm mt-1">Graduation: {studentProfile.graduationYear}</p>
-                                  )}
-                                </div>
-                              ) : (
-                                <div>
-                                  <p className="text-sm sm:text-base text-gray-500 italic">No education information provided</p>
-                                  <Button
-                                    variant="link"
-                                    className="text-indigo-400 hover:text-indigo-300 p-0 h-auto mt-2 text-xs sm:text-sm"
-                                    onClick={this.handleOpenEducationModal}
-                                  >
-                                    <span className="mr-1">Add your education details</span> →
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Bio section */}
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">About Me</h3>
-                              {studentProfile.bio && studentProfile.bio.trim() !== '' ? (
-                                <p className="text-sm sm:text-base text-gray-400 break-words">{studentProfile.bio}</p>
-                              ) : (
-                                <p className="text-sm sm:text-base text-gray-500 italic">No bio provided</p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Skills section */}
-                          <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                            <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Skills</h3>
-                            {studentProfile.skills && studentProfile.skills.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                {studentProfile.skills.map((skill: string, index: number) => (
-                                  <span 
-                                    key={index}
-                                    className="bg-black/80 text-gray-300 border border-gray-700/30 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm"
-                                  >
-                                    {skill}
-                                  </span>
-                                ))}
+                            )}
+                            {studentProfile.location && (
+                              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="break-words">{studentProfile.location}</span>
                               </div>
-                            ) : (
-                              <p className="text-sm sm:text-base text-gray-500 italic">No skills provided</p>
+                            )}
+                            {studentProfile.address && (
+                              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <span className="break-words">{studentProfile.address}</span>
+                              </div>
                             )}
                           </div>
-                          
-                          {/* Work Experience section */}
-                          {studentProfile.experiences && studentProfile.experiences.length > 0 && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Work Experience</h3>
-                              <div className="space-y-4 sm:space-y-6">
-                                {studentProfile.experiences.map((exp: WorkExperience, index: number) => (
-                                  <div key={index} className="border-l-2 border-gray-700 pl-3 sm:pl-4 pb-2">
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm sm:text-base text-white break-words">{exp.title}</h4>
-                                        <p className="text-xs sm:text-sm text-gray-400 break-words">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
-                                      </div>
-                                      <div className="text-xs sm:text-sm text-gray-500 bg-black/40 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full flex-shrink-0 w-fit">
-                                        {exp.startDate && (
-                                          <span>
-                                            {new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-                                            {' - '}
-                                            {exp.current 
-                                              ? 'Present'
-                                              : exp.endDate 
-                                                ? new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
-                                                : ''
-                                            }
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {exp.description && <p className="mt-2 text-xs sm:text-sm text-gray-400 break-words">{exp.description}</p>}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                        </div>
+
+                        {/* Professional Links */}
+                        <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
+                          {studentProfile.githubUrl && (
+                            <a
+                              href={studentProfile.githubUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
+                            >
+                              <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span>GitHub</span>
+                            </a>
                           )}
-                          
-                          {/* GitHub Projects section */}
-                          {studentProfile.githubProjects && studentProfile.githubProjects.length > 0 && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <Github className="h-4 w-4 sm:h-5 sm:w-5" />
-                                GitHub Projects
-                              </h3>
-                              <div className="grid gap-4 sm:gap-6">
-                                {studentProfile.githubProjects.map((project: GitHubProject, index: number) => (
-                                  <div key={index} className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30">
-                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="text-base sm:text-lg font-bold text-white mb-2 break-words">{project.name}</h4>
-                                        {project.description && (
-                                          <p className="text-gray-400 text-xs sm:text-sm mb-3 leading-relaxed break-words">{project.description}</p>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500">
-                                        {project.stars !== undefined && (
-                                          <div className="flex items-center gap-1">
-                                            <Star className="h-4 w-4" />
-                                            <span>{project.stars}</span>
-                                          </div>
-                                        )}
-                                        {project.forks !== undefined && (
-                                          <div className="flex items-center gap-1">
-                                            <GitFork className="h-4 w-4" />
-                                            <span>{project.forks}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                      <div className="flex items-center gap-4">
-                                        {project.url && (
-                                          <a 
-                                            href={project.url} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs sm:text-sm font-medium transition-colors"
-                                          >
-                                            <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                                            View Repository
-                                          </a>
-                                        )}
-                                      </div>
-                                      
-                                      {project.lastUpdated && (
-                                        <div className="flex items-center text-xs text-gray-500">
-                                          <Calendar className="h-3 w-3 mr-1" />
-                                          <span className="hidden sm:inline">Updated </span>
-                                          {new Date(project.lastUpdated).toLocaleDateString('en-US', { 
-                                            year: 'numeric', 
-                                            month: 'short', 
-                                            day: 'numeric' 
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                          {studentProfile.linkedinUrl && (
+                            <a
+                              href={studentProfile.linkedinUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
+                            >
+                              <Linkedin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span>LinkedIn</span>
+                            </a>
                           )}
-                          
-                          {/* Certification section */}
-                          {studentProfile.certifications && studentProfile.certifications.length > 0 && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Certifications</h3>
-                              <div className="space-y-3 sm:space-y-4">
-                                {studentProfile.certifications.map((cert: Certification, index: number) => (
-                                  <div key={index} className="border-l-2 border-gray-700 pl-3 sm:pl-4">
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm sm:text-base text-white break-words">{cert.name}</h4>
-                                        <p className="text-xs sm:text-sm text-gray-400 break-words">{cert.issuer}</p>
-                                      </div>
-                                      {cert.dateReceived && (
-                                        <span className="text-xs sm:text-sm text-gray-500 bg-black/40 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full flex-shrink-0 w-fit">
-                                          {new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                          {studentProfile.portfolioUrl && (
+                            <a
+                              href={studentProfile.portfolioUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 sm:gap-2 bg-black text-gray-300 border border-gray-700/30 hover:border-gray-600 rounded-md px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors text-xs sm:text-sm"
+                            >
+                              <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span>Portfolio</span>
+                            </a>
                           )}
-                          
-                          {/* CV/Resume section */}
-                          {hasResume && cvData && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                                CV
-                              </h3>
-                              <div className="bg-black/40 rounded-lg p-3 sm:p-4 border border-gray-800/30">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm sm:text-base text-white font-medium break-words">Generated Resume</p>
-                                    <p className="text-gray-400 text-xs sm:text-sm break-all">CV ID: {cvData.id}</p>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={this.handleToggleCvViewer}
-                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      {showCvViewer ? 'Hide CV' : 'View CV'}
-                                    </Button>
-                                    <Link
-                                      to="/resume"
-                                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                      Edit CV
-                                    </Link>
-                                  </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                      {/* Education section */}
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <div className="flex justify-between items-start mb-3 sm:mb-4">
+                          <h3 className="text-lg sm:text-xl font-semibold text-white">Education</h3>
+                        </div>
+                        {studentProfile.university && studentProfile.university.trim() !== '' ? (
+                          <div>
+                            <p className="text-base sm:text-lg font-medium text-white break-words">{studentProfile.university}</p>
+                            {studentProfile.major && studentProfile.major.trim() !== '' && (
+                              <p className="text-sm sm:text-base text-gray-400 break-words">{studentProfile.major}</p>
+                            )}
+                            {studentProfile.graduationYear && (
+                              <p className="text-gray-500 text-xs sm:text-sm mt-1">Graduation: {studentProfile.graduationYear}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm sm:text-base text-gray-500 italic">No education information provided</p>
+                            <Button
+                              variant="link"
+                              className="text-indigo-400 hover:text-indigo-300 p-0 h-auto mt-2 text-xs sm:text-sm"
+                              onClick={this.handleOpenEducationModal}
+                            >
+                              <span className="mr-1">Add your education details</span> →
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bio section */}
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">About Me</h3>
+                        {studentProfile.bio && studentProfile.bio.trim() !== '' ? (
+                          <p className="text-sm sm:text-base text-gray-400 break-words">{studentProfile.bio}</p>
+                        ) : (
+                          <p className="text-sm sm:text-base text-gray-500 italic">No bio provided</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Skills section */}
+                    <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Skills</h3>
+                      {studentProfile.skills && studentProfile.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                          {studentProfile.skills.map((skill: string, index: number) => (
+                            <span
+                              key={index}
+                              className="bg-black/80 text-gray-300 border border-gray-700/30 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm sm:text-base text-gray-500 italic">No skills provided</p>
+                      )}
+                    </div>
+
+                    {/* Work Experience section */}
+                    {studentProfile.experiences && studentProfile.experiences.length > 0 && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Work Experience</h3>
+                        <div className="space-y-4 sm:space-y-6">
+                          {studentProfile.experiences.map((exp: WorkExperience, index: number) => (
+                            <div key={index} className="border-l-2 border-gray-700 pl-3 sm:pl-4 pb-2">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-bold text-sm sm:text-base text-white break-words">{exp.title}</h4>
+                                  <p className="text-xs sm:text-sm text-gray-400 break-words">{exp.company}{exp.location ? ` • ${exp.location}` : ''}</p>
                                 </div>
-                                
-                                {showCvViewer && resumeHtml && (
-                                  <div className="mt-4">
-                                    <ResumeHtmlView html={resumeHtml} />
-                                  </div>
-                                )}
-                                
-                                {showCvViewer && !resumeHtml && (
-                                  <div className="mt-4 p-4 bg-gray-800/50 rounded-lg text-center">
-                                    <p className="text-gray-400">No resume content available</p>
-                                    <p className="text-gray-500 text-sm mt-1">
-                                      Visit the <Link to="/resume" className="text-indigo-400 hover:text-indigo-300">Resume Management</Link> page to generate your CV.
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* No CV section */}
-                          {!hasResume && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                                Resume/CV
-                              </h3>
-                              <div className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30 text-center">
-                                <p className="text-sm sm:text-base text-gray-400 mb-3 sm:mb-4">No resume generated yet</p>
-                                <Link
-                                  to="/resume"
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                  Generate Resume
-                                </Link>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Pre-OJT Orientation section */}
-                          {studentProfile.preojtOrientationUrl && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                                Pre-OJT Orientation Document
-                              </h3>
-                              <div className="bg-black/40 rounded-lg p-3 sm:p-4 border border-gray-800/30">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm sm:text-base text-white font-medium break-words">Orientation Document</p>
-                                    <p className="text-gray-400 text-xs sm:text-sm">Required pre-OJT documentation</p>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={this.handleTogglePreOjtViewer}
-                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      {showPreOjtViewer ? 'Hide Document' : 'View Document'}
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => window.open(studentProfile.preojtOrientationUrl, '_blank')}
-                                      className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Download
-                                    </Button>
-                                  </div>
+                                <div className="text-xs sm:text-sm text-gray-500 bg-black/40 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full flex-shrink-0 w-fit">
+                                  {exp.startDate && (
+                                    <span>
+                                      {new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
+                                      {' - '}
+                                      {exp.current
+                                        ? 'Present'
+                                        : exp.endDate
+                                          ? new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+                                          : ''
+                                      }
+                                    </span>
+                                  )}
                                 </div>
-                                
-                                {showPreOjtViewer && (
-                                  <div className="mt-4">
-                                    <PDFViewer 
-                                      fileUrl={studentProfile.preojtOrientationUrl}
-                                      onClose={this.handleTogglePreOjtViewer}
-                                    />
+                              </div>
+                              {exp.description && <p className="mt-2 text-xs sm:text-sm text-gray-400 break-words">{exp.description}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* GitHub Projects section */}
+                    {studentProfile.githubProjects && studentProfile.githubProjects.length > 0 && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <Github className="h-4 w-4 sm:h-5 sm:w-5" />
+                          GitHub Projects
+                        </h3>
+                        <div className="grid gap-4 sm:gap-6">
+                          {studentProfile.githubProjects.map((project: GitHubProject, index: number) => (
+                            <div key={index} className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-base sm:text-lg font-bold text-white mb-2 break-words">{project.name}</h4>
+                                  {project.description && (
+                                    <p className="text-gray-400 text-xs sm:text-sm mb-3 leading-relaxed break-words">{project.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500">
+                                  {project.stars !== undefined && (
+                                    <div className="flex items-center gap-1">
+                                      <Star className="h-4 w-4" />
+                                      <span>{project.stars}</span>
+                                    </div>
+                                  )}
+                                  {project.forks !== undefined && (
+                                    <div className="flex items-center gap-1">
+                                      <GitFork className="h-4 w-4" />
+                                      <span>{project.forks}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-center gap-4">
+                                  {project.url && (
+                                    <a
+                                      href={project.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs sm:text-sm font-medium transition-colors"
+                                    >
+                                      <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                      View Repository
+                                    </a>
+                                  )}
+                                </div>
+
+                                {project.lastUpdated && (
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    <span className="hidden sm:inline">Updated </span>
+                                    {new Date(project.lastUpdated).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
                                   </div>
                                 )}
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certification section */}
+                    {studentProfile.certifications && studentProfile.certifications.length > 0 && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Certifications</h3>
+                        <div className="space-y-3 sm:space-y-4">
+                          {studentProfile.certifications.map((cert: Certification, index: number) => (
+                            <div key={index} className="border-l-2 border-gray-700 pl-3 sm:pl-4">
+                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-bold text-sm sm:text-base text-white break-words">{cert.name}</h4>
+                                  <p className="text-xs sm:text-sm text-gray-400 break-words">{cert.issuer}</p>
+                                </div>
+                                {cert.dateReceived && (
+                                  <span className="text-xs sm:text-sm text-gray-500 bg-black/40 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full flex-shrink-0 w-fit">
+                                    {new Date(cert.dateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CV/Resume section */}
+                    {hasResume && cvData && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                          CV
+                        </h3>
+                        <div className="bg-black/40 rounded-lg p-3 sm:p-4 border border-gray-800/30">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm sm:text-base text-white font-medium break-words">Generated Resume</p>
+                              <p className="text-gray-400 text-xs sm:text-sm break-all">CV ID: {cvData.id}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={this.handleToggleCvViewer}
+                                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                {showCvViewer ? 'Hide CV' : 'View CV'}
+                              </Button>
+                              <Link
+                                to="/resume"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors"
+                              >
+                                <Pencil className="h-4 w-4" />
+                                Edit CV
+                              </Link>
+                            </div>
+                          </div>
+
+                          {showCvViewer && resumeHtml && (
+                            <div className="mt-4">
+                              <ResumeHtmlView html={resumeHtml} />
                             </div>
                           )}
 
-                          {/* Pre-OJT missing -> upload prompt */}
-                          {!studentProfile.preojtOrientationUrl && (
-                            <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
-                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
-                                Pre-OJT Orientation Document
-                              </h3>
-                              <div className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30 text-center">
-                                <p className="text-sm sm:text-base text-gray-400 mb-3 sm:mb-4">No Pre-OJT Orientation Certificate uploaded</p>
-                                <Button
-                                  onClick={this.handlePreOjtUploadClick}
-                                  disabled={this.state.uploadPreOjtLoading}
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
-                                >
-                                  {this.state.uploadPreOjtLoading ? (
-                                    <>
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                      <span>Uploading...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="h-4 w-4" />
-                                      <span>Upload Certificate (PDF)</span>
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
+                          {showCvViewer && !resumeHtml && (
+                            <div className="mt-4 p-4 bg-gray-800/50 rounded-lg text-center">
+                              <p className="text-gray-400">No resume content available</p>
+                              <p className="text-gray-500 text-sm mt-1">
+                                Visit the <Link to="/resume" className="text-indigo-400 hover:text-indigo-300">Resume Management</Link> page to generate your CV.
+                              </p>
                             </div>
                           )}
-                          
-                          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
-                            <Button 
-                              variant="outline" 
-                              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white w-full sm:w-auto text-sm sm:text-base"
-                              onClick={this.handleOpenProfileModal}
-                            >
-                              Edit Skills & Profile Information
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center justify-center gap-2 w-full sm:w-auto text-sm sm:text-base"
-                              onClick={() => this.setState({ showResetPasswordModal: true })}
-                            >
-                              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                              </svg>
-                              Reset Password
-                            </Button>
-                          </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* No CV section */}
+                    {!hasResume && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                          Resume/CV
+                        </h3>
+                        <div className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30 text-center">
+                          <p className="text-sm sm:text-base text-gray-400 mb-3 sm:mb-4">No resume generated yet</p>
+                          <Link
+                            to="/resume"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Generate Resume
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pre-OJT Orientation section */}
+                    {studentProfile.preojtOrientationUrl && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                          Pre-OJT Orientation Document
+                        </h3>
+                        <div className="bg-black/40 rounded-lg p-3 sm:p-4 border border-gray-800/30">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm sm:text-base text-white font-medium break-words">Orientation Document</p>
+                              <p className="text-gray-400 text-xs sm:text-sm">Required pre-OJT documentation</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={this.handleTogglePreOjtViewer}
+                                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                {showPreOjtViewer ? 'Hide Document' : 'View Document'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(studentProfile.preojtOrientationUrl, '_blank')}
+                                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={this.handlePreOjtUploadClick}
+                                disabled={this.state.uploadPreOjtLoading}
+                                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                              >
+                                {this.state.uploadPreOjtLoading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Updating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Update Document
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {showPreOjtViewer && (
+                            <div className="mt-4">
+                              <PDFViewer
+                                fileUrl={studentProfile.preojtOrientationUrl}
+                                onClose={this.handleTogglePreOjtViewer}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pre-OJT missing -> upload prompt */}
+                    {!studentProfile.preojtOrientationUrl && (
+                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+                          Pre-OJT Orientation Document
+                        </h3>
+                        <div className="bg-black/40 rounded-lg p-4 sm:p-6 border border-gray-800/30 text-center">
+                          <p className="text-sm sm:text-base text-gray-400 mb-3 sm:mb-4">No Pre-OJT Orientation Certificate uploaded</p>
+                          <Button
+                            onClick={this.handlePreOjtUploadClick}
+                            disabled={this.state.uploadPreOjtLoading}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                          >
+                            {this.state.uploadPreOjtLoading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4" />
+                                <span>Upload Certificate (PDF)</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-4 sm:mt-6">
+                      <Button
+                        variant="outline"
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white w-full sm:w-auto text-sm sm:text-base"
+                        onClick={this.handleOpenProfileModal}
+                      >
+                        Edit Skills & Profile Information
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white flex items-center justify-center gap-2 w-full sm:w-auto text-sm sm:text-base"
+                        onClick={() => this.setState({ showResetPasswordModal: true })}
+                      >
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        Reset Password
+                      </Button>
+                    </div>
                   </div>
-          </Card>
+                </div>
+              </Card>
             </div>
           </div>
         )}
-        
 
-        
+
+
         {isEmployer && (
           <div className="md:col-span-12">
             <Card className="overflow-hidden bg-gray-900/60 border-gray-800/50">
               {employerProfile ? (
-                <EmployerProfileDisplay 
-                  profile={employerProfile} 
-                  email={user?.email || ''} 
+                <EmployerProfileDisplay
+                  profile={employerProfile}
+                  email={user?.email || ''}
                   username={user?.username || ''}
                   onEditClick={this.handleOpenEmployerProfileModal}
                 />
@@ -2304,7 +2323,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             </Card>
           </div>
         )}
-        
+
         {/* Education Edit Modal */}
         {studentProfile && (
           <EducationEditModal
@@ -2318,7 +2337,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
             }}
           />
         )}
-        
+
         {/* Profile Edit Modal */}
         {studentProfile && (
           <ProfileEditModal
@@ -2413,6 +2432,6 @@ export function ProfilePageWrapper() {
       )}
     </ToastContext.Consumer>
   );
-} 
+}
 
 export default ProfilePageWrapper; 

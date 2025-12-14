@@ -24,7 +24,7 @@ public class JobApplication extends BaseEntity {
     @JsonIgnore
     private CV cv;
     
-    @Column(name = "cover_letter", length = 2000)
+    @Column(name = "cover_letter", columnDefinition = "TEXT")
     private String coverLetter;
     
     @Enumerated(EnumType.STRING)

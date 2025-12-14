@@ -610,29 +610,29 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
     }
 
     return (
-      <div className="min-h-screen bg-black py-12 px-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-black py-4 sm:py-6 md:py-8 px-2 sm:px-4">
+        <div className="max-w-2xl mx-auto">
         
           {/* Main container */}
-          <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-800/50 overflow-hidden">
+          <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-2xl border border-gray-800/50 overflow-hidden">
             {/* Header section */}
-            <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 px-8 py-10 border-b border-gray-800">
-              <h2 className="text-3xl font-bold text-white">
+            <div className="bg-gradient-to-r from-gray-900 via-black to-gray-900 px-3 sm:px-4 py-3 sm:py-4 border-b border-gray-800">
+              <h2 className="text-lg sm:text-xl font-bold text-white">
                 Complete Your Profile
               </h2>
-              <p className="text-gray-400 mt-2 max-w-2xl">
+              <p className="text-gray-400 mt-1 max-w-2xl text-xs sm:text-sm">
                 Tell us about yourself to help connect you with the best internship opportunities.
               </p>
               
               {/* Progress indicator with improved alignment */}
-              <div className="mt-12 mb-8 px-4">
+              <div className="mt-3 sm:mt-4 md:mt-5 mb-2 sm:mb-3 px-0 sm:px-2">
                 <div className="relative">
                   {/* Base line */}
-                  <div className="absolute top-6 left-0 right-0 h-1 bg-gray-800 rounded-full"></div>
+                  <div className="absolute top-3 sm:top-4 left-0 right-0 h-0.5 bg-gray-800 rounded-full"></div>
                   
                   {/* Progress line */}
                   <div 
-                    className="absolute top-6 left-0 h-1 bg-gradient-to-r from-gray-500 to-gray-700 rounded-full transition-all duration-300"
+                    className="absolute top-3 sm:top-4 left-0 h-0.5 bg-gradient-to-r from-gray-500 to-gray-700 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${((this.state.currentStep - 1) / 8) * 100}%`
                     }}
@@ -649,22 +649,22 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
                               this.setState({ currentStep: step });
                             }
                           }}
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 relative z-10
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all duration-300 relative z-10
                             ${this.state.currentStep === step 
-                              ? 'bg-gradient-to-br from-gray-500 to-gray-700 text-white ring-4 ring-gray-700/30 shadow-lg shadow-black/40 scale-110' 
+                              ? 'bg-gradient-to-br from-gray-500 to-gray-700 text-white ring-1 sm:ring-2 ring-gray-700/30 shadow-lg shadow-black/40 scale-105' 
                               : this.state.currentStep > step 
-                                ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white ring-2 ring-gray-600/20' 
+                                ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white ring-1 ring-gray-600/20' 
                                 : 'bg-black text-gray-500 border border-gray-700/30'
                             }
                             ${this.state.currentStep === 9 && step !== 9 ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
                         >
                           {this.state.currentStep > step ? (
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           ) : step}
                         </div>
-                        <span className={`text-xs mt-2 font-medium ${this.state.currentStep === step ? 'text-gray-300' : 'text-gray-500'}`}>
+                        <span className={`text-[8px] sm:text-[10px] mt-0.5 sm:mt-1 font-medium ${this.state.currentStep === step ? 'text-gray-300' : 'text-gray-500'} hidden sm:block`}>
                           {step === 1 && 'GitHub'}
                           {step === 2 && 'Personal'}
                           {step === 3 && 'Education'}
@@ -683,16 +683,16 @@ export class StudentOnboardingPage extends Component<{}, StudentOnboardingState>
             </div>
 
             {/* Content section */}
-            <div className="p-10 bg-black/90 backdrop-blur-lg">
+            <div className="p-3 sm:p-4 md:p-5 bg-black/90 backdrop-blur-lg">
               {error && (
-                <div className="bg-red-900/10 border border-red-700/50 rounded-xl p-5 mb-8 animate-pulse">
-                  <div className="flex gap-3">
-                    <svg className="w-6 h-6 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-red-900/10 border border-red-700/50 rounded-xl p-2 sm:p-3 mb-3 sm:mb-4 animate-pulse">
+                  <div className="flex gap-2 sm:gap-3">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <h4 className="text-base font-medium text-red-400">Error Saving Profile</h4>
-                      <p className="text-sm text-red-300/80 mt-1">{error}</p>
+                      <h4 className="text-sm sm:text-base font-medium text-red-400">Error Saving Profile</h4>
+                      <p className="text-xs sm:text-sm text-red-300/80 mt-1">{error}</p>
                     </div>
                   </div>
                 </div>

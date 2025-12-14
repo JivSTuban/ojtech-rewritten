@@ -126,6 +126,7 @@ export function generateResumeHtml(resumeData: ResumeData | ResumeJsonWrapper): 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resume - ${data.contactInfo?.name || 'Professional Resume'}</title>
+  <!--email_off-->
   <style>
     /* Reset and Base Styles */
     * {
@@ -272,8 +273,10 @@ export function generateResumeHtml(resumeData: ResumeData | ResumeJsonWrapper): 
       margin-bottom: 8px;
     }
   </style>
+  <!--/email_off-->
 </head>
 <body>
+  <!--email_off-->
   <div class="resume-container">
     <!-- Header -->
     <header class="header">
@@ -330,6 +333,7 @@ export function generateResumeHtml(resumeData: ResumeData | ResumeJsonWrapper): 
       </div>
     </div>
   </div>
+  <!--/email_off-->
 </body>
 </html>
     `;
@@ -340,9 +344,15 @@ export function generateResumeHtml(resumeData: ResumeData | ResumeJsonWrapper): 
 }
 
 /**
- * Get the professional title from experience data
+ * Get the professional title from contactInfo or experience data
  */
 function getTitle(data: ResumeData): string {
+  // First check if professionalTitle is set in contactInfo
+  if (data.contactInfo?.professionalTitle) {
+    return data.contactInfo.professionalTitle;
+  }
+  
+  // Fall back to first experience title if available
   if (data.experience && 'experiences' in data.experience && 
       Array.isArray(data.experience.experiences) && 
       data.experience.experiences.length > 0) {
@@ -356,12 +366,16 @@ function getTitle(data: ResumeData): string {
  */
 function renderContactItem(type: string, value: string, svgPath: string): string {
   if (!value) return '';
+  
+  // For email, add data attribute to prevent Cloudflare obfuscation
+  const emailAttr = type === 'email' ? ' data-cfasync="false"' : '';
+  
   return `
-    <p class="social-item">
+    <p class="social-item"${emailAttr}>
       <svg class="social-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
         <path d="${svgPath}"/>
       </svg>
-      ${value}
+      <span${emailAttr}>${value}</span>
     </p>
   `;
 }

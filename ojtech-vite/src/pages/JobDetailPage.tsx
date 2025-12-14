@@ -2,9 +2,12 @@ import React, { Component } from 'react';
 import { Link, useParams, useNavigate, NavigateFunction, useLocation, Location } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
 import { Button } from '../components/ui/Button';
-import { Loader2, MapPin, Briefcase, DollarSign, ArrowLeft, Calendar, Users, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, MapPin, Briefcase, DollarSign, ArrowLeft, Users, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
 import apiClient from '../lib/api/apiClient';
 import authService from '../lib/api/authService';
+import { MatchAnalysis } from '../components/jobs/MatchAnalysis';
+import { EmailDraftModal } from '../components/EmailDraftModal';
+import jobApplicationService, { EmailDraft } from '../lib/api/jobApplicationService';
 
 // Application interface
 interface JobApplication {
@@ -49,6 +52,11 @@ interface Job {
   applications?: JobApplication[];
   jobMatches?: JobMatch[];
   match_score?: number | null;
+  employer?: {
+    id: string;
+    companyName: string;
+    logoUrl?: string;
+  };
 }
 
 // Props for the JobDetailPage component
@@ -67,6 +75,9 @@ interface JobDetailPageState {
   userRole: string | null;
   showMatchDetails: boolean;
   isApplying: boolean;
+  emailModalOpen: boolean;
+  emailDraft: EmailDraft | null;
+  isPreparingEmail: boolean;
 }
 
 // Helper function to get match score color
@@ -90,12 +101,12 @@ const getScoreLabel = (score: number | null): string => {
 // Format salary range
 const formatSalary = (min: number | null, max: number | null, currency: string | null): string => {
   if (min === null && max === null) return "Not specified";
-  
-  const currencySymbol = currency === "USD" ? "$" : 
-                         currency === "EUR" ? "€" : 
-                         currency === "GBP" ? "£" : 
-                         currency || "";
-  
+
+  const currencySymbol = currency === "USD" ? "$" :
+    currency === "EUR" ? "€" :
+      currency === "GBP" ? "£" :
+        currency || "";
+
   if (min !== null && max !== null) {
     return `${currencySymbol}${min.toLocaleString()} - ${currencySymbol}${max.toLocaleString()}`;
   } else if (min !== null) {
@@ -103,14 +114,14 @@ const formatSalary = (min: number | null, max: number | null, currency: string |
   } else if (max !== null) {
     return `Up to ${currencySymbol}${max.toLocaleString()}`;
   }
-  
+
   return "Not specified";
 };
 
 class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageState> {
   static contextType = AuthContext;
   declare context: React.ContextType<typeof AuthContext>;
-  
+
   constructor(props: JobDetailPageProps) {
     super(props);
     this.state = {
@@ -121,9 +132,12 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       userRole: null,
       showMatchDetails: false,
       isApplying: false,
+      emailModalOpen: false,
+      emailDraft: null,
+      isPreparingEmail: false,
     };
   }
-  
+
   componentDidMount() {
     // Check authentication status
     if (this.context?.user) {
@@ -132,13 +146,13 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         userRole: this.context.user.roles?.[0] || null
       });
     }
-    
+
     // Check auth status in localStorage
     authService.checkAuthStatus();
-    
+
     this.fetchJobDetails();
   }
-  
+
   fetchJobDetails = async () => {
     const { jobId } = this.props;
     if (!jobId) {
@@ -148,22 +162,22 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       });
       return;
     }
-    
+
     this.setState({ loading: true, error: null });
-    
+
     try {
       const response = await apiClient.get(`/jobs/${jobId}`);
-      
+
       if (response.data) {
         const jobData = response.data;
-        
+
         // Find the user's match score if available
         // The backend filters jobMatches to only include the current student's match
         let userMatchScore = null;
         if (jobData.jobMatches && jobData.jobMatches.length > 0) {
           userMatchScore = jobData.jobMatches[0].matchScore;
         }
-        
+
         this.setState({
           job: {
             ...jobData,
@@ -185,70 +199,102 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
       });
     }
   };
-  
+
   toggleMatchDetails = () => {
     this.setState(prevState => ({
       showMatchDetails: !prevState.showMatchDetails
     }));
   };
-  
+
   handleApplyClick = async () => {
     const { job } = this.state;
     const { navigate } = this.props;
-    const { isAuthenticated, userRole } = this.state;
-    
+    const { isAuthenticated } = this.state;
+
     if (!isAuthenticated) {
       // Redirect to login if not authenticated
       navigate('/login', { state: { returnUrl: `/opportunities/${job?.id}` } });
       return;
     }
-    
+
     if (!job) return;
-    
+
     // Get the context safely
     const authContext = this.context;
     if (!authContext) {
       console.error("Auth context is undefined");
       return;
     }
-    
+
     const { user } = authContext;
-    
+
     if (!user) {
       // Redirect to login page
       navigate('/login', { state: { returnUrl: `/opportunities/${job?.id}` } });
       return;
     }
-    
+
     // Check if user is a student
     if (user.roles && user.roles.includes('ROLE_STUDENT')) {
-      this.setState({ isApplying: true });
-      
-      try {
-        const response = await apiClient.post(
-          `/api/job-applications/apply`,
-          { jobId: job.id }
-        );
-        
-        // Wait a moment to show the spinner before redirecting
-        setTimeout(() => {
-          // Redirect to applications page
-          navigate('/applications');
-        }, 500);
-      } catch (err) {
-        console.error("Error applying for job:", err);
-        this.setState({ isApplying: false });
-        alert('Failed to apply for job. Please try again.');
-      }
+      // Prepare email draft and show modal instead of applying directly
+      await this.prepareEmailDraft(job);
     } else {
       // Show message that only students can apply
       alert('Only students can apply for jobs');
     }
   };
-  
+
+  // Prepare email draft WITHOUT creating application first
+  prepareEmailDraft = async (job: Job) => {
+    try {
+      this.setState({ isPreparingEmail: true });
+
+      const emailDraft = await jobApplicationService.prepareEmailDraftForJob(job.id);
+
+      this.setState({
+        emailModalOpen: true,
+        emailDraft,
+        isPreparingEmail: false
+      });
+    } catch (error) {
+      console.error("Error preparing email:", error);
+      this.setState({ isPreparingEmail: false });
+      alert("Failed to prepare email. Please try again.");
+    }
+  };
+
+  // Send application email - creates application AND sends email
+  sendApplicationEmail = async (emailBody: string, subject: string, attachments?: File[]) => {
+    const { job } = this.state;
+    if (!job) return;
+
+    try {
+      const result = await jobApplicationService.applyAndSendEmail(
+        job.id,
+        {
+          subject,
+          emailBody
+        },
+        attachments
+      );
+
+      alert(`Email sent successfully! ${result.message}. Emails sent today: ${result.emailsSentToday}/10`);
+
+      this.setState({
+        emailModalOpen: false,
+        emailDraft: null
+      });
+
+      // Refresh job details to show application status
+      await this.fetchJobDetails();
+    } catch (error: any) {
+      throw error; // Re-throw to be handled by modal
+    }
+  };
+
   render() {
-    const { job, loading, error, showMatchDetails, isApplying } = this.state;
-    
+    const { job, loading, error, showMatchDetails, emailModalOpen, emailDraft } = this.state;
+
     if (loading) {
       return (
         <div className="container max-w-4xl mx-auto py-8 px-4 min-h-screen flex items-center justify-center">
@@ -270,15 +316,15 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
               <Button className="mt-4" variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Opportunities
-            </Button>
-          </Link>
+              </Button>
+            </Link>
           </div>
         </div>
       );
     }
 
     if (!job) {
-    return (
+      return (
         <div className="container max-w-4xl mx-auto py-8 px-4">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
             <h2 className="text-amber-600 text-xl font-semibold mb-2">Job Not Found</h2>
@@ -293,7 +339,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
         </div>
       );
     }
-    
+
     return (
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="mb-6">
@@ -304,7 +350,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
             </Button>
           </Link>
         </div>
-                
+
         <div className="bg-black rounded-xl border border-gray-800 shadow-sm overflow-hidden text-white">
           {/* Header Section */}
           <div className="p-6 border-b border-gray-800">
@@ -313,7 +359,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
                 <h1 className="text-2xl font-semibold text-white">{job.title}</h1>
                 <p className="text-sm text-gray-400 mt-1">Posted on {new Date(job.postedAt).toLocaleDateString()}</p>
               </div>
-                
+
               {job.match_score !== undefined && job.match_score !== null && (
                 <div className="bg-gray-900 px-3 py-2 rounded-lg border border-gray-800 text-center min-w-[100px]">
                   <span className={`text-2xl font-bold ${getScoreColor(job.match_score)}`}>
@@ -321,9 +367,9 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
                   </span>
                   <p className="text-xs text-gray-400">{getScoreLabel(job.match_score)}</p>
                   {job.jobMatches && job.jobMatches.length > 0 && (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    <Button
+                      variant="link"
+                      size="sm"
                       className="text-xs p-0 h-auto mt-1 text-blue-400 hover:text-blue-300"
                       onClick={this.toggleMatchDetails}
                     >
@@ -333,45 +379,43 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
                 </div>
               )}
             </div>
-            
+
             {/* Match Details Section */}
             {showMatchDetails && job.jobMatches && job.jobMatches.length > 0 && (
               <div className="mb-4 p-4 bg-gray-900 rounded-lg border border-gray-800">
-                <h3 className="text-md font-medium mb-2 text-white">Match Analysis</h3>
-                <pre className="whitespace-pre-wrap text-sm text-gray-300 bg-gray-800 p-3 rounded border border-gray-700">
-                  {job.jobMatches[0].detailedAnalysis}
-                </pre>
+                <h3 className="text-md font-medium mb-4 text-white">Match Analysis</h3>
+                <MatchAnalysis detailedAnalysis={job.jobMatches[0].detailedAnalysis} />
               </div>
             )}
-            
+
             <div className="flex flex-wrap gap-y-2 text-gray-400">
-                {job.location && (
+              {job.location && (
                 <div className="flex items-center mr-6">
                   <MapPin className="h-4 w-4 mr-1 text-gray-500" />
                   <span>{job.location}</span>
                 </div>
-                )}
-                
-                {job.employmentType && (
+              )}
+
+              {job.employmentType && (
                 <div className="flex items-center mr-6">
                   <Briefcase className="h-4 w-4 mr-1 text-gray-500" />
                   <span>{job.employmentType}</span>
                 </div>
-                )}
-                
-                {(job.minSalary !== null || job.maxSalary !== null) && (
+              )}
+
+              {(job.minSalary !== null || job.maxSalary !== null) && (
                 <div className="flex items-center mr-6">
                   <DollarSign className="h-4 w-4 mr-1 text-gray-500" />
                   <span>{formatSalary(job.minSalary, job.maxSalary, job.currency)}</span>
                 </div>
-                )}
-                
-              
-              </div>
-              
-            
+              )}
+
+
+            </div>
+
+
           </div>
-          
+
           {/* Description Section */}
           <div className="p-6 border-t border-gray-800">
             <h2 className="text-xl font-semibold mb-4 text-white">About this position</h2>
@@ -383,7 +427,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
               )}
             </div>
           </div>
-              
+
           {/* Skills Section */}
           {job.requiredSkills && (
             <div className="p-6 border-t border-gray-800">
@@ -400,7 +444,7 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
               </div>
             </div>
           )}
-          
+
           {/* Application Status Section - Show if user has applied */}
           {job.applications && job.applications.length > 0 && this.state.isAuthenticated && (
             <div className="p-6 border-t border-gray-800 bg-gray-900">
@@ -442,31 +486,45 @@ class JobDetailPageClass extends Component<JobDetailPageProps, JobDetailPageStat
               </div>
             </div>
           )}
-          
+
           {/* Apply Button Section - Show if user hasn't applied yet */}
           {this.state.isAuthenticated && (!job.applications || job.applications.length === 0) && (
             <div className="p-6 border-t border-gray-800">
-              <Button 
+              <Button
                 onClick={this.handleApplyClick}
-                disabled={isApplying}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg"
+                disabled={this.state.isPreparingEmail}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                size="lg"
               >
-                {isApplying ? (
+                {this.state.isPreparingEmail ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Applying...
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Preparing Application...
                   </>
                 ) : (
-                  'Apply Now'
+                  <>
+                    <Send className="h-5 w-5 mr-2" />
+                    Apply for this Position
+                  </>
                 )}
               </Button>
             </div>
           )}
-              
-         
-        
+
         </div>
-      </div>
+
+        {/* Email Draft Modal */}
+        {emailModalOpen && emailDraft && job && (
+          <EmailDraftModal
+            isOpen={emailModalOpen}
+            onClose={() => this.setState({ emailModalOpen: false, emailDraft: null })}
+            emailDraft={emailDraft}
+            onSend={this.sendApplicationEmail}
+            jobTitle={job.title}
+            companyName={job.employer?.companyName || 'Unknown Company'}
+          />
+        )}
+      </div >
     );
   }
 }
@@ -476,10 +534,10 @@ export function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   return (
-    <JobDetailPageClass 
-      jobId={id} 
+    <JobDetailPageClass
+      jobId={id}
       navigate={navigate}
       location={location}
     />

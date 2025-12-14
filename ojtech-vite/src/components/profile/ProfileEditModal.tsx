@@ -107,6 +107,10 @@ interface ProfileEditModalState {
   editingExperience: number | null;
   uploadingPdf: boolean;
   isPdfDialogOpen: boolean;
+  dateErrors: {
+    certification: string;
+    experience: string;
+  };
 }
 
 class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEditModalState> {
@@ -115,14 +119,14 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
 
   constructor(props: ProfileEditModalProps) {
     super(props);
-    
+
     // Convert skills string to array if it's a string
     const initialSkills = Array.isArray(props.initialData.skills)
       ? props.initialData.skills
       : typeof props.initialData.skills === 'string' && props.initialData.skills
         ? props.initialData.skills.split(',').map((skill: string) => skill.trim()).filter(Boolean)
         : [];
-    
+
     this.state = {
       formData: {
         id: props.initialData.id,
@@ -155,6 +159,10 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       editingExperience: null,
       uploadingPdf: false,
       isPdfDialogOpen: false,
+      dateErrors: {
+        certification: '',
+        experience: '',
+      },
       newGithubProject: {
         name: '',
         url: '',
@@ -180,7 +188,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       },
     };
   }
-  
+
   handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     this.setState(prevState => ({
@@ -190,11 +198,11 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   handleSkillInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     this.setState({ skillInput: e.target.value });
   };
-  
+
   handleAddSkill = () => {
     const { skillInput } = this.state;
     if (skillInput.trim()) {
@@ -207,7 +215,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }));
     }
   };
-  
+
   handleRemoveSkill = (index: number) => {
     this.setState(prevState => ({
       formData: {
@@ -216,7 +224,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   // GitHub Projects methods
   handleGithubProjectInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -227,11 +235,11 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   handleTechInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     this.setState({ techInput: e.target.value });
   };
-  
+
   handleAddTech = () => {
     const { techInput } = this.state;
     if (techInput.trim()) {
@@ -244,7 +252,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }));
     }
   };
-  
+
   handleRemoveTech = (index: number) => {
     this.setState(prevState => ({
       newGithubProject: {
@@ -253,7 +261,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   handleAddGithubProject = () => {
     const { newGithubProject } = this.state;
     if (newGithubProject.name && newGithubProject.url) {
@@ -271,7 +279,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }));
     }
   };
-  
+
   handleRemoveGithubProject = (index: number) => {
     this.setState(prevState => ({
       formData: {
@@ -280,7 +288,63 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
+  // Certification date validation
+  validateCertificationDates = (): boolean => {
+    const { issueDate, expiryDate } = this.state.newCertification;
+
+    if (expiryDate && issueDate) {
+      const issue = new Date(issueDate);
+      const expiry = new Date(expiryDate);
+
+      if (expiry < issue) {
+        this.setState({
+          dateErrors: {
+            ...this.state.dateErrors,
+            certification: 'Expiry date cannot be before issue date'
+          }
+        });
+        return false;
+      }
+    }
+
+    this.setState({
+      dateErrors: {
+        ...this.state.dateErrors,
+        certification: ''
+      }
+    });
+    return true;
+  };
+
+  // Experience date validation
+  validateExperienceDates = (): boolean => {
+    const { startDate, endDate, isCurrentPosition } = this.state.newExperience;
+
+    if (!isCurrentPosition && endDate && startDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (end < start) {
+        this.setState({
+          dateErrors: {
+            ...this.state.dateErrors,
+            experience: 'End date cannot be before start date'
+          }
+        });
+        return false;
+      }
+    }
+
+    this.setState({
+      dateErrors: {
+        ...this.state.dateErrors,
+        experience: ''
+      }
+    });
+    return true;
+  };
+
   // Certification methods
   handleCertificationInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -289,12 +353,22 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
         ...prevState.newCertification,
         [name]: value
       }
-    }));
+    }), () => {
+      // Validate dates when date fields change
+      if (name === 'issueDate' || name === 'expiryDate') {
+        this.validateCertificationDates();
+      }
+    });
   };
-  
+
   handleAddCertification = () => {
     const { newCertification } = this.state;
     if (newCertification.name && newCertification.issuer && newCertification.issueDate) {
+      // Validate dates before adding
+      if (!this.validateCertificationDates()) {
+        return;
+      }
+
       this.setState(prevState => ({
         formData: {
           ...prevState.formData,
@@ -307,11 +381,15 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
           expiryDate: '',
           credentialId: '',
           credentialUrl: '',
+        },
+        dateErrors: {
+          ...prevState.dateErrors,
+          certification: '',
         }
       }));
     }
   };
-  
+
   handleRemoveCertification = (index: number) => {
     this.setState(prevState => ({
       formData: {
@@ -320,7 +398,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   // Experience methods
   handleExperienceInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -329,9 +407,14 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
         ...prevState.newExperience,
         [name]: value
       }
-    }));
+    }), () => {
+      // Validate dates when date fields change
+      if (name === 'startDate' || name === 'endDate') {
+        this.validateExperienceDates();
+      }
+    });
   };
-  
+
   handleExperienceCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { checked } = e.target;
     this.setState(prevState => ({
@@ -339,13 +422,22 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
         ...prevState.newExperience,
         isCurrentPosition: checked,
         endDate: checked ? '' : prevState.newExperience.endDate
+      },
+      dateErrors: {
+        ...prevState.dateErrors,
+        experience: '', // Clear error when checking current position
       }
     }));
   };
-  
+
   handleAddExperience = () => {
     const { newExperience } = this.state;
     if (newExperience.title && newExperience.company && newExperience.startDate) {
+      // Validate dates before adding
+      if (!this.validateExperienceDates()) {
+        return;
+      }
+
       this.setState(prevState => ({
         formData: {
           ...prevState.formData,
@@ -359,11 +451,15 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
           endDate: '',
           description: '',
           isCurrentPosition: false,
+        },
+        dateErrors: {
+          ...prevState.dateErrors,
+          experience: '',
         }
       }));
     }
   };
-  
+
   handleRemoveExperience = (index: number) => {
     this.setState(prevState => ({
       formData: {
@@ -372,7 +468,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     }));
   };
-  
+
   // Tab navigation
   setActiveTab = (tab: 'personal' | 'education' | 'skills' | 'certifications' | 'experience' | 'contact' | 'bio' | 'documents') => {
     this.setState({ activeTab: tab });
@@ -432,10 +528,10 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
         cloudJson = await cloudRes.json();
       } catch (signedError) {
         console.warn('Signed upload failed, trying unsigned preset upload:', signedError);
-        
+
         // Fallback to unsigned upload with preset
         const { data: unsigned } = await apiClient.get('/public/cloudinary/unsigned-params');
-        
+
         const presetForm = new FormData();
         presetForm.append('file', file);
         presetForm.append('upload_preset', unsigned.uploadPreset);
@@ -449,7 +545,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
         });
         cloudJson = await cloudRes.json();
       }
-      
+
       if (!cloudRes.ok) {
         throw new Error(cloudJson?.error?.message || 'Cloudinary upload failed');
       }
@@ -581,11 +677,11 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       }
     });
   };
-  
+
   handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     this.setState({ isSubmitting: true });
-    
+
     try {
       await profileService.updateProfile(this.state.formData);
       this.context?.toast({
@@ -606,18 +702,21 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
       this.setState({ isSubmitting: false });
     }
   };
-  
+
   render() {
     const { isOpen, onClose } = this.props;
-    const { formData, isSubmitting, skillInput, activeTab, editingCertification, editingExperience, newCertification, newExperience } = this.state;
-    
+    const { formData, isSubmitting, skillInput, activeTab, editingCertification, editingExperience, newCertification, newExperience, dateErrors } = this.state;
+
+    // Get today's date in YYYY-MM-DD format for date input constraints
+    const today = new Date().toISOString().split('T')[0];
+
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Profile Information</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={this.handleSubmit} className="space-y-6">
             <Tabs value={activeTab} onValueChange={(value) => this.setActiveTab(value as any)}>
               <TabsList className="grid w-full grid-cols-8">
@@ -655,7 +754,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="location">Location</Label>
                   <Input
@@ -666,7 +765,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="City, Country"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="address">Address</Label>
                   <Input
@@ -691,7 +790,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="University name"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="major">Major</Label>
                   <Input
@@ -702,7 +801,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="Field of study"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="graduationYear">Graduation Year</Label>
                   <Input
@@ -756,10 +855,6 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
               <TabsContent value="certifications" className="space-y-4">
                 <div className="flex justify-between items-center">
                   <Label className="text-lg font-semibold">Certifications</Label>
-                  <Button type="button" onClick={this.handleAddCertification} size="sm">
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Add Certification
-                  </Button>
                 </div>
 
                 {/* Add New Certification Form */}
@@ -800,6 +895,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                             type="date"
                             value={newCertification.issueDate}
                             onChange={this.handleCertificationInputChange}
+                            max={today}
                           />
                         </div>
                         <div>
@@ -810,9 +906,13 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                             type="date"
                             value={newCertification.expiryDate}
                             onChange={this.handleCertificationInputChange}
+                            min={newCertification.issueDate || undefined}
                           />
                         </div>
                       </div>
+                      {dateErrors.certification && (
+                        <p className="text-red-500 text-sm">{dateErrors.certification}</p>
+                      )}
                       <div>
                         <Label htmlFor="certUrl">Credential URL (Optional)</Label>
                         <Input
@@ -902,10 +1002,6 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
               <TabsContent value="experience" className="space-y-4">
                 <div className="flex justify-between items-center">
                   <Label className="text-lg font-semibold">Work Experience</Label>
-                  <Button type="button" onClick={this.handleAddExperience} size="sm">
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Add Experience
-                  </Button>
                 </div>
 
                 {/* Add New Experience Form */}
@@ -956,6 +1052,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                             type="date"
                             value={newExperience.startDate}
                             onChange={this.handleExperienceInputChange}
+                            max={today}
                           />
                         </div>
                         <div>
@@ -967,14 +1064,19 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                             value={newExperience.endDate}
                             onChange={this.handleExperienceInputChange}
                             disabled={newExperience.isCurrentPosition}
+                            min={newExperience.startDate || undefined}
+                            max={today}
                           />
                         </div>
                       </div>
+                      {dateErrors.experience && (
+                        <p className="text-red-500 text-sm">{dateErrors.experience}</p>
+                      )}
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id="currentPosition"
                           checked={newExperience.isCurrentPosition}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             this.setState(prev => ({
                               newExperience: {
                                 ...prev.newExperience,
@@ -1089,7 +1191,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="githubUrl">GitHub URL</Label>
                   <Input
@@ -1100,7 +1202,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="https://github.com/username"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
                   <Input
@@ -1111,7 +1213,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                     placeholder="https://linkedin.com/in/username"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="portfolioUrl">Portfolio URL</Label>
                   <Input
@@ -1204,7 +1306,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                         </Label>
                       </div>
                     )}
-                    
+
                     <input
                       id="pdfUpload"
                       type="file"
@@ -1213,7 +1315,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                       className="hidden"
                       disabled={this.state.uploadingPdf}
                     />
-                    
+
                     {this.state.uploadingPdf && (
                       <div className="flex items-center space-x-2 text-sm text-blue-600">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -1234,7 +1336,7 @@ class ProfileEditModalClass extends Component<ProfileEditModalProps, ProfileEdit
                 title="PreOJT Orientation Certificate"
               />
             )}
-            
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel

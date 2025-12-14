@@ -7,11 +7,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
-import { Checkbox } from '@/components/ui/Checkbox';
+
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/Select";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/Command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, DollarSign, FileText, Code, Plus, X } from "lucide-react";
@@ -135,20 +134,20 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
   componentDidMount() {
     const { user } = this.context || {};
-    
+
     if (!user || !user.roles.includes('ROLE_NLO')) {
       this.setState({ redirectTo: '/login' });
       return;
     }
-    
+
     this.fetchEmployerData();
     this.fetchCompanies();
-    
+
     if (this.props.jobId) {
       this.fetchJobData();
     }
   }
-  
+
   fetchCompanies = async () => {
     try {
       this.setState({ loadingCompanies: true });
@@ -160,7 +159,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
       this.setState({ loadingCompanies: false });
     }
   };
-  
+
   fetchEmployerData = async () => {
     try {
       // Get current user data from context
@@ -178,20 +177,20 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
   fetchJobData = async () => {
     const { jobId } = this.props;
-    
+
     if (!jobId) return;
-    
+
     this.setState({ isLoading: true });
-    
+
     try {
       const job = await jobService.getEmployerJobById(jobId);
-      
+
       // Convert salary numbers to strings for form state
       const minSalary = job.minSalary ? job.minSalary.toString() : '';
       const maxSalary = job.maxSalary ? job.maxSalary.toString() : '';
-      
+
       // Parse required skills from string to array if needed
-      const requiredSkills = typeof job.requiredSkills === 'string' 
+      const requiredSkills = typeof job.requiredSkills === 'string'
         ? job.requiredSkills.split(',').map((skill: string) => skill.trim())
         : job.requiredSkills || [];
 
@@ -224,7 +223,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
   handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       this.setState(prev => ({
@@ -314,7 +313,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
   addRequiredSkill = () => {
     const { requiredSkillInput, formData } = this.state;
     if (!requiredSkillInput.trim()) return;
-    
+
     const newSkill = requiredSkillInput.trim();
     if (!formData.requiredSkills.includes(newSkill)) {
       this.setState({
@@ -330,7 +329,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
   addPreferredSkill = (): void => {
     const { preferredSkillInput, formData } = this.state;
     if (!preferredSkillInput.trim()) return;
-    
+
     const newSkill = preferredSkillInput.trim();
     if (!formData.skillsPreferred.includes(newSkill)) {
       this.setState({
@@ -345,7 +344,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
   validateForm = (): { isValid: boolean; error: string | null } => {
     const { formData } = this.state;
-    
+
     // Validate title (3-100 chars, no special characters except -, &, and spaces)
     if (!formData.title.trim() || formData.title.length < 3 || formData.title.length > 100) {
       return {
@@ -411,13 +410,13 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
     this.setState({ isLoading: true });
 
     // Construct salary range from min and max
-    const salaryRange = this.state.formData.minSalary || this.state.formData.maxSalary 
+    const salaryRange = this.state.formData.minSalary || this.state.formData.maxSalary
       ? `PHP ${this.state.formData.minSalary || '0'} - PHP ${this.state.formData.maxSalary || '0'}`
       : '';
 
     // Prepare payload
     const { minSalary, maxSalary, requiredSkills, ...rest } = this.state.formData;
-    
+
     const payload = {
       ...rest,
       minSalary: minSalary ? parseInt(minSalary) : undefined,
@@ -447,15 +446,15 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
   render() {
     const { formData, requiredSkillInput, preferredSkillInput, isLoading, error, redirectTo, employer, companies } = this.state;
     const isEditMode = Boolean(this.props.jobId);
-    
+
     // Get selected company location if a company is selected
     const selectedCompany = companies.find(c => c.id === formData.companyId);
     const officeLocation = selectedCompany?.location || employer?.profile?.location || "Office";
-    
+
     if (redirectTo) {
       return <Navigate to={redirectTo} />;
     }
-  
+
     if (isLoading && isEditMode) {
       return <div className="min-h-screen flex items-center justify-center"><p>Loading job details...</p></div>;
     }
@@ -508,7 +507,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                 {/* Company Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="companyId" className="text-gray-200">
-                    Company 
+                    Company
                   </Label>
                   <Select
                     value={formData.companyId || 'none'}
@@ -527,7 +526,7 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                    
+
                   </Select>
                   <p className="text-xs text-gray-400">
                     Associate this job with a company profile created by NLO staff
@@ -540,8 +539,8 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">Selected Company Details</h3>
                       {selectedCompany.logoUrl && (
-                        <img 
-                          src={selectedCompany.logoUrl} 
+                        <img
+                          src={selectedCompany.logoUrl}
                           alt={`${selectedCompany.name} logo`}
                           className="h-8 w-auto object-contain"
                         />
@@ -573,13 +572,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     onValueChange={this.handleLocationChange}
                     className="space-y-3"
                   >
-                    <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${
-                      formData.location === "Remote" 
-                        ? 'border-white bg-blue-500/10' 
-                        : 'border-gray-700 hover:border-gray-600'
-                    }`}>
-                      <RadioGroup.Item 
-                        value="Remote" 
+                    <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${formData.location === "Remote"
+                      ? 'border-white bg-blue-500/10'
+                      : 'border-gray-700 hover:border-gray-600'
+                      }`}>
+                      <RadioGroup.Item
+                        value="Remote"
                         id="location-remote"
                         className="aspect-square h-4 w-4 rounded-full border border-white cursor-pointer relative
                           before:content-[''] before:block before:w-2 before:h-2 before:rounded-full 
@@ -591,13 +589,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                         Remote - Work from anywhere
                       </Label>
                     </div>
-                    <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${
-                      formData.location === officeLocation
-                        ? 'border-gray-500 bg-blue-500/10' 
-                        : 'border-gray-700 hover:border-gray-600'
-                    }`}>
-                      <RadioGroup.Item 
-                        value={officeLocation} 
+                    <div className={`flex items-center space-x-2 p-4 rounded-lg border transition-all ${formData.location === officeLocation
+                      ? 'border-gray-500 bg-blue-500/10'
+                      : 'border-gray-700 hover:border-gray-600'
+                      }`}>
+                      <RadioGroup.Item
+                        value={officeLocation}
                         id="location-office"
                         className="aspect-square h-4 w-4 rounded-full border border-gray-400 cursor-pointer relative
                           before:content-[''] before:block before:w-2 before:h-2 before:rounded-full 
@@ -697,13 +694,12 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                     value={formData.description}
                     onChange={this.handleChange}
                     required
-                    className={`bg-gray-900/70 border-gray-700 text-white resize-none ${
-                      formData.description.length > 0 && formData.description.length < 100
-                        ? 'border-yellow-500'
-                        : formData.description.length >= 100
+                    className={`bg-gray-900/70 border-gray-700 text-white resize-none ${formData.description.length > 0 && formData.description.length < 100
+                      ? 'border-yellow-500'
+                      : formData.description.length >= 100
                         ? 'border-green-500'
                         : ''
-                    }`}
+                      }`}
                     placeholder="Describe the role in detail, including:&#13;&#10;• Key responsibilities&#13;&#10;• Required experience&#13;&#10;• Technical requirements&#13;&#10;• Benefits and perks"
                   />
                 </div>
@@ -719,76 +715,92 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-sm text-gray-400">
+                  Add the technical skills required for this position. You can type custom skills or click from the suggestions below.
+                </p>
+
                 {/* Add Skills Input */}
-                <div className="flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div className="flex-1">
-                        <Input
-                          type="text"
-                          value={requiredSkillInput}
-                          onChange={this.handleRequiredSkillsChange}
-                          className="w-full bg-gray-900/70 border-gray-700 text-white"
-                          placeholder="Search or enter a skill"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              this.addRequiredSkill();
-                            }
-                          }}
-                        />
+                <div className="space-y-2">
+                  <Label htmlFor="skill-input" className="text-gray-200">Add Skill</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        id="skill-input"
+                        type="text"
+                        value={requiredSkillInput}
+                        onChange={this.handleRequiredSkillsChange}
+                        className="w-full bg-gray-900/70 border-gray-700 text-white placeholder:text-gray-500"
+                        placeholder="Type a skill (e.g., JavaScript, Python) and press Enter"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            this.addRequiredSkill();
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={this.addRequiredSkill}
+                      disabled={!requiredSkillInput.trim()}
+                      className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-primary shadow-sm shadow-black/5 hover:bg-primary/90 h-9 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center gap-2 hover:from-gray-700 hover:to-gray-900"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+
+                  {/* Filtered suggestions as user types */}
+                  {requiredSkillInput.length > 0 && (
+                    <div className="mt-2">
+                      <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 max-h-48 overflow-y-auto">
+                        <p className="text-xs text-gray-400 mb-2">Matching suggestions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {techSuggestions
+                            .filter((tech) =>
+                              tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
+                              !formData.requiredSkills.includes(tech)
+                            )
+                            .slice(0, 20)
+                            .map((tech, index) => (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="cursor-pointer transition-colors border-blue-600 text-blue-300 hover:bg-blue-600/20 hover:border-blue-500 hover:text-blue-200"
+                                onClick={() => this.handleSuggestionSelect(tech)}
+                              >
+                                {tech}
+                              </Badge>
+                            ))}
+                          {techSuggestions.filter((tech) =>
+                            tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
+                            !formData.requiredSkills.includes(tech)
+                          ).length === 0 && (
+                              <p className="text-sm text-gray-500">No matching suggestions. Press Enter or click "Add" to add "{requiredSkillInput}"</p>
+                            )}
+                        </div>
                       </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search skills..." />
-                        <CommandList>
-                          <CommandEmpty>No results found.</CommandEmpty>
-                          <CommandGroup heading="Popular Technologies">
-                            {techSuggestions
-                              .filter((tech) => 
-                                tech.toLowerCase().includes(requiredSkillInput.toLowerCase()) &&
-                                !formData.requiredSkills.includes(tech)
-                              )
-                              .map((tech, index) => (
-                                <CommandItem
-                                  key={index}
-                                  value={tech}
-                                  onSelect={() => this.handleSuggestionSelect(tech)}
-                                  className="cursor-pointer"
-                                >
-                                  {tech}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <Button 
-                    type="button" 
-                    onClick={this.addRequiredSkill}
-                    className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-primary shadow-sm shadow-black/5 hover:bg-primary/90 h-9 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center gap-2 hover:from-gray-700 hover:to-gray-900"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Selected Skills */}
                 {formData.requiredSkills.length > 0 && (
                   <div className="space-y-2">
-                    <Label className="text-gray-200">Selected Skills</Label>
+                    <Label className="text-gray-200 flex items-center gap-2">
+                      <span>Selected Skills</span>
+                      <span className="text-xs text-green-400 font-normal">({formData.requiredSkills.length} added)</span>
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       {formData.requiredSkills.map((skill, index) => (
                         <Badge
                           key={index}
                           variant="secondary"
-                          className="bg-gray-500/30 text-white-300 border border-gray-700 hover:bg-gray-900/50 cursor-pointer"
+                          className="bg-green-500/20 text-green-200 border border-green-600 hover:bg-green-500/30 cursor-pointer transition-colors"
                           onClick={() => this.removeRequiredSkill(skill)}
                         >
                           {skill}
-                          <button className="ml-2 hover:text-blue-100">
+                          <button className="ml-2 hover:text-green-100">
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
@@ -797,30 +809,33 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
                   </div>
                 )}
 
-                {/* Popular Skills */}
-                <div className="space-y-2">
-                  <Label className="text-gray-200">Popular Technologies</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {techSuggestions
-                      .filter(skill => !formData.requiredSkills.includes(skill))
-                      .slice(0, 15)
-                      .map((skill, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="cursor-pointer transition-colors border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white"
-                          onClick={() => this.handleSuggestionSelect(skill)}
-                        >
-                          {skill}
-                        </Badge>
-                      ))}
+                {/* Popular Skills - Always show when not typing */}
+                {requiredSkillInput.length === 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-gray-200">Quick Add: Popular Technologies</Label>
+                    <p className="text-xs text-gray-500">Click any skill to add it instantly</p>
+                    <div className="flex flex-wrap gap-2">
+                      {techSuggestions
+                        .filter(skill => !formData.requiredSkills.includes(skill))
+                        .slice(0, 20)
+                        .map((skill, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="cursor-pointer transition-colors border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700/30 hover:text-white"
+                            onClick={() => this.handleSuggestionSelect(skill)}
+                          >
+                            + {skill}
+                          </Badge>
+                        ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Job Status Card */}
-            
+
 
             {error && (
               <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded">
@@ -830,21 +845,21 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-6">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 border-2 border-gray-600 text-gray-300 hover:bg-gray-800 hover:border-gray-500 h-9 px-4 py-2"
                 onClick={() => this.props.navigate('/nlo/jobs')}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isLoading}
                 className="whitespace-nowrap rounded-lg text-sm font-medium transition-colors outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-primary shadow-sm shadow-black/5 hover:bg-primary/90 h-9 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-800 text-white border-0 flex items-center gap-2 hover:from-gray-700 hover:to-gray-900"
-                  >
-                {isLoading 
-                  ? (isEditMode ? 'Saving Changes...' : 'Creating Job...') 
+              >
+                {isLoading
+                  ? (isEditMode ? 'Saving Changes...' : 'Creating Job...')
                   : (isEditMode ? 'Save Changes' : 'Create Job')}
               </Button>
             </div>
@@ -859,6 +874,6 @@ class JobFormPageClass extends Component<JobFormPageProps, JobFormPageState> {
 export const JobFormPage: React.FC = () => {
   const { jobId } = useParams<{ jobId?: string }>();
   const navigate = useNavigate();
-  
+
   return <JobFormPageClass jobId={jobId} navigate={navigate} />;
 };
