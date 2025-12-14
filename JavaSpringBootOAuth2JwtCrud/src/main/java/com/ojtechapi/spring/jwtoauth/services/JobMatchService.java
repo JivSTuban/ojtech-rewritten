@@ -47,7 +47,7 @@ public class JobMatchService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
-    private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
+    private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent";
 
     private final RestTemplate restTemplate = new RestTemplate();
 

@@ -41,22 +41,22 @@ public class StudentProfileController {
 
     @Autowired
     private CVRepository cvRepository;
-    
+
     @Autowired
     private CertificationRepository certificationRepository;
-    
+
     @Autowired
     private WorkExperienceRepository workExperienceRepository;
 
     @Autowired
     private CloudinaryService cloudinaryService;
-    
+
     @Autowired
     private ProfileUpdateEventService profileUpdateEventService;
-    
+
     @Value("${cloudinary.api-secret-preset:OJTECH}")
     private String cloudinaryPreset;
-    
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/me")
@@ -66,7 +66,7 @@ public class StudentProfileController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             UUID userId = userDetails.getId();
-            
+
             logger.info("Getting profile for user ID: {}", userId);
 
             Optional<StudentProfile> profileOpt = studentProfileRepository.findByUserId(userId);
@@ -74,12 +74,12 @@ public class StudentProfileController {
                 logger.warn("No profile found for user ID: {}", userId);
                 return ResponseEntity.notFound().build();
             }
-            
+
             StudentProfile profile = profileOpt.get();
-            
+
             // Create a response map with all profile properties
             Map<String, Object> responseMap = new HashMap<>();
-            
+
             // Add all basic profile fields
             responseMap.put("id", profile.getId());
             responseMap.put("firstName", profile.getFirstName());
@@ -93,8 +93,8 @@ public class StudentProfileController {
             responseMap.put("university", profile.getUniversity());
             responseMap.put("major", profile.getMajor());
             responseMap.put("graduationYear", profile.getGraduationYear());
-            responseMap.put("skills", profile.getSkills() != null ? 
-                    Arrays.asList(profile.getSkills().split(",")) : Collections.emptyList());
+            responseMap.put("skills", profile.getSkills() != null ? Arrays.asList(profile.getSkills().split(","))
+                    : Collections.emptyList());
             responseMap.put("githubUrl", profile.getGithubUrl());
             responseMap.put("linkedinUrl", profile.getLinkedinUrl());
             responseMap.put("portfolioUrl", profile.getPortfolioUrl());
@@ -105,7 +105,7 @@ public class StudentProfileController {
             responseMap.put("activeCvId", profile.getActiveCvId());
             responseMap.put("role", profile.getRole());
             responseMap.put("avatarUrl", profile.getAvatarUrl());
-            
+
             // Parse GitHub projects if available
             if (profile.getGithubProjects() != null && !profile.getGithubProjects().isEmpty()) {
                 try {
@@ -118,19 +118,19 @@ public class StudentProfileController {
             } else {
                 responseMap.put("githubProjects", Collections.emptyList());
             }
-            
+
             // Add certifications and experiences
             responseMap.put("certifications", profile.getCertifications());
             responseMap.put("experiences", profile.getExperiences());
-            
+
             // Add PreOJT Orientation URL
             responseMap.put("preojtOrientationUrl", profile.getPreojtOrientationUrl());
-            
+
             // Add verification status
             responseMap.put("verified", profile.isVerified());
             responseMap.put("verifiedAt", profile.getVerifiedAt());
             responseMap.put("verificationNotes", profile.getVerificationNotes());
-            
+
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {
             logger.error("Error getting student profile", e);
@@ -162,11 +162,11 @@ public class StudentProfileController {
         // Set login email from User entity
         profile.setEmail(user.getEmail());
         logger.info("Created student profile with login email: {}", user.getEmail());
-        
+
         updateProfileFields(profile, profileData);
-        
+
         profile = studentProfileRepository.save(profile);
-        
+
         return ResponseEntity.ok(profile);
     }
 
@@ -192,26 +192,27 @@ public class StudentProfileController {
             logger.info("Synced login email to student profile: {}", user.getEmail());
         }
         updateProfileFields(profile, profileData);
-        
+
         profile = studentProfileRepository.save(profile);
-        
-        // Trigger async match score recalculation (CV generation is handled by frontend)
+
+        // Trigger async match score recalculation (CV generation is handled by
+        // frontend)
         logger.info("Triggering async match score recalculation for user: {}", userId);
         profileUpdateEventService.handleProfileUpdate(userId, profile.getId());
-        
+
         return ResponseEntity.ok(profile);
     }
-    
+
     @PostMapping("/complete-onboarding")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> completeOnboarding(@RequestBody Map<String, Object> completeData) {
         logger.info("POST /api/student-profiles/complete-onboarding called");
-        
+
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             UUID userId = userDetails.getId();
-            
+
             logger.info("User ID: {}, Username: {}", userId, userDetails.getUsername());
             logger.info("User roles: {}", userDetails.getAuthorities());
 
@@ -221,11 +222,11 @@ public class StudentProfileController {
                         logger.error("User not found with ID: {}", userId);
                         return new ResourceNotFoundException("User not found");
                     });
-            
+
             Optional<StudentProfile> profileOpt = studentProfileRepository.findByUserId(userId);
             if (profileOpt.isEmpty()) {
                 logger.warn("No profile found for user ID: {}", userId);
-                
+
                 // Create a new profile if it doesn't exist
                 StudentProfile newProfile = new StudentProfile();
                 newProfile.setUser(user);
@@ -233,11 +234,12 @@ public class StudentProfileController {
                 newProfile.setEmail(user.getEmail()); // Set login email
                 newProfile = studentProfileRepository.save(newProfile);
                 profileOpt = Optional.of(newProfile);
-                logger.info("Created new student profile for user: {} with email: {}", user.getUsername(), user.getEmail());
+                logger.info("Created new student profile for user: {} with email: {}", user.getUsername(),
+                        user.getEmail());
             }
 
             StudentProfile profile = profileOpt.get();
-            
+
             // Always sync the email from User entity to StudentProfile
             if (profile.getEmail() == null || !profile.getEmail().equals(user.getEmail())) {
                 profile.setEmail(user.getEmail());
@@ -245,22 +247,23 @@ public class StudentProfileController {
             }
             profile.setHasCompletedOnboarding(true);
             logger.info("Processing onboarding data for profile ID: {}", profile.getId());
-            
+
             // Handle personal info
             if (completeData.containsKey("personalInfo")) {
                 Map<String, String> personalInfo = (Map<String, String>) completeData.get("personalInfo");
                 profile.setFirstName(personalInfo.get("firstName"));
                 profile.setLastName(personalInfo.get("lastName"));
-                
+
                 // Set full name based on first and last name
-                String fullName = String.format("%s %s", 
-                    personalInfo.get("firstName") != null ? personalInfo.get("firstName") : "",
-                    personalInfo.get("lastName") != null ? personalInfo.get("lastName") : "").trim();
+                String fullName = String.format("%s %s",
+                        personalInfo.get("firstName") != null ? personalInfo.get("firstName") : "",
+                        personalInfo.get("lastName") != null ? personalInfo.get("lastName") : "").trim();
                 profile.setFullName(fullName);
-                
-                logger.info("Updated personal info: {}, {}", personalInfo.get("firstName"), personalInfo.get("lastName"));
+
+                logger.info("Updated personal info: {}, {}", personalInfo.get("firstName"),
+                        personalInfo.get("lastName"));
             }
-            
+
             // Handle education info
             if (completeData.containsKey("education")) {
                 Map<String, Object> education = (Map<String, Object>) completeData.get("education");
@@ -270,14 +273,14 @@ public class StudentProfileController {
                     profile.setGraduationYear(((Number) education.get("graduationYear")).intValue());
                 }
             }
-            
+
             // Handle skills (convert array to comma-separated string)
             if (completeData.containsKey("skills") && completeData.get("skills") instanceof List) {
                 List<String> skillsList = (List<String>) completeData.get("skills");
                 profile.setSkills(String.join(",", skillsList));
                 logger.info("Processed skills: {}", profile.getSkills());
             }
-            
+
             // Handle contact info
             if (completeData.containsKey("contact")) {
                 Map<String, String> contact = (Map<String, String>) completeData.get("contact");
@@ -286,14 +289,14 @@ public class StudentProfileController {
                 profile.setGithubUrl(contact.get("githubUrl"));
                 profile.setPortfolioUrl(contact.get("portfolioUrl"));
             }
-            
+
             // Handle bio
             if (completeData.containsKey("bio")) {
                 String bio = (String) completeData.get("bio");
                 profile.setBio(bio);
                 logger.info("Set bio: {}", bio != null && bio.length() > 50 ? bio.substring(0, 50) + "..." : bio);
             }
-            
+
             // Process GitHub projects
             if (completeData.containsKey("githubProjects")) {
                 try {
@@ -304,12 +307,13 @@ public class StudentProfileController {
                     // Continue processing instead of failing the entire request
                 }
             }
-            
+
             // Process certifications
             if (completeData.containsKey("certifications") && completeData.get("certifications") instanceof List) {
-                List<Map<String, Object>> certificationsList = (List<Map<String, Object>>) completeData.get("certifications");
+                List<Map<String, Object>> certificationsList = (List<Map<String, Object>>) completeData
+                        .get("certifications");
                 DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_DATE;
-                
+
                 // Initialize certifications if null
                 if (profile.getCertifications() == null) {
                     profile.setCertifications(new HashSet<>());
@@ -317,28 +321,28 @@ public class StudentProfileController {
                     // Clear existing certifications
                     profile.getCertifications().clear();
                 }
-                
+
                 try {
                     for (Map<String, Object> certData : certificationsList) {
                         Certification certification = new Certification();
                         certification.setName((String) certData.get("name"));
                         certification.setIssuer((String) certData.get("issuer"));
-                        
+
                         // Parse dates
                         String dateStr = (String) certData.get("date");
                         if (dateStr != null) {
                             certification.setDateReceived(LocalDate.parse(dateStr, dateFormatter));
                         }
-                        
+
                         String expiryDateStr = (String) certData.get("expiryDate");
                         if (expiryDateStr != null && !expiryDateStr.isEmpty()) {
                             certification.setExpiryDate(LocalDate.parse(expiryDateStr, dateFormatter));
                         }
-                        
+
                         if (certData.containsKey("credentialUrl")) {
                             certification.setCredentialUrl((String) certData.get("credentialUrl"));
                         }
-                        
+
                         certification.setStudent(profile);
                         profile.addCertification(certification);
                     }
@@ -347,12 +351,12 @@ public class StudentProfileController {
                     // Continue processing instead of failing the entire request
                 }
             }
-            
+
             // Process work experiences
             if (completeData.containsKey("experiences") && completeData.get("experiences") instanceof List) {
                 List<Map<String, Object>> experiencesList = (List<Map<String, Object>>) completeData.get("experiences");
                 DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_DATE;
-                
+
                 // Initialize experiences if null
                 if (profile.getExperiences() == null) {
                     profile.setExperiences(new HashSet<>());
@@ -360,7 +364,7 @@ public class StudentProfileController {
                     // Clear existing experiences
                     profile.getExperiences().clear();
                 }
-                
+
                 try {
                     for (Map<String, Object> expData : experiencesList) {
                         WorkExperience experience = new WorkExperience();
@@ -368,18 +372,18 @@ public class StudentProfileController {
                         experience.setCompany((String) expData.get("company"));
                         experience.setLocation((String) expData.get("location"));
                         experience.setDescription((String) expData.get("description"));
-                        
+
                         // Parse dates
                         String startDateStr = (String) expData.get("startDate");
                         if (startDateStr != null) {
                             experience.setStartDate(LocalDate.parse(startDateStr, dateFormatter));
                         }
-                        
+
                         String endDateStr = (String) expData.get("endDate");
                         if (endDateStr != null && !endDateStr.isEmpty()) {
                             experience.setEndDate(LocalDate.parse(endDateStr, dateFormatter));
                         }
-                        
+
                         experience.setCurrent((Boolean) expData.getOrDefault("current", false));
                         experience.setStudent(profile);
                         profile.addExperience(experience);
@@ -389,16 +393,16 @@ public class StudentProfileController {
                     // Continue processing instead of failing the entire request
                 }
             }
-            
+
             // Mark onboarding as complete
             profile.setHasCompletedOnboarding(true);
-            
+
             profile = studentProfileRepository.save(profile);
             logger.info("Successfully saved profile with ID: {}", profile.getId());
-            
+
             // Create formatted response
             Map<String, Object> responseMap = new HashMap<>();
-            
+
             // Add all basic profile fields
             responseMap.put("id", profile.getId());
             responseMap.put("firstName", profile.getFirstName());
@@ -409,14 +413,14 @@ public class StudentProfileController {
             responseMap.put("university", profile.getUniversity());
             responseMap.put("major", profile.getMajor());
             responseMap.put("graduationYear", profile.getGraduationYear());
-            
+
             // Always convert skills to array consistently
             if (profile.getSkills() != null && !profile.getSkills().isEmpty()) {
                 responseMap.put("skills", Arrays.asList(profile.getSkills().split(",")));
             } else {
                 responseMap.put("skills", Collections.emptyList());
             }
-            
+
             responseMap.put("githubUrl", profile.getGithubUrl());
             responseMap.put("linkedinUrl", profile.getLinkedinUrl());
             responseMap.put("portfolioUrl", profile.getPortfolioUrl());
@@ -427,7 +431,7 @@ public class StudentProfileController {
             responseMap.put("activeCvId", profile.getActiveCvId());
             responseMap.put("role", profile.getRole());
             responseMap.put("avatarUrl", profile.getAvatarUrl());
-            
+
             // Parse GitHub projects if available
             if (profile.getGithubProjects() != null && !profile.getGithubProjects().isEmpty()) {
                 try {
@@ -440,21 +444,22 @@ public class StudentProfileController {
             } else {
                 responseMap.put("githubProjects", Collections.emptyList());
             }
-            
+
             // Add certifications and experiences
             responseMap.put("certifications", profile.getCertifications());
             responseMap.put("experiences", profile.getExperiences());
-            
+
             // Add PreOJT Orientation URL and verification status
             responseMap.put("preojtOrientationUrl", profile.getPreojtOrientationUrl());
             responseMap.put("verified", profile.isVerified());
             responseMap.put("verifiedAt", profile.getVerifiedAt());
             responseMap.put("verificationNotes", profile.getVerificationNotes());
-            
+
             return ResponseEntity.ok(responseMap);
         } catch (Exception e) {
             logger.error("Error in completeOnboarding", e);
-            return ResponseEntity.status(500).body(new MessageResponse("An error occurred while processing your request: " + e.getMessage()));
+            return ResponseEntity.status(500)
+                    .body(new MessageResponse("An error occurred while processing your request: " + e.getMessage()));
         }
     }
 
@@ -471,22 +476,22 @@ public class StudentProfileController {
         }
 
         StudentProfile profile = profileOpt.get();
-        
+
         // Upload to Cloudinary
         Map<String, Object> result = cloudinaryService.upload(file, "cvs");
         String fileUrl = (String) result.get("url");
-        
+
         // Create CV record
         CV cv = new CV();
         cv.setStudent(profile);
         cv.setLastUpdated(LocalDateTime.now());
-        
+
         // Store the file URL in the parsedResume field temporarily
         // This is a workaround until the file upload is fully replaced by AI generation
         cv.setParsedResume("{\"legacyFileUrl\": \"" + fileUrl + "\"}");
-        
+
         cv = cvRepository.save(cv);
-        
+
         // Set as active if no active CV exists
         if (profile.getActiveCvId() == null) {
             profile.setActiveCvId(cv.getId());
@@ -494,7 +499,7 @@ public class StudentProfileController {
             cv.setActive(true);
             cvRepository.save(cv);
         }
-        
+
         return ResponseEntity.ok(cv);
     }
 
@@ -512,7 +517,7 @@ public class StudentProfileController {
 
         StudentProfile profile = profileOpt.get();
         List<CV> cvs = cvRepository.findByStudent(profile);
-        
+
         return ResponseEntity.ok(cvs);
     }
 
@@ -529,28 +534,28 @@ public class StudentProfileController {
         }
 
         StudentProfile profile = profileOpt.get();
-        
+
         // Check if CV exists and belongs to student
         Optional<CV> cvOpt = cvRepository.findById(cvId);
         if (cvOpt.isEmpty() || !cvOpt.get().getStudent().getId().equals(profile.getId())) {
             return ResponseEntity.badRequest().body(new MessageResponse("CV not found or does not belong to you"));
         }
-        
+
         // Reset active status on all CVs
         List<CV> cvs = cvRepository.findByStudent(profile);
         for (CV cv : cvs) {
             cv.setActive(false);
         }
         cvRepository.saveAll(cvs);
-        
+
         // Set new active CV
         CV selectedCV = cvOpt.get();
         selectedCV.setActive(true);
         cvRepository.save(selectedCV);
-        
+
         profile.setActiveCvId(cvId);
         studentProfileRepository.save(profile);
-        
+
         return ResponseEntity.ok(new MessageResponse("Active CV updated successfully"));
     }
 
@@ -587,7 +592,8 @@ public class StudentProfileController {
                     java.net.URI uri = java.net.URI.create(fileUrl);
                     String host = uri.getHost();
                     if (host == null || (!host.endsWith("cloudinary.com") && !host.contains("res.cloudinary.com"))) {
-                        return ResponseEntity.badRequest().body(new MessageResponse("fileUrl must be a Cloudinary URL"));
+                        return ResponseEntity.badRequest()
+                                .body(new MessageResponse("fileUrl must be a Cloudinary URL"));
                     }
                 } catch (Exception ex) {
                     return ResponseEntity.badRequest().body(new MessageResponse("Invalid fileUrl"));
@@ -600,20 +606,20 @@ public class StudentProfileController {
             }
 
             StudentProfile profile = profileOpt.get();
-            
+
             // Upload to Cloudinary when file present; otherwise trust provided fileUrl
             if (!hasFileUrl) {
                 fileUrl = cloudinaryService.uploadPdf(file, cloudinaryPreset);
             }
-            
+
             // Update profile with the new PDF URL
             profile.setPreojtOrientationUrl(fileUrl);
             studentProfileRepository.save(profile);
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("message", "PreOJT Orientation PDF uploaded successfully");
             response.put("fileUrl", fileUrl);
-            
+
             return ResponseEntity.ok(response);
         } catch (IOException e) {
             logger.error("Error uploading PreOJT Orientation PDF", e);
@@ -630,27 +636,27 @@ public class StudentProfileController {
         if (data.containsKey("email")) {
             logger.warn("Ignoring email from profile data. Email is synced from User entity.");
         }
-        
+
         if (data.containsKey("firstName")) {
             profile.setFirstName((String) data.get("firstName"));
         }
-        
+
         if (data.containsKey("lastName")) {
             profile.setLastName((String) data.get("lastName"));
         }
-        
+
         if (data.containsKey("location")) {
             profile.setLocation((String) data.get("location"));
         }
-        
+
         if (data.containsKey("university")) {
             profile.setUniversity((String) data.get("university"));
         }
-        
+
         if (data.containsKey("major")) {
             profile.setMajor((String) data.get("major"));
         }
-        
+
         if (data.containsKey("graduationYear")) {
             Object yearObj = data.get("graduationYear");
             if (yearObj instanceof Integer) {
@@ -663,7 +669,7 @@ public class StudentProfileController {
                 }
             }
         }
-        
+
         if (data.containsKey("skills")) {
             Object skillsObj = data.get("skills");
             if (skillsObj instanceof String) {
@@ -673,29 +679,29 @@ public class StudentProfileController {
                 profile.setSkills(String.join(", ", skillsList));
             }
         }
-        
+
         if (data.containsKey("githubUrl")) {
             profile.setGithubUrl((String) data.get("githubUrl"));
         }
-        
+
         if (data.containsKey("linkedinUrl")) {
             profile.setLinkedinUrl((String) data.get("linkedinUrl"));
         }
-        
+
         if (data.containsKey("portfolioUrl")) {
             profile.setPortfolioUrl((String) data.get("portfolioUrl"));
         }
-        
+
         if (data.containsKey("phoneNumber")) {
             profile.setPhoneNumber((String) data.get("phoneNumber"));
         }
-        
+
         if (data.containsKey("bio")) {
             String bio = (String) data.get("bio");
             profile.setBio(bio);
             logger.info("Updated bio: {}", bio != null && bio.length() > 50 ? bio.substring(0, 50) + "..." : bio);
         }
-        
+
         if (data.containsKey("hasCompletedOnboarding")) {
             Object onboardingObj = data.get("hasCompletedOnboarding");
             boolean requestedValue = false;
@@ -710,9 +716,121 @@ public class StudentProfileController {
                 profile.setHasCompletedOnboarding(true);
             }
         }
-        
+
         if (data.containsKey("preojtOrientationUrl")) {
             profile.setPreojtOrientationUrl((String) data.get("preojtOrientationUrl"));
         }
+
+        // Process certifications
+        if (data.containsKey("certifications") && data.get("certifications") instanceof List) {
+            List<Map<String, Object>> certificationsList = (List<Map<String, Object>>) data.get("certifications");
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_DATE;
+
+            // Initialize certifications if null
+            if (profile.getCertifications() == null) {
+                profile.setCertifications(new HashSet<>());
+            } else {
+                // Clear existing certifications
+                profile.getCertifications().clear();
+            }
+
+            try {
+                for (Map<String, Object> certData : certificationsList) {
+                    // Parse dates - handle both 'dateReceived' and 'date' field names
+                    String dateStr = (String) certData.get("dateReceived");
+                    if (dateStr == null) {
+                        dateStr = (String) certData.get("date");
+                    }
+
+                    // Skip certifications without a valid date_received (required field)
+                    if (dateStr == null || dateStr.trim().isEmpty()) {
+                        logger.warn("Skipping certification without date_received: name={}, issuer={}",
+                                certData.get("name"), certData.get("issuer"));
+                        continue;
+                    }
+
+                    Certification certification = new Certification();
+                    certification.setName((String) certData.get("name"));
+                    certification.setIssuer((String) certData.get("issuer"));
+
+                    // Parse required date_received field
+                    try {
+                        certification.setDateReceived(LocalDate.parse(dateStr, dateFormatter));
+                    } catch (Exception e) {
+                        logger.warn("Skipping certification with invalid date format: {}", dateStr);
+                        continue;
+                    }
+
+                    // Parse optional expiry_date field
+                    String expiryDateStr = (String) certData.get("expiryDate");
+                    if (expiryDateStr != null && !expiryDateStr.isEmpty()) {
+                        try {
+                            certification.setExpiryDate(LocalDate.parse(expiryDateStr, dateFormatter));
+                        } catch (Exception e) {
+                            logger.warn("Invalid expiry date format, skipping expiry: {}", expiryDateStr);
+                            // Continue without expiry date
+                        }
+                    }
+
+                    if (certData.containsKey("credentialUrl")) {
+                        certification.setCredentialUrl((String) certData.get("credentialUrl"));
+                    }
+
+                    certification.setStudent(profile);
+                    profile.addCertification(certification);
+                }
+            } catch (Exception e) {
+                logger.error("Error processing certifications", e);
+                // Continue processing instead of failing the entire request
+            }
+        }
+
+        // Process work experiences
+        if (data.containsKey("experiences") && data.get("experiences") instanceof List) {
+            List<Map<String, Object>> experiencesList = (List<Map<String, Object>>) data.get("experiences");
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_DATE;
+
+            // Initialize experiences if null
+            if (profile.getExperiences() == null) {
+                profile.setExperiences(new HashSet<>());
+            } else {
+                // Clear existing experiences
+                profile.getExperiences().clear();
+            }
+
+            try {
+                for (Map<String, Object> expData : experiencesList) {
+                    WorkExperience experience = new WorkExperience();
+                    experience.setTitle((String) expData.get("title"));
+                    experience.setCompany((String) expData.get("company"));
+                    experience.setLocation((String) expData.get("location"));
+                    experience.setDescription((String) expData.get("description"));
+
+                    // Parse dates
+                    String startDateStr = (String) expData.get("startDate");
+                    if (startDateStr != null) {
+                        experience.setStartDate(LocalDate.parse(startDateStr, dateFormatter));
+                    }
+
+                    String endDateStr = (String) expData.get("endDate");
+                    if (endDateStr != null && !endDateStr.isEmpty()) {
+                        experience.setEndDate(LocalDate.parse(endDateStr, dateFormatter));
+                    }
+
+                    // Handle isCurrentPosition field (mapped to 'current' in entity)
+                    Object currentObj = expData.get("isCurrentPosition");
+                    if (currentObj == null) {
+                        currentObj = expData.get("current");
+                    }
+                    experience.setCurrent((Boolean) (currentObj != null ? currentObj : false));
+
+                    experience.setStudent(profile);
+                    profile.addExperience(experience);
+                }
+            } catch (Exception e) {
+                logger.error("Error processing work experiences", e);
+                // Continue processing instead of failing the entire request
+            }
+        }
     }
-} 
+}

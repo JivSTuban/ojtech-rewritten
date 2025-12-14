@@ -9,17 +9,17 @@ const getAuthHeaders = () => {
   // First, try to get the token from the user object
   const user = authService.getCurrentUser();
   if (user && user.accessToken) {
-    
+
     return { Authorization: 'Bearer ' + user.accessToken };
   }
-  
+
   // If not found, check if there's a standalone token
   const token = localStorage.getItem('token');
   if (token) {
     console.log('Found standalone token in localStorage');
     return { Authorization: 'Bearer ' + token };
   }
-  
+
   console.warn('No authentication token found');
   return {};
 };
@@ -53,10 +53,10 @@ const updateProfile = async (data: any) => {
   try {
     const userRole = getUserRole();
     console.log(`Updating profile for user with role: ${userRole}`);
-    
+
     let endpoint = '';
     let formattedData: any = {};
-    
+
     switch (userRole) {
       case 'STUDENT':
         endpoint = `${API_BASE_URL}/student-profiles/me`;
@@ -78,16 +78,31 @@ const updateProfile = async (data: any) => {
           major: data.major || null,
           graduationYear: data.graduationYear || null,
           // Role and onboarding status
-      role: data.role || 'STUDENT',
+          role: data.role || 'STUDENT',
           // Complex fields
           githubProjects: data.githubProjects || [],
-          certifications: data.certifications || [],
-          experiences: data.experiences || [],
+          certifications: (data.certifications || []).map((cert: any) => ({
+            name: cert.name,
+            issuer: cert.issuer,
+            dateReceived: cert.issueDate || cert.dateReceived || cert.date,
+            date: cert.issueDate || cert.dateReceived || cert.date,
+            expiryDate: cert.expiryDate || null,
+            credentialUrl: cert.credentialUrl || null
+          })),
+          experiences: (data.experiences || []).map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            location: exp.location || null,
+            startDate: exp.startDate,
+            endDate: exp.endDate || null,
+            description: exp.description || null,
+            isCurrentPosition: exp.isCurrentPosition || false
+          })),
           // Convert skills array to comma-separated string if needed by backend
           skills: Array.isArray(data.skills) ? data.skills : (data.skills ? data.skills.split(',') : [])
         };
         break;
-        
+
       case 'NLO':
         endpoint = `${API_BASE_URL}/nlo/me`;
         // Format employer-specific data
@@ -104,10 +119,10 @@ const updateProfile = async (data: any) => {
           contactPersonPhone: data.contactPersonPhone || null,
           companyLogoUrl: data.companyLogoUrl || null,
           logoUrl: data.logoUrl || data.companyLogoUrl || null,
-      // Do not include hasCompletedOnboarding in generic updates; handled by onboarding endpoints
+          // Do not include hasCompletedOnboarding in generic updates; handled by onboarding endpoints
         };
         break;
-        
+
       case 'ADMIN':
       default:
         // Use generic endpoint for admin or unknown roles
@@ -121,14 +136,14 @@ const updateProfile = async (data: any) => {
     const response = await axios.put(
       endpoint,
       formattedData,
-      { 
+      {
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json'
         }
       }
     );
-    
+
     console.log('Profile update response:', response.data);
     return response.data;
   } catch (error: any) {
@@ -164,14 +179,14 @@ const updateEmployerProfile = async (data: any) => {
     const response = await axios.put(
       `${API_BASE_URL}/nlo/me`,
       formattedData,
-      { 
+      {
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json'
         }
       }
     );
-    
+
     console.log('Employer profile update response:', response.data);
     return response.data;
   } catch (error: any) {
@@ -190,29 +205,29 @@ const createInitialProfile = async (fullName: string) => {
     if (!user) {
       throw new Error("User must be logged in to create profile");
     }
-    
+
     console.log(`Creating initial profile for user ${user.username} with full name: ${fullName}`);
-    
+
     // First check if profile already exists to avoid duplicate creation
     try {
       const existingProfile = await axios.get(`${API_URL}/me`, { headers: getAuthHeaders() });
       console.log('Profile already exists:', existingProfile.data);
-      
+
       // If profile exists but doesn't have a fullName, update it
       if (existingProfile.data && (!existingProfile.data.fullName || existingProfile.data.fullName.trim() === '')) {
         console.log('Updating existing profile with full name');
-        return await axios.post(`${API_URL}/update`, 
+        return await axios.post(`${API_URL}/update`,
           { fullName },
           { headers: getAuthHeaders() }
         );
       }
-      
+
       return existingProfile.data;
     } catch (error: any) {
       // If profile doesn't exist (404) or other error, create a new one
       if (error.response?.status === 404 || !error.response) {
         console.log('No existing profile found, creating new profile');
-        const response = await axios.post(`${API_URL}/create`, 
+        const response = await axios.post(`${API_URL}/create`,
           { fullName },
           { headers: getAuthHeaders() }
         );
@@ -235,7 +250,7 @@ const createInitialProfile = async (fullName: string) => {
 const completeStudentOnboarding = async (data: any) => {
   try {
     console.log('Sending student onboarding data:', data);
-    
+
     // First, check if the user already has a profile
     let profileExists = false;
     try {
@@ -252,15 +267,15 @@ const completeStudentOnboarding = async (data: any) => {
         console.log('No existing profile found (404 response)');
       }
     }
-    
+
     // If no profile exists yet, create a simple profile first
     if (!profileExists) {
       try {
         console.log('Creating initial student profile...');
-        
+
         // Extract education data properly
         const education = data.education || {};
-        
+
         const initialProfileData = {
           fullName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
           firstName: data.firstName || '',
@@ -280,7 +295,7 @@ const completeStudentOnboarding = async (data: any) => {
           // Include other minimal required fields
           skills: data.skills || []
         };
-        
+
         console.log('Initial profile data:', initialProfileData);
         await axios.post(`${API_URL}/create`, initialProfileData, { headers: getAuthHeaders() });
         console.log('Created initial profile successfully');
@@ -291,24 +306,24 @@ const completeStudentOnboarding = async (data: any) => {
         }
       }
     }
-    
+
     // Ensure token is still valid before continuing
     const authHeaders = getAuthHeaders();
     console.log('Using auth headers for onboarding submission:', authHeaders);
-    
+
     // Explicitly set hasCompletedOnboarding to true
     const onboardingData = {
       ...data,
       hasCompletedOnboarding: true
     };
-    
+
     // Now proceed with the onboarding data submission
     const userRole = getUserRole();
     console.log(`Completing onboarding for user with role: ${userRole}`);
-    
+
     let onboardingEndpoint = '';
     let updateEndpoint = '';
-    
+
     switch (userRole) {
       case 'STUDENT':
         onboardingEndpoint = `${API_BASE_URL}/student-profiles/complete-onboarding`;
@@ -326,11 +341,11 @@ const completeStudentOnboarding = async (data: any) => {
         updateEndpoint = `${API_BASE_URL}/profiles/me`;
         break;
     }
-    
+
     console.log(`Submitting complete onboarding data to ${onboardingEndpoint} with hasCompletedOnboarding set to true`);
     const response = await axios.post(onboardingEndpoint, onboardingData, { headers: authHeaders });
     console.log('Onboarding successful response:', response.data);
-    
+
     // Also update the profile directly to ensure the status is updated
     try {
       await axios.put(
@@ -343,7 +358,7 @@ const completeStudentOnboarding = async (data: any) => {
       console.error('Error updating onboarding status:', updateError);
       // Continue even if this fails, as the main onboarding was successful
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error("Error completing student onboarding:", error);
@@ -377,9 +392,9 @@ const getCurrentUserProfileSmart = async () => {
   try {
     const userRole = getUserRole();
     console.log(`Fetching profile for user with role: ${userRole}`);
-    
+
     let endpoint = '';
-    
+
     switch (userRole) {
       case 'STUDENT':
         endpoint = `${API_BASE_URL}/student-profiles/me`;
@@ -397,14 +412,14 @@ const getCurrentUserProfileSmart = async () => {
         endpoint = `${API_BASE_URL}/profiles/me`;
         break;
     }
-    
+
     console.log(`Making request to: ${endpoint}`);
     const response = await axios.get(endpoint, { headers: getAuthHeaders() });
-    
+
     return response.data;
   } catch (error: any) {
     console.error("Error fetching user profile:", error.message);
-    
+
     // If the role-specific endpoint fails, try the generic endpoint as fallback
     if (error.response?.status === 403 || error.response?.status === 404) {
       console.warn("Role-specific endpoint failed, trying generic endpoint as fallback");
@@ -416,7 +431,7 @@ const getCurrentUserProfileSmart = async () => {
         throw fallbackError;
       }
     }
-    
+
     throw error;
   }
 };
@@ -430,7 +445,7 @@ const getCurrentStudentProfile = async () => {
 const submitStudentOnboarding = async (data: any) => {
   try {
     console.log('Submitting student onboarding data:', data);
-    
+
     // First, check if the user already has a profile
     let profileExists = false;
     try {
@@ -447,15 +462,15 @@ const submitStudentOnboarding = async (data: any) => {
         console.log('No existing profile found (404 response)');
       }
     }
-    
+
     // If no profile exists yet, create a simple profile first
     if (!profileExists) {
       try {
         console.log('Creating initial student profile...');
-        
+
         // Extract education data properly
         const education = data.education || {};
-        
+
         const initialProfileData = {
           fullName: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
           firstName: data.firstName || '',
@@ -475,7 +490,7 @@ const submitStudentOnboarding = async (data: any) => {
           // Include other minimal required fields
           skills: data.skills || []
         };
-        
+
         console.log('Initial profile data:', initialProfileData);
         await axios.post(`${API_URL}/create`, initialProfileData, { headers: getAuthHeaders() });
         console.log('Created initial profile successfully');
@@ -486,22 +501,22 @@ const submitStudentOnboarding = async (data: any) => {
         }
       }
     }
-    
+
     // Ensure token is still valid before continuing
     const authHeaders = getAuthHeaders();
     console.log('Using auth headers for onboarding submission:', authHeaders);
-    
+
     // Explicitly set hasCompletedOnboarding to true
     const onboardingData = {
       ...data,
       hasCompletedOnboarding: true
     };
-    
+
     // Now proceed with the onboarding data submission
     console.log('Submitting complete onboarding data with hasCompletedOnboarding set to true');
     const response = await axios.post(`${API_BASE_URL}/student-profiles/complete-onboarding`, onboardingData, { headers: authHeaders });
     console.log('Student onboarding successful response:', response.data);
-    
+
     // Also update the profile directly to ensure the status is updated
     try {
       await axios.put(
@@ -514,7 +529,7 @@ const submitStudentOnboarding = async (data: any) => {
       console.error('Error updating onboarding status:', updateError);
       // Continue even if this fails, as the main onboarding was successful
     }
-    
+
     return response.data;
   } catch (error: any) {
     console.error('Error submitting student onboarding:', error.message);
@@ -568,14 +583,14 @@ const getCurrentEmployerProfile = async () => {
 const updateEducationInfo = async (educationData: any) => {
   try {
     console.log('Updating education info:', educationData);
-    
+
     // Format the education data for the API
     const updateData = {
       university: educationData.university || '',
       major: educationData.major || '',
       graduationYear: educationData.graduationYear || null
     };
-    
+
     // Update the profile via the API
     const response = await axios.put(`${API_URL}/me`, updateData, { headers: getAuthHeaders() });
     console.log('Education info updated successfully:', response.data);
@@ -593,8 +608,8 @@ const updateEducationInfo = async (educationData: any) => {
 // Check verification status for students
 const getVerificationStatus = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/student-profiles/verification-status`, { 
-      headers: getAuthHeaders() 
+    const response = await axios.get(`${API_BASE_URL}/student-profiles/verification-status`, {
+      headers: getAuthHeaders()
     });
     return response.data;
   } catch (error: any) {
