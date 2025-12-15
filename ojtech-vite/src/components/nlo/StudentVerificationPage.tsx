@@ -9,10 +9,11 @@ import { Badge } from "../ui/badge";
 import { Input } from "../ui/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/Select";
 import { Checkbox } from "../ui/Checkbox";
-import { CheckCircle, XCircle, ExternalLink, Github, Linkedin, Loader2, Search, Filter, Users, TrendingUp } from "lucide-react";
+import { CheckCircle, XCircle, ExternalLink, Github, Linkedin, Loader2, Search, Filter, Users, TrendingUp, X } from "lucide-react";
 import nloService, { Student, VerificationStats } from '../../lib/api/nloService';
 import { useToast } from "../ui/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/Table";
+import * as pdfjsLib from 'pdfjs-dist';
 
 const NLOStudentVerificationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +35,11 @@ const NLOStudentVerificationPage: React.FC = () => {
   const [majorFilter, setMajorFilter] = useState('all');
   const [graduationYearFilter, setGraduationYearFilter] = useState('all');
   const [stats, setStats] = useState<VerificationStats | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationStudent, setVerificationStudent] = useState<Student | null>(null);
+  const [pdfMetadata, setPdfMetadata] = useState<any>(null);
+  const [showMetadata, setShowMetadata] = useState(false);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
   const { toast } = useToast();
 
   const fetchStudents = async () => {
@@ -45,7 +51,7 @@ const NLOStudentVerificationPage: React.FC = () => {
         nloService.getStudentsForVerification(true),
         nloService.getVerificationStats()
       ]);
-      
+
       setUnverifiedStudents(Array.isArray(unverified) ? unverified : []);
       setVerifiedStudents(Array.isArray(verified) ? verified : []);
       setFilteredUnverified(Array.isArray(unverified) ? unverified : []);
@@ -71,21 +77,21 @@ const NLOStudentVerificationPage: React.FC = () => {
   useEffect(() => {
     const filterStudents = (students: Student[]) => {
       return students.filter(student => {
-        const matchesSearch = !searchTerm || 
+        const matchesSearch = !searchTerm ||
           student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           student.university?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           student.major?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesUniversity = universityFilter === 'all' || 
+
+        const matchesUniversity = universityFilter === 'all' ||
           student.university?.toLowerCase().includes(universityFilter.toLowerCase());
-        
-        const matchesMajor = majorFilter === 'all' || 
+
+        const matchesMajor = majorFilter === 'all' ||
           student.major?.toLowerCase().includes(majorFilter.toLowerCase());
-        
-        const matchesGradYear = graduationYearFilter === 'all' || 
+
+        const matchesGradYear = graduationYearFilter === 'all' ||
           student.graduationYear?.toString() === graduationYearFilter;
-        
+
         return matchesSearch && matchesUniversity && matchesMajor && matchesGradYear;
       });
     };
@@ -174,7 +180,7 @@ const NLOStudentVerificationPage: React.FC = () => {
           variant: 'default',
         });
       }
-      
+
       handleDialogClose();
       fetchStudents();
     } catch (err) {
@@ -189,7 +195,7 @@ const NLOStudentVerificationPage: React.FC = () => {
 
   const handleBatchVerificationAction = async () => {
     const studentIds = Array.from(selectedStudents);
-    
+
     try {
       if (actionType === 'verify') {
         await nloService.batchVerifyStudents(studentIds, notes);
@@ -206,7 +212,7 @@ const NLOStudentVerificationPage: React.FC = () => {
           variant: 'default',
         });
       }
-      
+
       setSelectedStudents(new Set());
       handleDialogClose();
       fetchStudents();
@@ -217,6 +223,101 @@ const NLOStudentVerificationPage: React.FC = () => {
         description: `Failed to ${actionType} students. Please try again.`,
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleVerifyWithDocument = (student: Student) => {
+    setVerificationStudent(student);
+    setShowVerificationModal(true);
+  };
+
+  const handleIgnoreVerification = () => {
+    setShowVerificationModal(false);
+    setVerificationStudent(null);
+  };
+
+  const handleConfirmVerification = async () => {
+    if (!verificationStudent) return;
+
+    try {
+      const notes = 'Verified with pre-OJT orientation document review';
+      await nloService.verifyStudent(verificationStudent.id, notes);
+      toast({
+        title: 'Student Verified',
+        description: `${verificationStudent.fullName} has been verified successfully`,
+        variant: 'default',
+      });
+      setShowVerificationModal(false);
+      setVerificationStudent(null);
+      fetchStudents();
+    } catch (err) {
+      console.error('Error verifying student:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to verify student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const fetchPdfMetadata = async (pdfUrl: string) => {
+    setLoadingMetadata(true);
+    try {
+      // Fetch the PDF file
+      const response = await fetch(pdfUrl);
+      const arrayBuffer = await response.arrayBuffer();
+
+      // Load the PDF document using pdf.js
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+
+      // Get metadata
+      const metadata = await pdf.getMetadata();
+      const info: any = metadata.info;
+
+      // Format dates if available
+      const formatPdfDate = (dateStr: any) => {
+        if (!dateStr) return 'N/A';
+        try {
+          // PDF dates are in format: D:YYYYMMDDHHmmSSOHH'mm'
+          if (typeof dateStr === 'string' && dateStr.startsWith('D:')) {
+            const year = dateStr.substring(2, 6);
+            const month = dateStr.substring(6, 8);
+            const day = dateStr.substring(8, 10);
+            const hour = dateStr.substring(10, 12);
+            const minute = dateStr.substring(12, 14);
+            const second = dateStr.substring(14, 16);
+            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+          }
+          return dateStr;
+        } catch (e) {
+          return dateStr;
+        }
+      };
+
+      setPdfMetadata({
+        title: info.Title || 'N/A',
+        author: info.Author || 'N/A',
+        subject: info.Subject || 'N/A',
+        creator: info.Creator || 'N/A',
+        producer: info.creator_tool || 'N/A',
+        creationDate: formatPdfDate(info.CreationDate),
+        modificationDate: formatPdfDate(info.ModDate),
+        pageCount: pdf.numPages,
+        fileSize: `${(arrayBuffer.byteLength / 1024).toFixed(2)} KB`,
+        pdfVersion: info.PDFFormatVersion || 'N/A',
+        fileName: pdfUrl.split('/').pop()?.split('?')[0] || 'document.pdf'
+      });
+      setShowMetadata(true);
+    } catch (error) {
+      console.error('Error loading PDF metadata:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load PDF metadata.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingMetadata(false);
     }
   };
 
@@ -236,7 +337,7 @@ const NLOStudentVerificationPage: React.FC = () => {
     const safeStudents = Array.isArray(students) ? students : [];
     const currentStudents = activeTab === 'unverified' ? filteredUnverified : filteredVerified;
     const allSelected = currentStudents.length > 0 && currentStudents.every(s => selectedStudents.has(s.id));
-    
+
     return (
       <div className="rounded-md border">
         <Table>
@@ -260,7 +361,7 @@ const NLOStudentVerificationPage: React.FC = () => {
           <TableBody>
             {safeStudents.length === 0 ? (
               <TableRow>
-                <TableCell className="text-center" style={{textAlign: 'center'}} {...{colSpan: 7}}>
+                <TableCell className="text-center" style={{ textAlign: 'center' }} {...{ colSpan: 7 }}>
                   <p className="text-muted-foreground">
                     No students found
                   </p>
@@ -280,9 +381,9 @@ const NLOStudentVerificationPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-muted">
                         {student.profilePictureUrl ? (
-                          <img 
-                            src={student.profilePictureUrl} 
-                            alt={student.fullName} 
+                          <img
+                            src={student.profilePictureUrl}
+                            alt={student.fullName}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -303,7 +404,7 @@ const NLOStudentVerificationPage: React.FC = () => {
                   <TableCell>
                     <div className="flex gap-2">
                       {student.linkedinUrl && (
-                        <a 
+                        <a
                           href={student.linkedinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -313,7 +414,7 @@ const NLOStudentVerificationPage: React.FC = () => {
                         </a>
                       )}
                       {student.githubUrl && (
-                        <a 
+                        <a
                           href={student.githubUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -323,7 +424,7 @@ const NLOStudentVerificationPage: React.FC = () => {
                         </a>
                       )}
                       {student.portfolioUrl && (
-                        <a 
+                        <a
                           href={student.portfolioUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -373,6 +474,15 @@ const NLOStudentVerificationPage: React.FC = () => {
                         </svg>
                         View Details
                       </Button>
+                      {student.preojtOrientationUrl && !student.verified && (
+                        <Button
+                          onClick={() => handleVerifyWithDocument(student)}
+                          className="flex items-center gap-1"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Verify
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -520,7 +630,7 @@ const NLOStudentVerificationPage: React.FC = () => {
                   Verified Students ({filteredVerified.length})
                 </TabsTrigger>
               </TabsList>
-              
+
               {/* Batch Action Buttons */}
               {selectedStudents.size > 0 && (
                 <div className="flex gap-2">
@@ -572,7 +682,7 @@ const NLOStudentVerificationPage: React.FC = () => {
               {actionType === 'verify' ? 'Verify Student' : 'Unverify Student'}
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedStudent && (
             <>
               <p className="text-base">
@@ -593,11 +703,11 @@ const NLOStudentVerificationPage: React.FC = () => {
               />
             </>
           )}
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={handleDialogClose}>Cancel</Button>
-            <Button 
-              onClick={handleVerificationAction} 
+            <Button
+              onClick={handleVerificationAction}
               variant={actionType === 'verify' ? 'default' : 'destructive'}
             >
               {actionType === 'verify' ? 'Verify' : 'Unverify'}
@@ -614,7 +724,7 @@ const NLOStudentVerificationPage: React.FC = () => {
               {actionType === 'verify' ? 'Batch Verify Students' : 'Batch Unverify Students'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <p className="text-base">
             {actionType === 'verify'
               ? `Are you sure you want to verify ${selectedStudents.size} students?`
@@ -631,14 +741,143 @@ const NLOStudentVerificationPage: React.FC = () => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={handleDialogClose}>Cancel</Button>
-            <Button 
-              onClick={handleBatchVerificationAction} 
+            <Button
+              onClick={handleBatchVerificationAction}
               variant={actionType === 'verify' ? 'default' : 'destructive'}
             >
               {actionType === 'verify' ? `Verify ${selectedStudents.size} Students` : `Unverify ${selectedStudents.size} Students`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Verification Modal */}
+      {showVerificationModal && verificationStudent?.preojtOrientationUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verify Student - Review Pre-OJT Orientation Document</h2>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchPdfMetadata(verificationStudent.preojtOrientationUrl!)}
+                  disabled={loadingMetadata}
+                >
+                  {loadingMetadata ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'View Metadata'
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVerificationModal(false)}
+                  className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
+              <div className="relative w-full h-full border border-gray-200 rounded-md overflow-hidden">
+                <iframe
+                  src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(verificationStudent.preojtOrientationUrl)}`}
+                  className="w-full h-full"
+                  title="PDF Document"
+                />
+              </div>
+            </div>
+
+            {/* Footer with Ignore and Confirm buttons */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-900">
+              <Button
+                variant="outline"
+                onClick={handleIgnoreVerification}
+              >
+                Ignore
+              </Button>
+              <Button
+                onClick={handleConfirmVerification}
+                className="flex items-center gap-1"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Confirm Verification
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Metadata Dialog */}
+      <Dialog open={showMetadata} onOpenChange={setShowMetadata}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>PDF Document Metadata</DialogTitle>
+          </DialogHeader>
+          {pdfMetadata && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Title</p>
+                  <p className="text-sm">{pdfMetadata.title}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Author</p>
+                  <p className="text-sm">{pdfMetadata.author}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Subject</p>
+                  <p className="text-sm">{pdfMetadata.subject}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Creator</p>
+                  <p className="text-sm">{pdfMetadata.creator}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Producer</p>
+                  <p className="text-sm">{pdfMetadata.producer}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Creation Date</p>
+                  <p className="text-sm">{pdfMetadata.creationDate}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Modification Date</p>
+                  <p className="text-sm">{pdfMetadata.modificationDate}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Page Count</p>
+                  <p className="text-sm">{pdfMetadata.pageCount}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">File Size</p>
+                  <p className="text-sm">{pdfMetadata.fileSize}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">PDF Version</p>
+                  <p className="text-sm">{pdfMetadata.pdfVersion}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">File Name</p>
+                  <p className="text-sm break-all">{pdfMetadata.fileName}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMetadata(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

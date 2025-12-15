@@ -85,7 +85,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onClose }) => {
 
           {useIframe && (
             <div className="w-full">
-             
+
               <div className="relative w-full h-[1000px] border border-gray-200 rounded-md overflow-hidden">
                 {iframeLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white">
@@ -111,7 +111,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onClose }) => {
               </div>
             </div>
           )}
-          
+
           {!error && !useIframe && (
             <>
               <div className="border border-gray-200 rounded-md overflow-hidden mb-4 max-h-[500px] overflow-y-auto">
@@ -125,8 +125,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onClose }) => {
                     </div>
                   }
                 >
-                  <Page 
-                    pageNumber={pageNumber} 
+                  <Page
+                    pageNumber={pageNumber}
                     renderTextLayer={true}
                     renderAnnotationLayer={true}
                     scale={1.2}
@@ -135,23 +135,23 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onClose }) => {
               </div>
 
               <div className="flex items-center justify-between w-full mb-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={previousPage} 
+                  onClick={previousPage}
                   disabled={pageNumber <= 1}
                 >
                   Previous
                 </Button>
-                
+
                 <p className="text-sm text-gray-600">
                   Page {pageNumber} of {numPages || '--'}
                 </p>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={nextPage} 
+                  onClick={nextPage}
                   disabled={!numPages || pageNumber >= numPages}
                 >
                   Next

@@ -883,7 +883,31 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
 
   componentDidMount() {
     this.loadUserProfile();
+    // Handle hash navigation for auto-scroll
+    this.scrollToHashElement();
   }
+
+  componentDidUpdate(_prevProps: ProfilePageProps, prevState: ProfilePageState) {
+    // Scroll to hash element after profile is loaded
+    if (prevState.loading && !this.state.loading) {
+      this.scrollToHashElement();
+    }
+  }
+
+  scrollToHashElement = () => {
+    const hash = window.location.hash;
+    if (hash) {
+      // Remove the # from the hash
+      const elementId = hash.substring(1);
+      // Use setTimeout to ensure the element is rendered
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  };
 
   // Get the token from localStorage or context
   getAuthToken = (): string | null => {
@@ -2179,7 +2203,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
 
                     {/* Pre-OJT Orientation section */}
                     {studentProfile.preojtOrientationUrl && (
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                      <div id="documents-section" className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                           <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                           Pre-OJT Orientation Document
@@ -2245,7 +2269,7 @@ export class ProfilePage extends Component<ProfilePageProps, ProfilePageState> {
 
                     {/* Pre-OJT missing -> upload prompt */}
                     {!studentProfile.preojtOrientationUrl && (
-                      <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
+                      <div id="documents-section" className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-4 sm:p-6">
                         <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                           <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                           Pre-OJT Orientation Document

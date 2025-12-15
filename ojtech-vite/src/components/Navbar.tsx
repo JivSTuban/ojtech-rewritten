@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { AuthContext } from '../providers/AuthProvider';
 import { useTheme } from 'next-themes';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Book, UserCheck, FileUp, FileText, Brain, Briefcase } from 'lucide-react';
 
 interface NavbarState {
   isDropdownOpen: boolean;
   isMobileMenuOpen: boolean;
+  isGuideDropdownOpen: boolean;
 }
 
 // Class component for Navbar logic
@@ -16,12 +17,14 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
   declare context: React.ContextType<typeof AuthContext>;
   private dropdownRef = React.createRef<HTMLDivElement>();
   private mobileMenuRef = React.createRef<HTMLDivElement>();
+  private guideDropdownRef = React.createRef<HTMLDivElement>();
 
   constructor(props: { setTheme: (theme: string) => void; theme?: string }) {
     super(props);
     this.state = {
       isDropdownOpen: false,
-      isMobileMenuOpen: false
+      isMobileMenuOpen: false,
+      isGuideDropdownOpen: false
     };
   }
 
@@ -39,6 +42,9 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
     }
     if (this.mobileMenuRef.current && !this.mobileMenuRef.current.contains(event.target as Node)) {
       this.setState({ isMobileMenuOpen: false });
+    }
+    if (this.guideDropdownRef.current && !this.guideDropdownRef.current.contains(event.target as Node)) {
+      this.setState({ isGuideDropdownOpen: false });
     }
   };
 
@@ -58,10 +64,16 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
     this.setState({ isMobileMenuOpen: false });
   };
 
+  toggleGuideDropdown = () => {
+    this.setState(prevState => ({
+      isGuideDropdownOpen: !prevState.isGuideDropdownOpen
+    }));
+  };
+
   render() {
     const { user, isLoading, logout } = this.context || {};
-    const { isDropdownOpen, isMobileMenuOpen } = this.state;
-    
+    const { isDropdownOpen, isMobileMenuOpen, isGuideDropdownOpen } = this.state;
+
     // Don't render anything while checking auth
     if (isLoading) {
       return (
@@ -100,7 +112,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </Link>
                 </>
               )}
-              
+
               {/* Employer-specific navigation */}
               {user.roles.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
@@ -109,7 +121,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </Link>
                 </>
               )}
-              
+
               {/* Admin-specific navigation */}
               {user.roles.includes('ROLE_ADMIN') && (
                 <>
@@ -119,7 +131,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   <Link to="/admin/users" className="text-gray-400 hover:text-white transition-colors">
                     Users
                   </Link>
-                
+
                 </>
               )}
 
@@ -139,7 +151,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               )}
             </div>
           )}
-          
+
           {/* Right side controls */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             {user ? (
@@ -147,24 +159,133 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                 {/* Role Badge - Hidden on very small screens */}
                 {user.roles && user.roles.length > 0 && (
                   <span className="hidden sm:block px-2 py-1 text-xs rounded-full bg-gray-700 text-white font-medium">
-                    {user.roles.includes('ROLE_ADMIN') 
-                      ? 'Admin' 
-                      : user.roles.includes('ROLE_NLO') 
-                        ? 'NLO' 
-                          : 'Student'}
+                    {user.roles.includes('ROLE_ADMIN')
+                      ? 'Admin'
+                      : user.roles.includes('ROLE_NLO')
+                        ? 'NLO'
+                        : 'Student'}
                   </span>
                 )}
-                
+
+                {/* Guide Dropdown - Only for students */}
+                {user.roles?.includes('ROLE_STUDENT') && (
+                  <div className="relative z-50 pointer-events-auto" ref={this.guideDropdownRef}>
+                    <button
+                      onClick={this.toggleGuideDropdown}
+                      className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center hover:ring-2 hover:ring-gray-600 transition-all"
+                      title="How It Works"
+                    >
+                      <Book className="w-4 h-4 text-white" />
+                    </button>
+
+                    {isGuideDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-80 bg-gray-900 rounded-lg shadow-xl py-2 z-50 pointer-events-auto border border-gray-700">
+                        <div className="px-4 py-3 border-b border-gray-700">
+                          <h3 className="font-semibold text-white text-sm">How OJTech Works</h3>
+                          <p className="text-xs text-gray-400 mt-1">Follow these steps to get started</p>
+                        </div>
+
+                        <div className="py-2">
+                          {/* Step 1 */}
+                          <Link
+                            to="/onboarding/student"
+                            className="block px-4 py-3 hover:bg-gray-800 transition-colors"
+                            onClick={this.toggleGuideDropdown}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                                <UserCheck className="w-4 h-4 text-gray-300" />
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-white text-sm">1. Create Your Profile</h4>
+                                <p className="text-xs text-gray-400 mt-1">Complete your profile with GitHub projects, education, and skills.</p>
+                              </div>
+                            </div>
+                          </Link>
+
+                          {/* Step 2 */}
+                          <Link
+                            to="/profile#documents-section"
+                            className="block px-4 py-3 hover:bg-gray-800 transition-colors"
+                            onClick={this.toggleGuideDropdown}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                                <FileUp className="w-4 h-4 text-gray-300" />
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-white text-sm">2. Upload Documents</h4>
+                                <p className="text-xs text-gray-400 mt-1">Upload and manage your Pre-OJT Orientation documents.</p>
+                              </div>
+                            </div>
+                          </Link>
+
+                          {/* Step 3 */}
+                          <Link
+                            to="/resume"
+                            className="block px-4 py-3 hover:bg-gray-800 transition-colors"
+                            onClick={this.toggleGuideDropdown}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                                <FileText className="w-4 h-4 text-gray-300" />
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-white text-sm">3. Generate CV</h4>
+                                <p className="text-xs text-gray-400 mt-1">Create professional, ATS-friendly curriculum vitae.</p>
+                              </div>
+                            </div>
+                          </Link>
+
+                          {/* Step 4 */}
+                          <Link
+                            to="/opportunities"
+                            className="block px-4 py-3 hover:bg-gray-800 transition-colors"
+                            onClick={this.toggleGuideDropdown}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                                <Brain className="w-4 h-4 text-gray-300" />
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-white text-sm">4. AI-Powered Matching</h4>
+                                <p className="text-xs text-gray-400 mt-1">Get matched with internship opportunities that fit your profile.</p>
+                              </div>
+                            </div>
+                          </Link>
+
+                          {/* Step 5 */}
+                          <Link
+                            to="/applications"
+                            className="block px-4 py-3 hover:bg-gray-800 transition-colors"
+                            onClick={this.toggleGuideDropdown}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                                <Briefcase className="w-4 h-4 text-gray-300" />
+                              </div>
+                              <div className="flex-grow">
+                                <h4 className="font-medium text-white text-sm">5. Apply with Confidence</h4>
+                                <p className="text-xs text-gray-400 mt-1">Apply with AI-generated cover letters tailored to each position.</p>
+                              </div>
+                            </div>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Profile Dropdown */}
                 <div className="relative z-50 pointer-events-auto" ref={this.dropdownRef}>
-                  <button 
+                  <button
                     onClick={this.toggleDropdown}
                     className="h-8 w-8 rounded-full bg-gray-700 cursor-pointer flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-gray-600 transition-all"
                   >
                     {user.profile?.avatar_url ? (
-                      <img 
-                        src={user.profile.avatar_url} 
-                        alt="Avatar" 
+                      <img
+                        src={user.profile.avatar_url}
+                        alt="Avatar"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -173,43 +294,43 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                       </span>
                     )}
                   </button>
-                  
+
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 pointer-events-auto">
-                      <Link 
+                      <Link
                         to={
-                          user.roles?.includes('ROLE_ADMIN') 
-                            ? "/admin/profile" 
-                            : user.roles?.includes('ROLE_NLO') 
-                              ? "/nlo/profile" 
+                          user.roles?.includes('ROLE_ADMIN')
+                            ? "/admin/profile"
+                            : user.roles?.includes('ROLE_NLO')
+                              ? "/nlo/profile"
                               : "/profile"
                         }
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                         onClick={this.toggleDropdown}
                       >
-                        {user.roles?.includes('ROLE_ADMIN') 
-                          ? "Profile" 
-                          : user.roles?.includes('ROLE_NLO') 
-                            ? "Profile" 
+                        {user.roles?.includes('ROLE_ADMIN')
+                          ? "Profile"
+                          : user.roles?.includes('ROLE_NLO')
+                            ? "Profile"
                             : "My Profile"}
                       </Link>
-                      
+
                       {/* Resume Management link for students only */}
                       {user.roles?.includes('ROLE_STUDENT') && (
-                        <Link 
-                          to="/resume" 
+                        <Link
+                          to="/resume"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                           onClick={this.toggleDropdown}
                         >
                           Manage Resume
                         </Link>
                       )}
-                      
-                      <button 
+
+                      <button
                         onClick={() => {
                           if (logout) logout();
                           this.toggleDropdown();
-                        }} 
+                        }}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                       >
                         Sign Out
@@ -219,7 +340,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                 </div>
 
                 {/* Mobile Menu Button - Only show for logged in users */}
-                <button 
+                <button
                   onClick={this.toggleMobileMenu}
                   className="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
                   aria-label="Toggle mobile menu"
@@ -242,7 +363,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
 
         {/* Mobile Navigation Menu */}
         {user && isMobileMenuOpen && (
-          <div 
+          <div
             ref={this.mobileMenuRef}
             className="md:hidden absolute top-14 left-0 right-0 bg-black border-b border-gray-800 shadow-lg z-40"
           >
@@ -250,15 +371,15 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {/* Student-specific navigation */}
               {user.roles?.includes('ROLE_STUDENT') && (
                 <>
-                  <Link 
-                    to="/opportunities" 
+                  <Link
+                    to="/opportunities"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Find Jobs
                   </Link>
-                  <Link 
-                    to="/applications" 
+                  <Link
+                    to="/applications"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -266,12 +387,12 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </Link>
                 </>
               )}
-              
+
               {/* Employer-specific navigation */}
               {user.roles?.includes('ROLE_NLO') && !user.username?.includes('nlo_staff') && (
                 <>
-                  <Link 
-                    to="/nlo/jobs" 
+                  <Link
+                    to="/nlo/jobs"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -279,26 +400,26 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
                   </Link>
                 </>
               )}
-              
+
               {/* Admin-specific navigation */}
               {user.roles?.includes('ROLE_ADMIN') && (
                 <>
-                  <Link 
-                    to="/admin/dashboard" 
+                  <Link
+                    to="/admin/dashboard"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Dashboard
                   </Link>
-                  <Link 
-                    to="/admin/users" 
+                  <Link
+                    to="/admin/users"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Users
                   </Link>
-                  <Link 
-                    to="/admin/profile" 
+                  <Link
+                    to="/admin/profile"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -310,22 +431,22 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
               {/* NLO-specific navigation */}
               {user.roles?.includes('ROLE_NLO') && user.username === 'nlo_staff' && (
                 <>
-                  <Link 
-                    to="/nlo/jobs" 
+                  <Link
+                    to="/nlo/jobs"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Manage Jobs
                   </Link>
-                  <Link 
-                    to="/nlo/students/verification" 
+                  <Link
+                    to="/nlo/students/verification"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
                     Student Verification
                   </Link>
-                  <Link 
-                    to="/nlo/companies" 
+                  <Link
+                    to="/nlo/companies"
                     className="block text-gray-400 hover:text-white transition-colors py-2"
                     onClick={this.closeMobileMenu}
                   >
@@ -339,7 +460,7 @@ class NavbarClass extends Component<{ setTheme: (theme: string) => void; theme?:
       </nav>
     );
   }
-} 
+}
 
 // Wrapper component to provide theme context
 export const Navbar: React.FC = () => {

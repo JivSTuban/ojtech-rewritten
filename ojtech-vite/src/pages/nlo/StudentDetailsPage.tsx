@@ -89,12 +89,12 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
       if (!content || content.trim() === '') {
         return `<!DOCTYPE html><html><head><title>Resume</title></head><body><h1>No Resume Content Available</h1></body></html>`;
       }
-      
+
       const isHtml = content.includes('<!DOCTYPE html>') || content.includes('<html>');
       const isJson = (content.startsWith('{') && content.endsWith('}')) || content.includes('\\"');
-      
+
       if (isHtml) return content;
-      
+
       if (isJson) {
         try {
           let processedContent = content;
@@ -109,10 +109,10 @@ const ResumeHtmlView: React.FC<{ html: string }> = ({ html }) => {
           return `<!DOCTYPE html><html><head><title>Resume</title></head><body><h1>Error Loading Resume</h1><p>Unable to parse resume data.</p></body></html>`;
         }
       }
-      
+
       return `<!DOCTYPE html><html><head><title>Resume</title></head><body><pre>${content}</pre></body></html>`;
     };
-    
+
     try {
       const processed = processHtml(html);
       setProcessedHtml(processed);
@@ -154,6 +154,7 @@ const StudentDetailsPage: React.FC = () => {
   const [showPreOjtViewer, setShowPreOjtViewer] = useState(false);
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [selectedCv, setSelectedCv] = useState<any | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -181,7 +182,7 @@ const StudentDetailsPage: React.FC = () => {
 
   const handleVerifyClick = () => {
     if (!student) return;
-    
+
     // Open a confirmation dialog
     if (confirm(`Are you sure you want to verify ${student.fullName}?`)) {
       verifyStudent();
@@ -190,7 +191,7 @@ const StudentDetailsPage: React.FC = () => {
 
   const handleUnverifyClick = () => {
     if (!student) return;
-    
+
     // Open a confirmation dialog
     if (confirm(`Are you sure you want to unverify ${student.fullName}?`)) {
       unverifyStudent();
@@ -208,11 +209,11 @@ const StudentDetailsPage: React.FC = () => {
         description: `${student.fullName} has been verified successfully`,
         variant: 'default',
       });
-      setStudent(prev => prev ? { 
-        ...prev, 
-        verified: true, 
-        verifiedAt: new Date().toISOString(), 
-        verificationNotes: notes || prev.verificationNotes 
+      setStudent(prev => prev ? {
+        ...prev,
+        verified: true,
+        verifiedAt: new Date().toISOString(),
+        verificationNotes: notes || prev.verificationNotes
       } : null);
     } catch (err) {
       console.error('Error verifying student:', err);
@@ -235,17 +236,53 @@ const StudentDetailsPage: React.FC = () => {
         description: `${student.fullName} has been unverified`,
         variant: 'default',
       });
-      setStudent(prev => prev ? { 
-        ...prev, 
-        verified: false, 
-        verifiedAt: undefined, 
-        verificationNotes: notes || prev.verificationNotes 
+      setStudent(prev => prev ? {
+        ...prev,
+        verified: false,
+        verifiedAt: undefined,
+        verificationNotes: notes || prev.verificationNotes
       } : null);
     } catch (err) {
       console.error('Error unverifying student:', err);
       toast({
         title: 'Error',
         description: 'Failed to unverify student. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleVerifyWithDocument = () => {
+    setShowVerificationModal(true);
+  };
+
+  const handleIgnoreVerification = () => {
+    setShowVerificationModal(false);
+  };
+
+  const handleConfirmVerification = async () => {
+    if (!student || !id) return;
+
+    try {
+      const notes = 'Verified with pre-OJT orientation document review';
+      await nloService.verifyStudent(id, notes);
+      toast({
+        title: 'Student Verified',
+        description: `${student.fullName} has been verified successfully`,
+        variant: 'default',
+      });
+      setStudent(prev => prev ? {
+        ...prev,
+        verified: true,
+        verifiedAt: new Date().toISOString(),
+        verificationNotes: notes
+      } : null);
+      setShowVerificationModal(false);
+    } catch (err) {
+      console.error('Error verifying student:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to verify student. Please try again.',
         variant: 'destructive',
       });
     }
@@ -267,8 +304,8 @@ const StudentDetailsPage: React.FC = () => {
         <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-md">
           <h2 className="text-lg font-semibold">Error</h2>
           <p>{error || 'Student not found'}</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="mt-4"
             onClick={() => window.history.back()}
           >
@@ -279,7 +316,7 @@ const StudentDetailsPage: React.FC = () => {
       </div>
     );
   }
-  
+
   // Normalize skills defensively in the UI as well (in case API shape varies)
   const skillsArray: string[] = Array.isArray(student.skills)
     ? student.skills
@@ -330,9 +367,9 @@ const StudentDetailsPage: React.FC = () => {
               <div className="flex flex-col items-center mb-6">
                 <div className="h-32 w-32 rounded-full overflow-hidden mb-4 bg-muted flex items-center justify-center">
                   {student.profilePictureUrl ? (
-                    <img 
-                      src={student.profilePictureUrl} 
-                      alt={student.fullName} 
+                    <img
+                      src={student.profilePictureUrl}
+                      alt={student.fullName}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -343,7 +380,7 @@ const StudentDetailsPage: React.FC = () => {
                 </div>
                 <h2 className="text-xl font-bold">{student.fullName}</h2>
                 <p className="text-muted-foreground">{student.university || 'No University'}</p>
-                
+
                 <div className="mt-2">
                   {student.verified ? (
                     <Badge className="bg-green-500">Verified</Badge>
@@ -351,84 +388,84 @@ const StudentDetailsPage: React.FC = () => {
                     <Badge variant="outline" className="text-yellow-500 border-yellow-500">Not Verified</Badge>
                   )}
                 </div>
-                
+
                 {student.verified && student.verifiedAt && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Verified on {formatDate(student.verifiedAt)}
                   </p>
                 )}
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span>{student.email}</span>
                 </div>
-                
+
                 <div className="flex items-center">
                   <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span>{student.phoneNumber || (student as any).phone || 'No phone number'}</span>
                 </div>
-                
+
                 {student.location && (
                   <div className="flex items-center">
                     <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                     <span>{student.location}</span>
                   </div>
                 )}
-                
+
                 <div className="flex items-center">
                   <GraduationCap className="h-4 w-4 mr-2 text-muted-foreground" />
                   <span>{student.major || 'No major'} ({student.graduationYear || 'N/A'})</span>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
                   <h3 className="font-medium mb-2">External Profiles</h3>
                   <div className="flex gap-2">
                     {student.linkedinUrl && (
-                      <a 
+                      <a
                         href={student.linkedinUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/>
+                          <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z" />
                         </svg>
                       </a>
                     )}
-                    
+
                     {student.githubUrl && (
-                      <a 
+                      <a
                         href={student.githubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
                         </svg>
                       </a>
                     )}
-                    
+
                     {student.portfolioUrl && (
-                      <a 
+                      <a
                         href={student.portfolioUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                          <path fillRule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
-                          <path fillRule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                          <path fillRule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                          <path fillRule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
                         </svg>
                       </a>
                     )}
                   </div>
                 </div>
-                
+
                 {student.verificationNotes && (
                   <div>
                     <h3 className="font-medium mb-2">Verification Notes</h3>
@@ -441,7 +478,7 @@ const StudentDetailsPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Right Column - Tabs with Details */}
         <div className="md:col-span-2">
           <Card>
@@ -477,7 +514,7 @@ const StudentDetailsPage: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div>
                       <h3 className="text-lg font-medium mb-2">Skills</h3>
                       <div className="flex flex-wrap gap-2">
@@ -492,7 +529,7 @@ const StudentDetailsPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-lg font-medium mb-2">CVs / Resumes</h3>
                       {student.cvs && student.cvs.length > 0 ? (
@@ -506,8 +543,8 @@ const StudentDetailsPage: React.FC = () => {
                                   {cv.active && <Badge className="ml-2" variant="default">Active</Badge>}
                                 </p>
                               </div>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => {
                                   setSelectedCv(cv);
@@ -527,7 +564,7 @@ const StudentDetailsPage: React.FC = () => {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="projects">
                   {student.githubProjects && student.githubProjects.length > 0 ? (
                     <div className="space-y-6">
@@ -539,9 +576,9 @@ const StudentDetailsPage: React.FC = () => {
                                 <Github className="h-5 w-5" />
                                 {project.name}
                               </h4>
-                              <a 
-                                href={project.url} 
-                                target="_blank" 
+                              <a
+                                href={project.url}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
                               >
@@ -560,11 +597,11 @@ const StudentDetailsPage: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          
+
                           {project.description && (
                             <p className="text-sm text-muted-foreground mb-3">{project.description}</p>
                           )}
-                          
+
                           {project.technologies && project.technologies.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
                               {project.technologies.map((tech, i) => (
@@ -574,7 +611,7 @@ const StudentDetailsPage: React.FC = () => {
                               ))}
                             </div>
                           )}
-                          
+
                           {project.lastUpdated && (
                             <p className="text-xs text-muted-foreground">
                               Last updated: {new Date(project.lastUpdated).toLocaleDateString()}
@@ -587,7 +624,7 @@ const StudentDetailsPage: React.FC = () => {
                     <p className="text-muted-foreground">No GitHub projects found</p>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="applications">
                   {student.applications && student.applications.length > 0 ? (
                     <div className="space-y-4">
@@ -603,16 +640,16 @@ const StudentDetailsPage: React.FC = () => {
                             <Badge
                               variant={
                                 app.status === 'ACCEPTED' ? 'default' :
-                                app.status === 'REJECTED' ? 'destructive' :
-                                app.status === 'INTERVIEW' ? 'secondary' : 'outline'
+                                  app.status === 'REJECTED' ? 'destructive' :
+                                    app.status === 'INTERVIEW' ? 'secondary' : 'outline'
                               }
                             >
                               {app.status.toLowerCase()}
                             </Badge>
                           </div>
                           <div className="mt-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => window.location.href = `/application/${app.id}`}
                             >
@@ -626,7 +663,7 @@ const StudentDetailsPage: React.FC = () => {
                     <p className="text-muted-foreground">No job applications</p>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="experiences">
                   {student.experiences && student.experiences.length > 0 ? (
                     <div className="space-y-6">
@@ -653,7 +690,7 @@ const StudentDetailsPage: React.FC = () => {
                     <p className="text-muted-foreground">No work experience listed</p>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="certifications">
                   {student.certifications && student.certifications.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -671,9 +708,9 @@ const StudentDetailsPage: React.FC = () => {
                                 {cert.expirationDate && !cert.expiryDate && ` • Expires: ${formatDate(cert.expirationDate)}`}
                               </p>
                               {cert.credentialUrl && (
-                                <a 
-                                  href={cert.credentialUrl} 
-                                  target="_blank" 
+                                <a
+                                  href={cert.credentialUrl}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
                                 >
@@ -690,7 +727,7 @@ const StudentDetailsPage: React.FC = () => {
                     <p className="text-muted-foreground">No certifications listed</p>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="documents">
                   <div className="space-y-6">
                     {/* PreOJT Orientation Document */}
@@ -723,12 +760,21 @@ const StudentDetailsPage: React.FC = () => {
                                 <ExternalLink className="h-4 w-4 mr-2" />
                                 Open in New Tab
                               </Button>
+                              <Button
+                                size="sm"
+                                onClick={handleVerifyWithDocument}
+                                className="flex items-center gap-1"
+                                disabled={student.verified}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Verify
+                              </Button>
                             </div>
                           </div>
-                          
+
                           {showPreOjtViewer && (
                             <div className="mt-4">
-                              <PDFViewer 
+                              <PDFViewer
                                 fileUrl={student.preojtOrientationUrl}
                                 onClose={() => setShowPreOjtViewer(false)}
                               />
@@ -739,10 +785,10 @@ const StudentDetailsPage: React.FC = () => {
                         <p className="text-muted-foreground">No PreOJT orientation certificate uploaded</p>
                       )}
                     </div>
-                    
+
                     <Separator />
-                    
-                   
+
+
                   </div>
                 </TabsContent>
               </CardContent>
@@ -767,7 +813,7 @@ const StudentDetailsPage: React.FC = () => {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            
+
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-950">
               <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-lg rounded-lg">
@@ -782,6 +828,53 @@ const StudentDetailsPage: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Modal */}
+      {showVerificationModal && student?.preojtOrientationUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-6xl h-[95vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verify Student - Review Pre-OJT Orientation Document</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowVerificationModal(false)}
+                className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-950">
+              <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-lg rounded-lg">
+                <PDFViewer
+                  fileUrl={student.preojtOrientationUrl}
+                  onClose={() => setShowVerificationModal(false)}
+                />
+              </div>
+            </div>
+
+            {/* Footer with Ignore and Confirm buttons */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-900">
+              <Button
+                variant="outline"
+                onClick={handleIgnoreVerification}
+              >
+                Ignore
+              </Button>
+              <Button
+                onClick={handleConfirmVerification}
+                className="flex items-center gap-1"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Confirm Verification
+              </Button>
             </div>
           </div>
         </div>

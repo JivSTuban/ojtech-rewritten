@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../providers/AuthProvider';
-import { ArrowRight, Briefcase, Brain, UserCheck, Award, Rocket, CheckCircle, ChevronRight, Star, ExternalLink, Building2 } from 'lucide-react';
+import { ArrowRight, Briefcase, Brain, UserCheck, Award, Rocket, CheckCircle, ChevronRight, Star, ExternalLink, Building2, FileUp, FileText } from 'lucide-react';
 import { WaveyHeroHeader } from '../components/ui/WaveyHeroHeader';
 
 export const HomePage: React.FC = () => {
@@ -85,49 +85,78 @@ export const HomePage: React.FC = () => {
             <div className="w-20 h-1 bg-gradient-to-r from-gray-700 to-gray-500 mx-auto"></div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-[#111111] p-8 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-6 border border-gray-800">
+          <div className="grid md:grid-cols-5 gap-6 max-w-7xl mx-auto">
+            <div className="bg-[#111111] p-6 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col">
+              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4 border border-gray-800">
                 <UserCheck className="w-8 h-8 text-gray-300" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Create Your Profile</h3>
-              <p className="text-gray-300 mb-4">
-                Upload your resume and complete your profile. Our AI analyzes your skills, experience,
-                and educational background.
+              <p className="text-gray-300 mb-4 flex-grow">
+                Complete a comprehensive profile with your GitHub projects, education, skills, certifications, and work experience.
               </p>
-              <div className="flex items-center text-gray-500 text-sm">
+              <div className="flex items-center text-gray-500 text-sm mt-auto">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">1</span>
                 Step One
               </div>
             </div>
 
-            <div className="bg-[#111111] p-8 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-6 border border-gray-800">
-                <Brain className="w-8 h-8 text-gray-300" />
+            <div className="bg-[#111111] p-6 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col">
+              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4 border border-gray-800">
+                <FileUp className="w-8 h-8 text-gray-300" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">AI-Powered Matching</h3>
-              <p className="text-gray-300 mb-4">
-                Our intelligent algorithm matches your profile with internship opportunities
-                that align with your skills and career goals.
+              <h3 className="text-xl font-semibold mb-3">Upload Documents</h3>
+              <p className="text-gray-300 mb-4 flex-grow">
+                Upload and manage your Pre-OJT Orientation documents. Update them anytime
+                with our easy document management system.
               </p>
-              <div className="flex items-center text-gray-500 text-sm">
+              <div className="flex items-center text-gray-500 text-sm mt-auto">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">2</span>
                 Step Two
               </div>
             </div>
 
-            <div className="bg-[#111111] p-8 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-6 border border-gray-800">
+            <div className="bg-[#111111] p-6 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col">
+              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4 border border-gray-800">
+                <FileText className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Generate CV</h3>
+              <p className="text-gray-300 mb-4 flex-grow">
+                Create professional, ATS-friendly curriculum vitae (CV) with our AI-powered CV generator.
+                Multiple templates and formats available.
+              </p>
+              <div className="flex items-center text-gray-500 text-sm mt-auto">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">3</span>
+                Step Three
+              </div>
+            </div>
+
+            <div className="bg-[#111111] p-6 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col">
+              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4 border border-gray-800">
+                <Brain className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">AI-Powered Matching</h3>
+              <p className="text-gray-300 mb-4 flex-grow">
+                Our intelligent algorithm matches your profile with internship opportunities
+                that align with your skills and career goals.
+              </p>
+              <div className="flex items-center text-gray-500 text-sm mt-auto">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">4</span>
+                Step Four
+              </div>
+            </div>
+
+            <div className="bg-[#111111] p-6 rounded-xl border border-[#222222] transform transition-all duration-300 hover:translate-y-[-8px] hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col">
+              <div className="bg-[#0A0A0A] p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4 border border-gray-800">
                 <Briefcase className="w-8 h-8 text-gray-300" />
               </div>
               <h3 className="text-xl font-semibold mb-3">Apply with Confidence</h3>
-              <p className="text-gray-300 mb-4">
-                Review your matches, apply to positions with a single click, and track
+              <p className="text-gray-300 mb-4 flex-grow">
+                Apply with AI-generated cover letters tailored to each position. Track
                 your application status in real-time.
               </p>
-              <div className="flex items-center text-gray-500 text-sm">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">3</span>
-                Step Three
+              <div className="flex items-center text-gray-500 text-sm mt-auto">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-800 text-white mr-2">5</span>
+                Step Five
               </div>
             </div>
           </div>
@@ -151,6 +180,18 @@ export const HomePage: React.FC = () => {
                 <h3 className="text-xl font-semibold mb-2 group-hover:text-gray-200 transition-colors">Personalized Matching</h3>
                 <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
                   Our AI understands your unique skills and preferences to suggest only relevant opportunities.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-5 items-start group">
+              <div className="p-3 rounded-md bg-gray-900 border border-gray-800 group-hover:border-gray-700 transition-all duration-300">
+                <CheckCircle className="w-6 h-6 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2 group-hover:text-gray-200 transition-colors">Document Management</h3>
+                <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                  Easily upload, view, download, and update your Pre-OJT Orientation documents anytime.
                 </p>
               </div>
             </div>
@@ -190,6 +231,18 @@ export const HomePage: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            <div className="flex gap-5 items-start group">
+              <div className="p-3 rounded-md bg-gray-900 border border-gray-800 group-hover:border-gray-700 transition-all duration-300">
+                <CheckCircle className="w-6 h-6 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2 group-hover:text-gray-200 transition-colors">Profile Flexibility</h3>
+                <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                  Update your profile, resume, and documents at any time to keep your information current.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -201,54 +254,56 @@ export const HomePage: React.FC = () => {
 
       </section >
 
-      {/* Improved CTA section */}
-      < section className="py-20 bg-black relative overflow-hidden" >
-        <div className="absolute inset-0 bg-[#0a0a0a]"></div>
-        <div className="absolute inset-0 bg-gradient-radial from-gray-900/20 to-transparent"></div>
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
+      {/* Improved CTA section - Only show if user is NOT logged in */}
+      {!user && (
+        <section className="py-20 bg-black relative overflow-hidden">
+          <div className="absolute inset-0 bg-[#0a0a0a]"></div>
+          <div className="absolute inset-0 bg-gradient-radial from-gray-900/20 to-transparent"></div>
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-800 to-transparent"></div>
 
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-4xl mx-auto bg-gradient-to-b from-[#111] to-[#0a0a0a] rounded-2xl p-10 border border-gray-800 shadow-[0_20px_80px_-10px_rgba(0,0,0,0.5)]">
-            <div className="text-center mb-10">
-              <div className="flex justify-center">
-                <div className="inline-flex gap-1 mb-6">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-5 h-5 text-gray-500" fill="#555" />
-                  ))}
+          <div className="container mx-auto px-4 relative">
+            <div className="max-w-4xl mx-auto bg-gradient-to-b from-[#111] to-[#0a0a0a] rounded-2xl p-10 border border-gray-800 shadow-[0_20px_80px_-10px_rgba(0,0,0,0.5)]">
+              <div className="text-center mb-10">
+                <div className="flex justify-center">
+                  <div className="inline-flex gap-1 mb-6">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className="w-5 h-5 text-gray-500" fill="#555" />
+                    ))}
+                  </div>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 inline-block text-transparent bg-clip-text">
+                  Ready to Launch Your Career?
+                </h2>
+                <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+                  Join thousands of students who have found their perfect internship match with OJTech.
+                </p>
+
+                <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
+                  <Link to="/register" className="w-full">
+                    <Button className="bg-gray-200 text-black hover:bg-gray-300 w-full text-base py-6 rounded-xl shadow-lg group transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+                      <span>Sign Up Free</span>
+                      <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                  </Link>
+                  <Link to="/opportunities" className="w-full">
+                    <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-900 w-full text-base py-6 rounded-xl shadow-lg transition-all duration-300">
+                      Browse Opportunities
+                    </Button>
+                  </Link>
                 </div>
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 inline-block text-transparent bg-clip-text">
-                Ready to Launch Your Career?
-              </h2>
-              <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-                Join thousands of students who have found their perfect internship match with OJTech.
-              </p>
 
-              <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-md mx-auto">
-                <Link to="/register" className="w-full">
-                  <Button className="bg-gray-200 text-black hover:bg-gray-300 w-full text-base py-6 rounded-xl shadow-lg group transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
-                    <span>Sign Up Free</span>
-                    <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </Link>
-                <Link to="/opportunities" className="w-full">
-                  <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-900 w-full text-base py-6 rounded-xl shadow-lg transition-all duration-300">
-                    Browse Opportunities
-                  </Button>
-                </Link>
+              <div className="flex justify-center items-center space-x-1 text-sm text-gray-600">
+                <span>No credit card required</span>
+                <span>•</span>
+                <span>Free forever</span>
+                <span>•</span>
+                <span>Cancel anytime</span>
               </div>
             </div>
-
-            <div className="flex justify-center items-center space-x-1 text-sm text-gray-600">
-              <span>No credit card required</span>
-              <span>•</span>
-              <span>Free forever</span>
-              <span>•</span>
-              <span>Cancel anytime</span>
-            </div>
           </div>
-        </div>
-      </section >
+        </section>
+      )}
 
       {/* Footer with subtle gradient border */}
 

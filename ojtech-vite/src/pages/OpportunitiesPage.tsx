@@ -81,7 +81,7 @@ interface OpportunitiesPageState {
 export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
   // Refs for controlling cards programmatically
   private childRefs: RefObject<any>[] = [];
-  
+
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -104,57 +104,57 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       isPreparingEmail: false
     };
   }
-  
+
   componentDidMount() {
     this.fetchStudentProfile();
     this.checkCVProcessingStatus();
     this.fetchUserApplications();
     this.fetchJobs();
   }
-  
+
   // Fetch user applications to track applied job IDs
   fetchUserApplications = async () => {
     try {
       const applications = await jobApplicationService.getStudentApplications();
       const appliedJobIds = new Set(applications.map(app => app.jobId));
-      this.setState({ 
+      this.setState({
         appliedJobIds,
-        applicationsLoading: false 
+        applicationsLoading: false
       });
       console.log('Fetched applied job IDs:', Array.from(appliedJobIds));
     } catch (error) {
       console.error("Error fetching user applications:", error);
       // Don't block the page if applications fetch fails
-      this.setState({ 
+      this.setState({
         appliedJobIds: new Set<string>(),
-        applicationsLoading: false 
+        applicationsLoading: false
       });
     }
   };
-  
+
   // Fetch student profile to check verification status
   fetchStudentProfile = async () => {
     try {
       const profile = await profileService.getCurrentUserProfileSmart();
-      this.setState({ 
+      this.setState({
         studentProfile: {
           preojtOrientationUrl: profile.preojtOrientationUrl || null,
           verified: profile.verified || false,
           verifiedAt: profile.verifiedAt || null,
           verificationNotes: profile.verificationNotes || null
         },
-        profileLoading: false 
+        profileLoading: false
       });
     } catch (error) {
       console.error("Error fetching student profile:", error);
       // Don't block the page if profile fetch fails, just continue without profile data
-      this.setState({ 
+      this.setState({
         studentProfile: null,
-        profileLoading: false 
+        profileLoading: false
       });
     }
   };
-  
+
   componentDidUpdate(prevProps: {}, prevState: OpportunitiesPageState) {
     // Update refs if jobs array changes
     if (prevState.jobs.length !== this.state.jobs.length) {
@@ -163,7 +163,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         .map(() => createRef<any>());
     }
   }
-  
+
   // Check if CV is currently being processed
   checkCVProcessingStatus = async () => {
     try {
@@ -175,19 +175,19 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       this.setState({ isProcessingCV: false });
     }
   };
-  
+
   // Fetch jobs for the current user using the API
   fetchJobs = async () => {
     this.setState({ loading: true, error: null });
-    
+
     try {
       // Call the job matching API to get matched jobs
       const matchedJobsData = await jobApplicationService.getStudentJobMatches();
-      
+
       if (matchedJobsData && Array.isArray(matchedJobsData)) {
         // Track seen job IDs to prevent duplicates
         const seenIds = new Set<string>();
-        
+
         // Map API response to our JobWithMatchScore interface
         const matchedJobs: JobWithMatchScore[] = matchedJobsData
           .filter(match => {
@@ -202,7 +202,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             // Handle the nested structure from the API response
             const job = match.job || {};
             const employer = job.employer || {};
-            
+
             // Ensure unique job ID
             let jobId = job.id;
             const originalJobId = jobId; // Store the original job ID for API calls
@@ -210,7 +210,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               jobId = `${jobId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
             }
             seenIds.add(jobId);
-            
+
             return {
               id: jobId,
               original_id: originalJobId, // Store the original job ID
@@ -222,8 +222,8 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               company_logo_url: employer.logoUrl || null,
               location: job.location || null,
               job_type: job.employmentType || null,
-              salary_range: job.minSalary && job.maxSalary ? 
-                `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
+              salary_range: job.minSalary && job.maxSalary ?
+                `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` :
                 null,
               required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
               preferred_skills: null,
@@ -237,14 +237,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
               alreadyApplied: match.alreadyApplied || false
             };
           });
-        
+
         // Set jobs and update current index
         this.setState({
           jobs: matchedJobs,
           currentIndex: matchedJobs.length - 1,
           loading: false
         });
-        
+
         // Initialize refs
         this.childRefs = Array(matchedJobs.length)
           .fill(0)
@@ -268,15 +268,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       });
     }
   };
-  
+
   // Find jobs using simple search
   findJobs = async () => {
     this.setState({ loading: true, error: null });
-    
+
     try {
       // Call the simple find jobs API
       const jobsData = await jobApplicationService.findJobs();
-      
+
       if (jobsData && Array.isArray(jobsData)) {
         // Filter out jobs that user has already applied to, then map to our interface
         const mappedJobs: JobWithMatchScore[] = jobsData
@@ -290,42 +290,42 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             return job.active !== false;
           })
           .map((job: any) => {
-          const employer = job.employer || {};
-          const jobId = job.id;
-          
-          return {
-            id: jobId,
-            original_id: jobId, // Store the original job ID
-            match_id: null, // No match ID for simple find jobs
-            employer_id: employer.id || '',
-            title: job.title || 'Untitled Position',
-            description: job.description || null,
-            company_name: employer.companyName || null,
-            company_logo_url: employer.logoUrl || null,
-            location: job.location || null,
-            job_type: job.employmentType || null,
-            salary_range: job.minSalary && job.maxSalary ? 
-              `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` : 
-              null,
-            required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
-            preferred_skills: null,
-            application_deadline: null,
-            created_at: job.postedAt || new Date().toISOString(),
-            updated_at: null,
-            status: "active",
-            is_active: true,
-            match_score: null,
-            viewed: false
-          };
-        });
-        
+            const employer = job.employer || {};
+            const jobId = job.id;
+
+            return {
+              id: jobId,
+              original_id: jobId, // Store the original job ID
+              match_id: null, // No match ID for simple find jobs
+              employer_id: employer.id || '',
+              title: job.title || 'Untitled Position',
+              description: job.description || null,
+              company_name: employer.companyName || null,
+              company_logo_url: employer.logoUrl || null,
+              location: job.location || null,
+              job_type: job.employmentType || null,
+              salary_range: job.minSalary && job.maxSalary ?
+                `${job.currency || '$'}${job.minSalary.toLocaleString()} - ${job.currency || '$'}${job.maxSalary.toLocaleString()}` :
+                null,
+              required_skills: job.requiredSkills ? job.requiredSkills.split(',') : [],
+              preferred_skills: null,
+              application_deadline: null,
+              created_at: job.postedAt || new Date().toISOString(),
+              updated_at: null,
+              status: "active",
+              is_active: true,
+              match_score: null,
+              viewed: false
+            };
+          });
+
         // Set jobs and update current index
         this.setState({
           jobs: mappedJobs,
           currentIndex: mappedJobs.length - 1,
           loading: false
         });
-        
+
         // Initialize refs
         this.childRefs = Array(mappedJobs.length)
           .fill(0)
@@ -349,17 +349,17 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       });
     }
   };
-  
+
   // Prepare email draft WITHOUT creating application first
   prepareEmailDraft = async (job: JobWithMatchScore) => {
     try {
       this.setState({ isPreparingEmail: true });
-      
+
       // We'll prepare the email draft directly without application ID
       // The application will be created when email is sent
       const jobId = job.original_id || job.id;
       const emailDraft = await jobApplicationService.prepareEmailDraftForJob(jobId);
-      
+
       this.setState({
         emailModalOpen: true,
         emailDraft,
@@ -377,15 +377,15 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       });
     }
   };
-  
+
   // Send application email - creates application AND sends email
   sendApplicationEmail = async (emailBody: string, subject: string, attachments?: File[]) => {
     const { currentJobForEmail } = this.state;
     if (!currentJobForEmail) return;
-    
+
     try {
       const jobId = currentJobForEmail.original_id || currentJobForEmail.id;
-      
+
       // Create application AND send email in one call
       const result = await jobApplicationService.applyAndSendEmail(
         jobId,
@@ -395,18 +395,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
         },
         attachments
       );
-      
+
       // Email sent successfully - add the job to applied jobs set
       this.setState(prevState => ({
         appliedJobIds: new Set([...prevState.appliedJobIds, jobId])
       }));
       console.log(`Added job ${jobId} to applied jobs after successful email send`);
-      
+
       this.toast({
         title: "Email Sent Successfully!",
         description: `${result.message}. Emails sent today: ${result.emailsSentToday}/10`
       });
-      
+
       this.setState({
         emailModalOpen: false,
         emailDraft: null,
@@ -417,14 +417,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       throw error; // Re-throw to be handled by modal
     }
   };
-  
+
   // Decline a job
   declineJob = async (jobId: string) => {
     try {
       // Find the job in our state to get the original ID if available
       const job = this.state.jobs.find(j => j.id === jobId);
       const apiJobId = job?.original_id || jobId;
-      
+
       // This would be replaced with a real API call in the future
       console.log(`Declined job ${apiJobId}`);
       return { success: true, data: {} };
@@ -433,38 +433,38 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       return { success: false, error: "Failed to decline job" };
     }
   };
-  
+
   // Simple toast function (would be replaced with a real toast component)
   toast = (toast: Toast) => {
     console.log(`TOAST: ${toast.title} - ${toast.description}`);
     // Here you would use a real toast notification system
   };
-  
+
   // Handle card swipe
   handleSwipe = async (direction: string, job: Job, index: number) => {
     try {
       // Ensure direction is only left or right before processing
       if (direction !== 'left' && direction !== 'right') return;
-      
+
       console.log(`Swiped ${direction} on ${job.title}`);
-      
+
       if (direction === 'right') {
         // Update UI state immediately
-        this.setState(prevState => ({ 
+        this.setState(prevState => ({
           currentIndex: index - 1,
           lastRemovedJob: { job: job as JobWithMatchScore, direction: 'right' },
           currentJobForEmail: job as JobWithMatchScore
         }));
-        
+
         // Just prepare and show email modal - don't create application yet
         await this.prepareEmailDraft(job as JobWithMatchScore);
       } else {
         // Decline - update state immediately
-        this.setState(prevState => ({ 
+        this.setState(prevState => ({
           currentIndex: index - 1,
           lastRemovedJob: { job: job as JobWithMatchScore, direction: 'left' }
         }));
-        
+
         const result = await this.declineJob(job.id);
         if (result.success) {
           this.toast({
@@ -488,13 +488,13 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       });
     }
   };
-  
+
   // Handle when a card goes out of frame
   outOfFrame = (jobTitle: string, index: number) => {
     console.log(`${jobTitle} left the screen at index ${index}`);
     // Consider removing the job from the state here if performance is an issue
   };
-  
+
   // Programmatically swipe a card
   swipe = async (dir: "left" | "right") => {
     const { currentIndex } = this.state;
@@ -505,18 +505,18 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     }
     await this.childRefs[currentIndex].current.swipe(dir); // Swipe the current card
   };
-  
+
   // Implement undo swipe functionality
   undoSwipe = async () => {
     const { lastRemovedJob } = this.state;
     if (!lastRemovedJob) return;
-    
+
     // Re-add the job to the state and update the index
     this.setState(prevState => {
       const newJobs = [...prevState.jobs];
       // Reset the viewed status and ensure unique ID by adding timestamp
       const jobToRestore = {
-        ...lastRemovedJob.job, 
+        ...lastRemovedJob.job,
         viewed: false,
         id: `${lastRemovedJob.job.id}-${Date.now()}`,
         // Preserve the original ID for API calls
@@ -524,14 +524,14 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
       };
       // Add the job back to the stack
       newJobs.splice(prevState.currentIndex + 1, 0, jobToRestore);
-      
+
       return {
         jobs: newJobs,
         currentIndex: prevState.currentIndex + 1,
         lastRemovedJob: null
       };
     });
-    
+
     // Try to reset the viewed status on the server
     try {
       // This would need a new API endpoint to unmark a job as viewed
@@ -540,13 +540,13 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     } catch (error) {
       console.error("Error resetting viewed status:", error);
     }
-    
+
     this.toast({
       title: "Undo Swipe",
       description: `Brought back ${lastRemovedJob.job.title}. You can now re-decide.`
     });
   };
-  
+
   // Helper function to get match score color
   getScoreColor = (score: number | null): string => {
     if (score === null || score === undefined) return "text-gray-400";
@@ -555,7 +555,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     if (score >= 40) return "text-yellow-500";
     return "text-red-500";
   };
-  
+
   // Helper function to get human-readable match score label
   getScoreLabel = (score: number | null): string => {
     if (score === null || score === undefined) return "No match data";
@@ -564,10 +564,10 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     if (score >= 40) return "Potential Match";
     return "Low Match";
   };
-  
+
   render() {
     const { jobs, loading, error, currentIndex, lastRemovedJob, expandedJobId, isProcessingCV, studentProfile, profileLoading, emailModalOpen, emailDraft, currentJobForEmail } = this.state;
-    
+
     if (loading || profileLoading || this.state.applicationsLoading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
@@ -579,16 +579,16 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
     return (
       <main className="min-h-screen container mx-auto py-4 sm:py-6 md:py-8 px-4 flex flex-col items-center relative overflow-hidden">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-center">New Job Matches</h1>
-        <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 text-center px-2">Swipe right to apply, left to pass.</p>
-        
+        <p className="text-sm sm:text-base text-white font-semibold mb-3 sm:mb-4 text-center px-2 drop-shadow-md">Swipe right to apply, left to pass.</p>
+
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6 w-full sm:w-auto px-2 sm:px-0">
           <Button onClick={this.fetchJobs} className="w-full sm:w-auto text-sm sm:text-base">
             Find Matched Jobs
           </Button>
-         
+
         </div>
-        
+
         {/* Error Banner - Show inline instead of full screen */}
         {error && (
           <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-red-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
@@ -607,7 +607,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             </div>
           </div>
         )}
-        
+
         {/* CV Processing Warning */}
         {isProcessingCV && (
           <div className="mb-4 sm:mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-yellow-800 flex items-center gap-2 max-w-xl w-full mx-2 sm:mx-0">
@@ -620,7 +620,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             </div>
           </div>
         )}
-        
+
         {/* Warning: Missing Pre-OJT Orientation Document */}
         {studentProfile && !studentProfile.preojtOrientationUrl && (
           <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-red-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
@@ -638,7 +638,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             </div>
           </div>
         )}
-        
+
         {/* Warning: Pending Admin Verification */}
         {studentProfile && studentProfile.preojtOrientationUrl && !studentProfile.verified && (
           <div className="mb-4 sm:mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-blue-800 flex items-start gap-2 sm:gap-3 max-w-xl w-full mx-2 sm:mx-0">
@@ -646,25 +646,25 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             <div className="flex-1 min-w-0">
               <p className="font-semibold mb-1">Account Verification in Progress</p>
               <p>
-                Admin is verifying your account. Please wait while we review your Pre-OJT Orientation Document. 
+                Admin is verifying your account. Please wait while we review your Pre-OJT Orientation Document.
                 You'll be notified once verification is complete.
               </p>
             </div>
           </div>
         )}
-        
+
         {/* Block job viewing if not verified */}
         {studentProfile && (!studentProfile.preojtOrientationUrl || !studentProfile.verified) ? (
           <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
             <Info className="h-12 w-12 text-gray-400 mb-4" />
             <h2 className="text-2xl font-semibold mb-2">
-              {!studentProfile.preojtOrientationUrl 
-                ? "Action Required" 
+              {!studentProfile.preojtOrientationUrl
+                ? "Action Required"
                 : "Verification Pending"}
             </h2>
             <p className="text-gray-600 mb-6">
-              {!studentProfile.preojtOrientationUrl 
-                ? "You need to upload your Pre-OJT Orientation Document before you can view job opportunities." 
+              {!studentProfile.preojtOrientationUrl
+                ? "You need to upload your Pre-OJT Orientation Document before you can view job opportunities."
                 : "Your account is currently under review. You'll be able to view job opportunities once your account is verified by admin."}
             </p>
             {!studentProfile.preojtOrientationUrl && (
@@ -681,7 +681,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
             <div className="mb-6 sm:mb-8">
               <Popover open={this.state.showMatchingInfo} onOpenChange={(open) => this.setState({ showMatchingInfo: open })}>
                 <PopoverTrigger asChild>
-                  <button 
+                  <button
                     className="text-sm text-primary flex items-center gap-1.5 hover:underline cursor-pointer transition-all hover:gap-2 group"
                     onClick={() => this.setState({ showMatchingInfo: !this.state.showMatchingInfo })}
                   >
@@ -701,7 +701,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                       Our intelligent system analyzes your profile to find the best opportunities
                     </p>
                   </div>
-                  
+
                   <div className="p-4 space-y-4">
                     {/* How it works */}
                     <div>
@@ -728,7 +728,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         </li>
                       </ul>
                     </div>
-                    
+
                     {/* Match score guide */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
@@ -744,7 +744,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         <p className="text-xs text-muted-foreground ml-14">
                           Excellent fit! You have most or all required skills. Apply with confidence.
                         </p>
-                        
+
                         <div className="flex items-center gap-2 text-xs mt-3">
                           <div className="w-12 h-1.5 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"></div>
                           <span className="font-bold text-blue-600">60-79%</span>
@@ -753,7 +753,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         <p className="text-xs text-muted-foreground ml-14">
                           Great opportunity! You meet many requirements. Highlight relevant skills in your application.
                         </p>
-                        
+
                         <div className="flex items-center gap-2 text-xs mt-3">
                           <div className="w-12 h-1.5 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"></div>
                           <span className="font-bold text-yellow-600">40-59%</span>
@@ -762,7 +762,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         <p className="text-xs text-muted-foreground ml-14">
                           Worth considering! You have some relevant skills. Emphasize transferable experience.
                         </p>
-                        
+
                         <div className="flex items-center gap-2 text-xs mt-3">
                           <div className="w-12 h-1.5 bg-gradient-to-r from-red-400 to-red-600 rounded-full"></div>
                           <span className="font-bold text-red-600">&lt;40%</span>
@@ -773,7 +773,7 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* Tips */}
                     <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 mt-4">
                       <p className="text-xs text-blue-900 dark:text-blue-100 flex items-start gap-2">
@@ -787,175 +787,174 @@ export class OpportunitiesPage extends Component<{}, OpportunitiesPageState> {
                 </PopoverContent>
               </Popover>
             </div>
-            
+
             {jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
-            <Info className="h-12 w-12 text-gray-400 mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No New Job Matches</h2>
-            <p className="text-gray-600 mb-6">
-              You've viewed all available job matches. Check back later for new opportunities.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Refresh Matches
-            </Button>
-          </div>
-        ) : (
-          <div className="relative h-[480px] sm:h-[520px] w-full max-w-[90vw] sm:max-w-md">
-            {jobs.map((job, index) => (
-              <div className="absolute" key={`${job.id}-${index}`}>
-                <TinderCard
-                  ref={this.childRefs[index]}
-                  className="absolute cursor-grab active:cursor-grabbing touch-none"
-                  onSwipe={(dir) => this.handleSwipe(dir, job, index)}
-                  onCardLeftScreen={() => this.outOfFrame(job.title, index)}
-                  preventSwipe={["up", "down"]}
-                >
-                  <div 
-                    className={`bg-gray-900 p-4 sm:p-6 w-[85vw] sm:w-[360px] max-w-[400px] h-[480px] sm:h-[500px] rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${
-                      expandedJobId === job.id ? 'max-h-none overflow-y-auto' : ''
-                    }`}
-                  >
-                    {/* Avatar, Company & Location */}
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        {job.company_logo_url ? (
-                          <img
-                            src={job.company_logo_url}
-                            alt={`${job.company_name} logo`}
-                            className="w-10 h-10 object-contain rounded-full"
-                          />
-                        ) : (
-                          <span className="text-lg font-medium text-purple-800">
-                            {job.company_name ? job.company_name.charAt(0) : 'A'}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-base">{job.company_name}</h3>
-                        <p className="text-sm text-gray-600">{job.location}</p>
-                      </div>
-                      <div className="ml-auto">
-                        <div className={`${this.getScoreColor(job.match_score)} px-2 py-0.5 rounded-full text-xs font-medium bg-opacity-10 bg-current`}>
-                          {job.match_score != null && <span className="text-white">{job.match_score.toFixed(2)}% </span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Job Title & Subtitle */}
-                    <div className="text-center mb-3">
-                      <h2 className="text-xl font-medium mb-1">{job.title}</h2>
-                      <p className="text-sm text-white-600">
-                        {job.job_type || "Subtitle"}
-                      </p>
-                    </div>
-
-                    {/* Job Description - Limited to 50 chars */}
-                    <div className="mb-3">
-                      <p className="text-sm text-white-700 leading-relaxed">
-                        {job.description 
-                          ? (job.description.length > 190 
-                             ? job.description.substring(0, 190) + '...' 
-                             : job.description)
-                          : "No description provided."}
-                      </p>
-                    </div>
-
-                    {/* Job Details */}
-                    <div className="grid grid-cols-1 gap-1.5 mb-3">
-                      {job.location && (
-                        <div className="flex items-center gap-2 text-xs text-white-700">
-                          <MapPin className="w-3 h-3" />
-                          <span>{job.location}</span>
-                        </div>
-                      )}
-                      
-                      {job.job_type && (
-                        <div className="flex items-center gap-2 text-xs text-white-700">
-                          <Briefcase className="w-3 h-3" />
-                          <span>{job.job_type}</span>
-                        </div>
-                      )}
-                      
-                      {job.salary_range && (
-                        <div className="flex items-center gap-2 text-xs text-white-700">
-                          <DollarSign className="w-3 h-3" />
-                          <span>{job.salary_range}</span>
-                        </div>
-                      )}
-                      
-                      {job.application_deadline && (
-                        <div className="flex items-center gap-2 text-xs text-white-700">
-                          <Calendar className="w-3 h-3" />
-                          <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Required Skills */}
-                    {job.required_skills && job.required_skills.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs font-medium mb-1.5">Required Skills:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {job.required_skills.map((skill, i) => (
-                            <span
-                              key={`${skill}-${i}`}
-                              className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* View Details Button */}
-                    <div className="mt-auto pt-2">
-                      <Link to={`/opportunities/${job.original_id}`} className="block w-full">
-                        <Button variant="outline" className="w-full flex items-center justify-center text-sm">
-                          View Full Details
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </TinderCard>
+              <div className="flex flex-col items-center justify-center mt-8 text-center max-w-md">
+                <Info className="h-12 w-12 text-gray-400 mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">No New Job Matches</h2>
+                <p className="text-gray-600 mb-6">
+                  You've viewed all available job matches. Check back later for new opportunities.
+                </p>
+                <Button onClick={() => window.location.reload()}>
+                  Refresh Matches
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Email Preparation Loading Modal */}
-        {this.state.isPreparingEmail && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Preparing Your Application</h3>
-              <p className="text-gray-600">
-                Generating personalized cover letter and preparing email draft...
-              </p>
-              <p className="text-sm text-gray-500 mt-3">
-                This may take a few moments
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Email Draft Modal */}
-        {emailModalOpen && emailDraft && currentJobForEmail && (
-          <EmailDraftModal
-            isOpen={emailModalOpen}
-            onClose={() => this.setState({ 
-              emailModalOpen: false, 
-              emailDraft: null, 
-              pendingApplicationId: null,
-              currentJobForEmail: null 
-            })}
-            emailDraft={emailDraft}
-            onSend={this.sendApplicationEmail}
-            jobTitle={currentJobForEmail.title}
-            companyName={currentJobForEmail.company_name || 'Unknown Company'}
-          />
-        )}
+            ) : (
+              <div className="relative h-[480px] sm:h-[520px] w-full max-w-[90vw] sm:max-w-md mx-auto">
+                {jobs.map((job, index) => (
+                  <div className="absolute" key={`${job.id}-${index}`}>
+                    <TinderCard
+                      ref={this.childRefs[index]}
+                      className="absolute cursor-grab active:cursor-grabbing touch-none"
+                      onSwipe={(dir) => this.handleSwipe(dir, job, index)}
+                      onCardLeftScreen={() => this.outOfFrame(job.title, index)}
+                      preventSwipe={["up", "down"]}
+                    >
+                      <div
+                        className={`bg-gray-900 p-4 sm:p-6 w-[85vw] sm:w-[360px] max-w-[400px] h-[480px] sm:h-[500px] rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col ${expandedJobId === job.id ? 'max-h-none overflow-y-auto' : ''
+                          }`}
+                      >
+                        {/* Avatar, Company & Location */}
+                        <div className="flex items-start gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                            {job.company_logo_url ? (
+                              <img
+                                src={job.company_logo_url}
+                                alt={`${job.company_name} logo`}
+                                className="w-10 h-10 object-contain rounded-full"
+                              />
+                            ) : (
+                              <span className="text-lg font-medium text-purple-800">
+                                {job.company_name ? job.company_name.charAt(0) : 'A'}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-base">{job.company_name}</h3>
+                            <p className="text-sm text-gray-600">{job.location}</p>
+                          </div>
+                          <div className="ml-auto">
+                            <div className={`${this.getScoreColor(job.match_score)} px-2 py-0.5 rounded-full text-xs font-medium bg-opacity-10 bg-current`}>
+                              {job.match_score != null && <span className="text-white">{job.match_score.toFixed(2)}% </span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Job Title & Subtitle */}
+                        <div className="text-center mb-3">
+                          <h2 className="text-xl font-medium mb-1">{job.title}</h2>
+                          <p className="text-sm text-white-600">
+                            {job.job_type || "Subtitle"}
+                          </p>
+                        </div>
+
+                        {/* Job Description - Limited to 50 chars */}
+                        <div className="mb-3">
+                          <p className="text-sm text-white-700 leading-relaxed">
+                            {job.description
+                              ? (job.description.length > 190
+                                ? job.description.substring(0, 190) + '...'
+                                : job.description)
+                              : "No description provided."}
+                          </p>
+                        </div>
+
+                        {/* Job Details */}
+                        <div className="grid grid-cols-1 gap-1.5 mb-3">
+                          {job.location && (
+                            <div className="flex items-center gap-2 text-xs text-white-700">
+                              <MapPin className="w-3 h-3" />
+                              <span>{job.location}</span>
+                            </div>
+                          )}
+
+                          {job.job_type && (
+                            <div className="flex items-center gap-2 text-xs text-white-700">
+                              <Briefcase className="w-3 h-3" />
+                              <span>{job.job_type}</span>
+                            </div>
+                          )}
+
+                          {job.salary_range && (
+                            <div className="flex items-center gap-2 text-xs text-white-700">
+                              <DollarSign className="w-3 h-3" />
+                              <span>{job.salary_range}</span>
+                            </div>
+                          )}
+
+                          {job.application_deadline && (
+                            <div className="flex items-center gap-2 text-xs text-white-700">
+                              <Calendar className="w-3 h-3" />
+                              <span>Deadline: {new Date(job.application_deadline).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Required Skills */}
+                        {job.required_skills && job.required_skills.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium mb-1.5">Required Skills:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {job.required_skills.map((skill, i) => (
+                                <span
+                                  key={`${skill}-${i}`}
+                                  className="px-2 py-0.5 bg-gray-100 text-gray-800 text-xs rounded-full"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* View Details Button */}
+                        <div className="mt-auto pt-2">
+                          <Link to={`/opportunities/${job.original_id}`} className="block w-full">
+                            <Button variant="outline" className="w-full flex items-center justify-center text-sm">
+                              View Full Details
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </TinderCard>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Email Preparation Loading Modal */}
+            {this.state.isPreparingEmail && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Preparing Your Application</h3>
+                  <p className="text-gray-600">
+                    Generating personalized cover letter and preparing email draft...
+                  </p>
+                  <p className="text-sm text-gray-500 mt-3">
+                    This may take a few moments
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Email Draft Modal */}
+            {emailModalOpen && emailDraft && currentJobForEmail && (
+              <EmailDraftModal
+                isOpen={emailModalOpen}
+                onClose={() => this.setState({
+                  emailModalOpen: false,
+                  emailDraft: null,
+                  pendingApplicationId: null,
+                  currentJobForEmail: null
+                })}
+                emailDraft={emailDraft}
+                onSend={this.sendApplicationEmail}
+                jobTitle={currentJobForEmail.title}
+                companyName={currentJobForEmail.company_name || 'Unknown Company'}
+              />
+            )}
           </>
         )}
       </main>
